@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.js" ></script>
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+  </head>
+  <body>
+      <script>
+        const rawTitles = [
+        "Edge of Tomorrow",
+        "Languedoc",
+        "Replicas - HD",
+        "Ma part d'Eve",
+        "The Strain",
+        "Joséphine s'arrondit - HD",
+        "The Finest Hours",
+        "Languedoc",
+        "NAVIRES XXL",
+        "Le livre de la jungle",
+        "Cloud 9: L'ultime Figure",
+        "Versailles",
+        "Tatouées et baisées",
+        "BA - Centurion",
+        "EMBARQUE : OPERATION DJIBOUTI",
+        "Médecin de campagne",
+        "Camp Rock",
+        "EMBARQUE : OPERATION DJIBOUTI",
+        "Secrétaire de direction - HD",
+        "Insomnia",
+        "Divergente 3 : au-delà du mur - extrait exclusif offert",
+        "Infirmières par derrière - HD",
+        "L'abominable vérité - HD",
+        "Robin des bois, la véritable histoire - HD",
+        "Le journal du hard",
+        "Graziella",
+        "Pixels - HD",
+        "Adaline",
+        "Mon roi - édition spéciale",
+        "Amy",
+        "Mon maître d'école - HD",
+        "Habillé(e)s pour l'hiver 2016-2017",
+        "Languedoc",
+        "Le tout nouveau Testament",
+        "Le 3ème anus",
+        "Secrétaire de direction - HD",
+        "Crazy Amy - HD",
+        "Minuit à Paris - HD",
+        "Prémonitions",
+        "France 2",
+        "France 3 Nat",
+        "Amy",
+        "Les secrets de Laly - HD",
+        "Les coiffeuses - HD",
+        "Haute sécurité - HD",
+        "Les aventures extraordinaires d'un apprenti détective - HD",
+        "Ave, César!",
+        "Versailles",
+        "The Revenant",
+        "Lord of War - HD",
+        "Il baise une Star du X - HD",
+        "Ant-Man",
+        "ISRAEL: SOUS LA PRESSION DES ULTRAS",
+        "Divergente 3 : au-delà du mur - HD",
+        "Ma fille - HD",
+        "Fanboys",
+        "Dallas Buyers Club",
+        "Charlie's Country",
+        "Grease",
+        "Délire express - HD",
+        "La jeune avocate - HD",
+        "Anissa et lola à l'école d'infirmières - HD",
+        "Creed l'héritage de Rocky Balboa",
+        "Dangerous housewife - HD",
+        "Terminator : Genisys",
+        "Ask Me Anything - HD",
+        "Le charme discret de la bourgeoisie",
+        "La banquière - HD",
+        "Versailles",
+        "La bourgeoise - HD",
+        "Michael Clayton - HD",
+        "Elles trompent leur mari - HD",
+        "Casting",
+        "TF1",
+        "The Revenant - HD",
+        "Accros à la bite",
+        "The Strain",
+        "Papa se tape la fille au pair - HD",
+        "Le prestige - HD",
+        "Pouvoirs étranges",
+        "Infirmières par derrière - HD",
+        "Au nom de ma fille - extrait offert",
+        "Le 3ème anus",
+        "Memento - HD",
+        "Amiennemies",
+        "Janis",
+        "Antigang - HD",
+        "France 2",
+        "Les Tuche 2 - Le rêve américain",
+        "Man of steel",
+        "Lache moi la grappe c'est plus les vendanges",
+        "Anissa et lola à l'école d'infirmières - HD",
+        "Zack et Cody: Le Film",
+        "Les Tuche 2 - Le rêve américain",
+        "The Danish Girl",
+        "Le cirque",
+        "Centurion",
+        "Ballerine le jour, escorte la nuit - HD",
+        "Les délurées",
+        "Plume perverse",
+        "Papa se tape la fille au pair - HD",
+        "Disparue en hiver",
+        "Tusk - HD",
+        "Un + une - HD",
+        "Spectacles intimes",
+        "GRAVITE ZERO",
+        "BA - Le tout nouveau Testament",
+        "The Bay - HD",
+        "Kamasutra - Les secrets du sexe - HD",
+        "Descendants",
+        "The Strain",
+        ];
+
+        function prepareTitle(title) {
+            return title.replace(' - HD', '');
+        }
+
+        var titles = Array.from(new Set(rawTitles));
+        let films = titles.map(title => ({
+            vodTitle: title,
+            preparedTitle: prepareTitle(title),
+        }));
+        console.log(rawTitles);
+        console.log(titles);
+        console.log(films);
+
+
+
+        const baseURI = 'https://query.wikidata.org/bigdata/namespace/wdq/sparql?query=';
+        function queryFilmObject(frenchName) {
+            let sparql = `select distinct ?film where  {
+                ?film wdt:P31 wd:Q11424;
+                rdfs:label "${frenchName}"@fr.
+            }` ;
+            return $.getJSON(baseURI + encodeURIComponent(sparql));
+        }
+
+        const originalTitle = 'P1476';
+        const composer = 'P86';
+        const musicBrainzRGID = 'P436';
+
+        function enrich(film) {
+            return queryFilmObject(film.preparedTitle
+            ).then(function(res) {
+                console.log(res.results);
+                if (res.results.bindings.length === 0) {
+                    return Promise.reject(`No results for ${film.preparedTitle}`);
+                }
+                film.wikiDataId = res.results.bindings[0].film.value.slice(31);
+
+                return $.getJSON(`https://www.wikidata.org/wiki/Special:EntityData/${film.wikiDataId}.json`);
+            }
+            ).then(function(res) {
+                console.log(res);
+
+                let props = res.entities[film.wikiDataId].claims
+
+                film.composer = get(props, composer, 0, 'mainsnak', 'datavalue', 'value', 'id');
+                film.title = get(props, originalTitle, 0, 'mainsnak', 'datavalue', 'value', 'text');
+                film.MBRGID = get(props, musicBrainzRGID, 0, 'mainsnak', 'datavalue', 'value');
+                console.log(JSON.stringify(film, null, 2));
+                return Promise.resolve(true);
+            }).catch(function(msg) {
+                console.log(msg);
+                return Promise.resolve(true);
+            });
+            //(console.log.bind(console));
+        }
+
+
+        // helpers
+        function get(obj, ...prop) {
+            return prop.reduce((current, key) => current ? current[key] : undefined, obj)
+        }
+
+        function promiseSeries(iterable, callback, self) {
+            var results = [];
+
+            return iterable.reduce(function(sequence, id, index, array) {
+              return sequence.then(function(res) {
+                results.push(res);
+                return callback.call(self, id, index, array);
+              });
+            }, Promise.resolve(true)).then(function(res) {
+              return new Promise(function(resolve, reject) {
+                results.push(res);
+                resolve(results.slice(1));
+              });
+            });
+          };
+
+        function percent(v) {
+            return Math.round(v * 100);
+        }
+        // enrich({ preparedTitle: 'Edge of Tomorrow'});
+        promiseSeries(films, enrich).then(function() {
+            let hasWikiDataId = films.filter(film => Boolean(film.wikiDataId));
+            let hasMBID = films.filter(film => Boolean(film.MBRGID));
+            let hasComposer = films.filter(film => Boolean(film.composer));
+
+
+            console.log(`Total: ${films.length}\n\
+hasWikiDataId: ${hasWikiDataId.length}, ${percent(hasWikiDataId.length/films.length)}\n\
+hasMBID: ${hasMBID.length}, ${hasMBID.length/hasWikiDataId.length}, ${percent(hasMBID.length/films.length)}\n\
+hasComposer: ${hasComposer.length}, ${percent(hasComposer.length/hasWikiDataId.length)}, ${percent(hasComposer.length/films.length)}\n\
+            `);
+
+
+            let html = `<table class="table table-hover table-striped">
+  <thead>
+    <tr>
+    <th>#</th>
+    <th>Data title</th>
+    <th>Prepared title</th>
+    <th>Wikidata ID</th>
+    <th>Wikidata Title</th>
+    <th>Composer</th>
+    <th>Musicbrainz</th>
+    </tr>
+  </thead>
+  <tbody>
+`;
+        html += films.map(function(film, index) {
+    return `
+    <tr>
+        <th>${index}</th>
+        <td>${film.vodTitle || ''}</td>
+        <td>${film.preparedTitle || ''}</td>
+        <td>${film.wikiDataId || ''}</td>
+        <td>${film.title || ''}</td>
+        <td>${film.composer || ''}</td>
+        <td>${film.MBRGID || ''}</td>
+    </tr>`
+            }).join('\n');
+    html += `</tbody>
+</table>`
+            $('body').append(html);
+        });
+      </script>
+
+  </body>
+</html>
