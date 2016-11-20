@@ -11,123 +11,148 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
   </head>
   <body>
+    <input type="text" class="form-control" id="inputFilm" placeholder="La vie des autres">
+    <button type="button" id="searchFilm" class="btn btn-default">Trouver !</button>
+
+    <table class="table table-hover table-striped">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Data title</th>
+          <th>Prepared title</th>
+          <th>Wikidata ID</th>
+          <th>Wikidata Title</th>
+          <th>Composer</th>
+          <th>Musicbrainz</th>
+          <th>BO count on MB</th>
+        </tr>
+      </thead>
+      <tbody>
+      </tbody>
+    </table>`
       <script>
         const rawTitles = [
-        "Edge of Tomorrow",
-        "Languedoc",
-        "Replicas - HD",
-        "Ma part d'Eve",
-        "The Strain",
-        "Joséphine s'arrondit - HD",
-        "The Finest Hours",
-        "Languedoc",
-        "NAVIRES XXL",
-        "Le livre de la jungle",
-        "Cloud 9: L'ultime Figure",
-        "Versailles",
-        "Tatouées et baisées",
-        "BA - Centurion",
-        "EMBARQUE : OPERATION DJIBOUTI",
-        "Médecin de campagne",
-        "Camp Rock",
-        "EMBARQUE : OPERATION DJIBOUTI",
-        "Secrétaire de direction - HD",
-        "Insomnia",
-        "Divergente 3 : au-delà du mur - extrait exclusif offert",
-        "Infirmières par derrière - HD",
-        "L'abominable vérité - HD",
-        "Robin des bois, la véritable histoire - HD",
-        "Le journal du hard",
-        "Graziella",
-        "Pixels - HD",
-        "Adaline",
-        "Mon roi - édition spéciale",
-        "Amy",
-        "Mon maître d'école - HD",
-        "Habillé(e)s pour l'hiver 2016-2017",
-        "Languedoc",
-        "Le tout nouveau Testament",
-        "Le 3ème anus",
-        "Secrétaire de direction - HD",
-        "Crazy Amy - HD",
-        "Minuit à Paris - HD",
-        "Prémonitions",
-        "France 2",
-        "France 3 Nat",
-        "Amy",
-        "Les secrets de Laly - HD",
-        "Les coiffeuses - HD",
-        "Haute sécurité - HD",
-        "Les aventures extraordinaires d'un apprenti détective - HD",
-        "Ave, César!",
-        "Versailles",
-        "The Revenant",
-        "Lord of War - HD",
-        "Il baise une Star du X - HD",
-        "Ant-Man",
-        "ISRAEL: SOUS LA PRESSION DES ULTRAS",
-        "Divergente 3 : au-delà du mur - HD",
-        "Ma fille - HD",
-        "Fanboys",
-        "Dallas Buyers Club",
-        "Charlie's Country",
-        "Grease",
-        "Délire express - HD",
-        "La jeune avocate - HD",
-        "Anissa et lola à l'école d'infirmières - HD",
-        "Creed l'héritage de Rocky Balboa",
-        "Dangerous housewife - HD",
-        "Terminator : Genisys",
-        "Ask Me Anything - HD",
-        "Le charme discret de la bourgeoisie",
-        "La banquière - HD",
-        "Versailles",
-        "La bourgeoise - HD",
-        "Michael Clayton - HD",
-        "Elles trompent leur mari - HD",
-        "Casting",
-        "TF1",
-        "The Revenant - HD",
-        "Accros à la bite",
-        "The Strain",
-        "Papa se tape la fille au pair - HD",
-        "Le prestige - HD",
-        "Pouvoirs étranges",
-        "Infirmières par derrière - HD",
-        "Au nom de ma fille - extrait offert",
-        "Le 3ème anus",
-        "Memento - HD",
-        "Amiennemies",
-        "Janis",
-        "Antigang - HD",
-        "France 2",
-        "Les Tuche 2 - Le rêve américain",
-        "Man of steel",
-        "Lache moi la grappe c'est plus les vendanges",
-        "Anissa et lola à l'école d'infirmières - HD",
-        "Zack et Cody: Le Film",
-        "Les Tuche 2 - Le rêve américain",
-        "The Danish Girl",
+        "Edge of Tomorrow", // ok
+        //"Languedoc",
+        "Replicas - HD", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=209496.html
+        // X "Ma part d'Eve",
+        //"The Strain", // série http://www.allocine.fr/series/ficheserie_gen_cserie=11467.html
+        "Joséphine s'arrondit - HD", // ok
+        "The Finest Hours", // ok
+        //"Languedoc",
+        //"NAVIRES XXL",
+        "Le livre de la jungle", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=222692.html
+        // Téléfilm "Cloud 9: L'ultime Figure", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=228050.html
+        "Versailles", // ok
+        //"Tatouées et baisées", // X
+        "BA - Centurion", // bande annonce de film http://www.allocine.fr/film/fichefilm_gen_cfilm=142950.html
+        // "EMBARQUE : OPERATION DJIBOUTI", // Série (rmcdecouverte http://rmcdecouverte.bfmtv.com/emission/embarque-operation-djibouti/)
+        "Médecin de campagne", // ok
+        // Disney channel ... "Camp Rock", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=137308.html
+        //D "EMBARQUE : OPERATION DJIBOUTI",
+        //"Secrétaire de direction - HD", // X
+        "Insomnia", // ok
+        "Divergente 3 : au-delà du mur - extrait exclusif offert", // film (z - extrait...)
+        //"Infirmières par derrière - HD", // X
+        "L'abominable vérité - HD", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=132658.html
+        "Robin des bois, la véritable histoire - HD", // ok
+        //"Le journal du hard", // X
+        "Graziella", // ok
+        "Pixels - HD", // ok
+        "Adaline", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=227851.html
+        "Mon roi - édition spéciale", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=226416.html
+        "Amy", // ok
+        "Mon maître d'école - HD", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=241523.html
+        // "Habillé(e)s pour l'hiver 2016-2017", // TV émission
+        // "Languedoc",
+        "Le tout nouveau Testament", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=222641.html
+        // "Le 3ème anus", // X
+        // X "Secrétaire de direction - HD",
+        "Crazy Amy - HD", // ok
+        "Minuit à Paris - HD", // ok
+        "Prémonitions", // ok
+        //"France 2",
+        //"France 3 Nat",
+        "Amy", // ok
+        // X "Les secrets de Laly - HD",
+        // X "Les coiffeuses - HD",
+        "Haute sécurité - HD", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=42408.html
+        "Les aventures extraordinaires d'un apprenti détective - HD", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=223932.html
+        "Ave, César!", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=225859.html
+        "Versailles", // ok
+        "The Revenant", // ok
+        "Lord of War - HD", // ok
+        // "Il baise une Star du X - HD", // X
+        "Ant-Man", // ok
+        // "ISRAEL: SOUS LA PRESSION DES ULTRAS", // TV émission
+        "Divergente 3 : au-delà du mur - HD", // film
+        // X "Ma fille - HD",
+        "Fanboys", // ok
+        "Dallas Buyers Club", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=137097.html
+        "Charlie's Country", // ok
+        "Grease", // ok
+        "Délire express - HD", // ok http://www.allocine.fr/film/fichefilm_gen_cfilm=124707.html
+        // X "La jeune avocate - HD",
+        // X "Anissa et lola à l'école d'infirmières - HD",
+        "Creed l'héritage de Rocky Balboa", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=222968.html
+        "Dangerous housewife - HD", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=220144.html
+        "Terminator : Genisys", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=141609.html
+        "Ask Me Anything - HD", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=235009.html
+        "Le charme discret de la bourgeoisie", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=2191.html
+        // X "La banquière - HD",
+        //D "Versailles",
+        // X "La bourgeoise - HD",
+        "Michael Clayton - HD", // ok
+        // X "Elles trompent leur mari - HD",
+        "Casting", // ok
+        //"TF1",
+        //D "The Revenant - HD",
+        //"Accros à la bite", // X
+        //D "The Strain",
+        // X "Papa se tape la fille au pair - HD",
+        "Le prestige - HD", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=108998.html
+        // X "Pouvoirs étranges",
+        // X "Infirmières par derrière - HD",
+        "Au nom de ma fille - extrait offert", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=231971.html  extrait ...
+        //D "Le 3ème anus",
+        "Memento - HD", // ok
+        // "Amiennemies", // film à la TV ... http://www.allocine.fr/film/fichefilm_gen_cfilm=206147.html
+        "Janis", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=237404.html
+        "Antigang - HD", // ok
+        // "France 2",
+        "Les Tuche 2 - Le rêve américain", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=231178.html
+        "Man of steel", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=123348.html
+        // X "Lache moi la grappe c'est plus les vendanges",
+        // D "Anissa et lola à l'école d'infirmières - HD",
+        // Disney channel "Zack et Cody: Le Film", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=206738.html
+        //D "Les Tuche 2 - Le rêve américain",
+        "The Danish Girl", // ok
         "Le cirque",
-        "Centurion",
-        "Ballerine le jour, escorte la nuit - HD",
-        "Les délurées",
-        "Plume perverse",
-        "Papa se tape la fille au pair - HD",
-        "Disparue en hiver",
-        "Tusk - HD",
-        "Un + une - HD",
-        "Spectacles intimes",
-        "GRAVITE ZERO",
-        "BA - Le tout nouveau Testament",
-        "The Bay - HD",
-        "Kamasutra - Les secrets du sexe - HD",
-        "Descendants",
-        "The Strain",
+        "Centurion", // ok
+        // X "Ballerine le jour, escorte la nuit - HD",
+        // X "Les délurées",
+        // X "Plume perverse",
+        // D "Papa se tape la fille au pair - HD",
+        "Disparue en hiver", // ok
+        "Tusk - HD",// ok
+        "Un + une - HD", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=228049.html
+        // X "Spectacles intimes",
+        // "GRAVITE ZERO", // TV
+        "BA - Le tout nouveau Testament", // film --> Bande Annonce ...
+        "The Bay - HD", // ok
+        // X "Kamasutra - Les secrets du sexe - HD",
+        "Descendants", // fiml, the descendants http://www.allocine.fr/film/fichefilm_gen_cfilm=171157.html
+        // D "The Strain",
         ];
 
         function prepareTitle(title) {
-            return title.replace(' - HD', '');
+            return title.replace(' - HD', '')
+                .replace(/^BA - /, '')
+                .replace(/ - extrait exclusif offert$/, '')
+                .replace(/ - extrait offert$/, '')
+                .replace(/ - édition spéciale$/, '')
+
+            ;
         }
 
         var titles = Array.from(new Set(rawTitles));
@@ -140,15 +165,115 @@
         console.log(films);
 
 
+        // Musicbrainz
+        function getPlayList(film) {
+
+            let uri = 'https://musicbrainz.org/ws/2/release-group/?fmt=json&query=';
+            uri += `release:${encodeURIComponent(film.title)}%20AND%20type:soundtrack`;
+            if (film.composer && film.composer.label) {
+                uri += `%20AND%20artistname:${film.composer.label}`;
+            }
+            console.log('here');
+            $.getJSON(uri)
+            .then(function(res) {
+                film.boCount = res.count;
+                let filtered = res['release-groups'].filter(item => item.score > 80);
+                film.boCount = filtered.length;
+
+                console.log(res);
+                console.log(film);
+
+                return promiseSeries(filtered.map(item => item.id), getTracks).then(function(tracks) {
+                    console.log(tracks);
+                    film.boTracks = tracks;
+                    return Promise.resolve();
+                });
+
+            });
+        }
+
+        function getTracks(rgid) {
+            return $.getJSON(`http://musicbrainz.org/ws/2/recording?fmt=json&query=rgid:${rgid}`);
+        }
+        //http://musicbrainz.org/ws/2/recording?query=rgid:c5dc46de-a7a1-4b1f-90e7-d08f55ac8d31
+
+        //https://musicbrainz.org/ws/2/release-group/?query=release:%22The%20wire%22%20AND%20type:soundtrack
+
+
+        // Wiki data .
 
         const baseURI = 'https://query.wikidata.org/bigdata/namespace/wdq/sparql?query=';
+        // Pure sparql
         function queryFilmObject(frenchName) {
             let sparql = `select distinct ?film where  {
                 ?film wdt:P31 wd:Q11424;
-                rdfs:label "${frenchName}"@fr.
+                rdfs:label "${frenchName}"@en.
             }` ;
             return $.getJSON(baseURI + encodeURIComponent(sparql));
         }
+
+        // Wikidata API to get from label
+
+        // query items with label
+        function getFilmSuggestionObjectAPI(film) {
+            // var req = new XMLHttpRequest();
+            // console.log(req);
+            // req.open('GET',
+
+            return $.getJSON(
+            `https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(prepareTitle(film.vodTitle))}&format=json&language=fr&type=item&origin=*`)
+            .then(function(res) {
+                console.log(res.search);
+
+                let items = res.search.sort((item,itemB) =>
+                    (item.description &&
+                    (item.description.indexOf('film') !== -1
+                    || item.description.indexOf('movie') !== -1)) ? -1 : 1
+                    );
+
+                console.log(items);
+
+                let checkEnrichRecursive = function(items, index) {
+                    if (index >= items.length) {
+                        return Promise.resolve(true); // Emtpy ...: (
+                    }
+                    film.preparedTitle = items[index].label;
+
+                    return enrich(film).then(function(res) {
+                        if (!film.wikiDataId) {
+                            return checkEnrichRecursive(items, index + 1);
+                        }
+
+                        console.log(film);
+                        return Promise.resolve(film);
+                    });
+                }
+
+                return checkEnrichRecursive(items, 0);
+
+            })
+            ;
+            // console.log(req.send(null));
+            // console.log(req.responseText);
+
+        }
+
+
+        // filter ? object, with the good type ?
+
+        function fetchComposer(film) {
+            $.getJSON(`https://www.wikidata.org/wiki/Special:EntityData/${film.composer}.json`)
+            .then(function(res) {
+                console.log(res);
+                let props = res.entities[film.composer].claims;
+                film.composer =  {
+                    label: getFirst(res.entities).labels.en.value,
+                    id: film.composer,
+                };
+                return Promise.resolve();
+            });
+        }
+
 
         const originalTitle = 'P1476';
         const composer = 'P86';
@@ -174,6 +299,14 @@
                 film.title = get(props, originalTitle, 0, 'mainsnak', 'datavalue', 'value', 'text');
                 film.MBRGID = get(props, musicBrainzRGID, 0, 'mainsnak', 'datavalue', 'value');
                 console.log(JSON.stringify(film, null, 2));
+
+                if (film.composer) {
+                    return fetchComposer(film);
+                } else {
+                    return Promise.resolve(true);
+                }
+            }).then(function(res) {
+                getPlayList(film);
                 return Promise.resolve(true);
             }).catch(function(msg) {
                 console.log(msg);
@@ -186,6 +319,10 @@
         // helpers
         function get(obj, ...prop) {
             return prop.reduce((current, key) => current ? current[key] : undefined, obj)
+        }
+
+        function getFirst(obj) {
+            return obj[Object.keys(obj)[0]];
         }
 
         function promiseSeries(iterable, callback, self) {
@@ -204,53 +341,65 @@
             });
           };
 
+        //function promiseFirst(iterable, callback, self) {
+
         function percent(v) {
             return Math.round(v * 100);
         }
+
+        $('#searchFilm').click(function() {
+          let txt = $('#inputFilm').val();
+          console.log(txt);
+          let film = { vodTitle: txt };
+
+          getFilmSuggestionObjectAPI(film).then(function() {
+            console.log(film);
+            // getPlayList(film);
+          });
+/*
+          let film = {
+            vodTitle: txt,
+            preparedTitle: prepareTitle(txt),
+          };
+          enrich(film).then(function() {
+            $('tbody').append(buildLine(film));
+          });*/
+        });
+
         // enrich({ preparedTitle: 'Edge of Tomorrow'});
-        promiseSeries(films, enrich).then(function() {
+
+        function buildLine(film, index) {
+            return `
+            <tr>
+                <th>${index || -1}</th>
+                <td>${film.vodTitle || ''}</td>
+                <td>${film.preparedTitle || ''}</td>
+                <td>${film.wikiDataId || ''}</td>
+                <td>${film.title || ''}</td>
+                <td>${film.composer || ''}</td>
+                <td>${film.MBRGID || ''}</td>
+                <td>${film.boCount || ''}</td>
+            </tr>`
+        }
+
+/*
+        promiseSeries(films, getFilmSuggestionObjectAPI).then(function() {
             let hasWikiDataId = films.filter(film => Boolean(film.wikiDataId));
             let hasMBID = films.filter(film => Boolean(film.MBRGID));
             let hasComposer = films.filter(film => Boolean(film.composer));
+            let hasBos = films.filter(film => Boolean(film.boCount));
 
 
             console.log(`Total: ${films.length}\n\
 hasWikiDataId: ${hasWikiDataId.length}, ${percent(hasWikiDataId.length/films.length)}\n\
 hasMBID: ${hasMBID.length}, ${hasMBID.length/hasWikiDataId.length}, ${percent(hasMBID.length/films.length)}\n\
 hasComposer: ${hasComposer.length}, ${percent(hasComposer.length/hasWikiDataId.length)}, ${percent(hasComposer.length/films.length)}\n\
+hasBos: ${hasBos.length}, ${percent(hasBos.length/hasWikiDataId.length)}, ${percent(hasBos.length/films.length)}\n\
             `);
 
-
-            let html = `<table class="table table-hover table-striped">
-  <thead>
-    <tr>
-    <th>#</th>
-    <th>Data title</th>
-    <th>Prepared title</th>
-    <th>Wikidata ID</th>
-    <th>Wikidata Title</th>
-    <th>Composer</th>
-    <th>Musicbrainz</th>
-    </tr>
-  </thead>
-  <tbody>
-`;
-        html += films.map(function(film, index) {
-    return `
-    <tr>
-        <th>${index}</th>
-        <td>${film.vodTitle || ''}</td>
-        <td>${film.preparedTitle || ''}</td>
-        <td>${film.wikiDataId || ''}</td>
-        <td>${film.title || ''}</td>
-        <td>${film.composer || ''}</td>
-        <td>${film.MBRGID || ''}</td>
-    </tr>`
-            }).join('\n');
-    html += `</tbody>
-</table>`
-            $('body').append(html);
+        $('tbody').append(films.map(buildLine).join('\n'));
         });
+*/
       </script>
 
   </body>
