@@ -11,8 +11,11 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
   </head>
   <body>
-    <input type="text" class="form-control" id="inputFilm" placeholder="La vie des autres">
-    <button type="button" id="searchFilm" class="btn btn-default">Trouver !</button>
+    <input type="text" class="form-control" id="inputFilm" placeholder="La vie des autres"><button type="button" id="searchFilm" class="btn btn-default">Trouver !</button>
+    <button type="button" id="processList" class="btn btn-default">Tous</button>
+
+
+    <iframe id="deezerFrame" scrolling="no" frameborder="0" allowTransparency="true"  width="700" height="240"></iframe>
 
     <table class="table table-hover table-striped">
       <thead>
@@ -25,6 +28,10 @@
           <th>Composer</th>
           <th>Musicbrainz</th>
           <th>BO count on MB</th>
+          <th>BO Title</th>
+          <th>Tracks</th>
+          <th>Deezer AlbumId</th>
+          <th>Deezer Tracks</th>
         </tr>
       </thead>
       <tbody>
@@ -164,6 +171,11 @@
         console.log(titles);
         console.log(films);
 
+        function setDeezerPlay(id, type) {
+            $('#deezerFrame').attr('src', `http://www.deezer.com/plugins/player?format=classic&autoplay=false&playlist=true&width=700&height=350&color=007FEB&layout=dark&size=medium&app_id=1&type=${type}&id=${id}`);
+
+        }
+
 
         // Musicbrainz
         function getPlayList(film) {
@@ -174,11 +186,12 @@
                 uri += `%20AND%20artistname:${film.composer.label}`;
             }
             console.log('here');
-            $.getJSON(uri)
+            return $.getJSON(uri)
             .then(function(res) {
                 film.boCount = res.count;
-                let filtered = res['release-groups'].filter(item => item.score > 80);
+                let filtered = res['release-groups'].filter(item => item.score > 90);
                 film.boCount = filtered.length;
+                film.boTitle = filtered[0].title;
 
                 console.log(res);
                 console.log(film);
@@ -199,6 +212,7 @@
 
         //https://musicbrainz.org/ws/2/release-group/?query=release:%22The%20wire%22%20AND%20type:soundtrack
 
+        // Deezer :
 
         // Wiki data .
 
@@ -210,6 +224,31 @@
                 rdfs:label "${frenchName}"@en.
             }` ;
             return $.getJSON(baseURI + encodeURIComponent(sparql));
+        }
+
+
+
+        // Deezer API :
+        function getDeezerData(film) {
+            let uri = `https://api.deezer.com/search/album?output=jsonp&callback=?&q=album:"${encodeURIComponent(film.title)}"`;
+            // if (film.composer && film.composer.label) {
+            //     uri += `%20artist:"${encodeURIComponent(film.composer.label)}"`;
+            // }
+            return $.getJSON(uri).then(function(res) {
+                console.log(res);
+                let album = get(res, 'data', 0);
+                if (!album) {
+                    return Promise.resolve();
+                }
+
+                film.deezer = {
+                    albumId: album.id,
+                };
+
+                return $.getJSON(`https://api.deezer.com/album/${film.deezer.albumId}/tracks/?output=jsonp&callback=?`).then(function(res) {
+                    film.deezer.tracklist = res.data;
+                })
+            })
         }
 
         // Wikidata API to get from label
@@ -306,8 +345,10 @@
                     return Promise.resolve(true);
                 }
             }).then(function(res) {
-                getPlayList(film);
-                return Promise.resolve(true);
+                return getPlayList(film)
+                .then(function() {
+                    return getDeezerData(film);
+                });
             }).catch(function(msg) {
                 console.log(msg);
                 return Promise.resolve(true);
@@ -354,6 +395,13 @@
 
           getFilmSuggestionObjectAPI(film).then(function() {
             console.log(film);
+            $('tbody').append(buildLine(film));
+
+            $('.deezer').click(function(ev) {
+                console.log(ev);
+                let d = ev.target.dataset;
+                setDeezerPlay(d.id, d.type);
+            })
             // getPlayList(film);
           });
 /*
@@ -361,14 +409,27 @@
             vodTitle: txt,
             preparedTitle: prepareTitle(txt),
           };
-          enrich(film).then(function() {
-            $('tbody').append(buildLine(film));
+          enrich(film)
           });*/
+
         });
 
         // enrich({ preparedTitle: 'Edge of Tomorrow'});
 
+        function buildTrackList(tracks, origin) {
+            return tracks.map(function(track) {
+
+                let elem = '<li>';
+                if (origin === 'deezer') {
+                    elem = `<li class='${origin}' data-type='tracks' data-id='${track.id}'>`
+                }
+                return `${elem}${track.title}</li>`
+            }).join('\n');
+
+        }
         function buildLine(film, index) {
+            let tracks = get(film, 'boTracks', 0, 'recordings') || [];
+
             return `
             <tr>
                 <th>${index || -1}</th>
@@ -379,27 +440,35 @@
                 <td>${film.composer || ''}</td>
                 <td>${film.MBRGID || ''}</td>
                 <td>${film.boCount || ''}</td>
+                <td>${film.noTitle || ''}</td>
+                <td><ol>${buildTrackList(get(film, 'boTracks', 0, 'recordings') || [])}</ol></td>
+
+                <td class="deezer" data-type="album" data-id="${get(film, 'deezer', 'albumId') || '' }" >${get(film, 'deezer', 'albumId') || '' }</td>
+                <td><ol>${buildTrackList(get(film, 'deezer', 'tracklist') || [], 'deezer')}</ol></td>
             </tr>`
+
+
         }
 
-/*
-        promiseSeries(films, getFilmSuggestionObjectAPI).then(function() {
-            let hasWikiDataId = films.filter(film => Boolean(film.wikiDataId));
-            let hasMBID = films.filter(film => Boolean(film.MBRGID));
-            let hasComposer = films.filter(film => Boolean(film.composer));
-            let hasBos = films.filter(film => Boolean(film.boCount));
+        $('#processList').click(function() {
+
+            promiseSeries(films, getFilmSuggestionObjectAPI).then(function() {
+                let hasWikiDataId = films.filter(film => Boolean(film.wikiDataId));
+                let hasMBID = films.filter(film => Boolean(film.MBRGID));
+                let hasComposer = films.filter(film => Boolean(film.composer));
+                let hasBos = films.filter(film => Boolean(film.boCount));
 
 
-            console.log(`Total: ${films.length}\n\
-hasWikiDataId: ${hasWikiDataId.length}, ${percent(hasWikiDataId.length/films.length)}\n\
-hasMBID: ${hasMBID.length}, ${hasMBID.length/hasWikiDataId.length}, ${percent(hasMBID.length/films.length)}\n\
-hasComposer: ${hasComposer.length}, ${percent(hasComposer.length/hasWikiDataId.length)}, ${percent(hasComposer.length/films.length)}\n\
-hasBos: ${hasBos.length}, ${percent(hasBos.length/hasWikiDataId.length)}, ${percent(hasBos.length/films.length)}\n\
-            `);
+                console.log(`Total: ${films.length}\n\
+    hasWikiDataId: ${hasWikiDataId.length}, ${percent(hasWikiDataId.length/films.length)}\n\
+    hasMBID: ${hasMBID.length}, ${hasMBID.length/hasWikiDataId.length}, ${percent(hasMBID.length/films.length)}\n\
+    hasComposer: ${hasComposer.length}, ${percent(hasComposer.length/hasWikiDataId.length)}, ${percent(hasComposer.length/films.length)}\n\
+    hasBos: ${hasBos.length}, ${percent(hasBos.length/hasWikiDataId.length)}, ${percent(hasBos.length/films.length)}\n\
+                `);
 
-        $('tbody').append(films.map(buildLine).join('\n'));
+            $('tbody').append(films.map(buildLine).join('\n'));
+            });
         });
-*/
       </script>
 
   </body>
