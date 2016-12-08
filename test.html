@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.js" ></script>
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+  </head>
+  <body>
+    <input type="text" class="form-control" id="inputFilm" placeholder="La vie des autres"><button type="button" id="searchFilm" class="btn btn-default">Trouver !</button>
+    <button type="button" id="processList" class="btn btn-default">Tous</button>
+
+
+    <iframe id="deezerFrame" scrolling="no" frameborder="0" allowTransparency="true"  width="700" height="240"></iframe>
+
+    <table class="table table-hover table-striped">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Data title</th>
+          <th>Prepared title</th>
+          <th>Wikidata ID</th>
+          <th>Wikidata Title</th>
+          <th>Composer</th>
+          <th>Musicbrainz</th>
+          <th>BO count on MB</th>
+          <th>BO Title</th>
+          <th>Tracks</th>
+          <th>Deezer AlbumId</th>
+          <th>Deezer Tracks</th>
+        </tr>
+      </thead>
+      <tbody>
+      </tbody>
+    </table>`
+      <script>
+        const rawTitles = [
+        "Edge of Tomorrow", // ok
+        //"Languedoc",
+        "Replicas - HD", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=209496.html
+        // X "Ma part d'Eve",
+        //"The Strain", // série http://www.allocine.fr/series/ficheserie_gen_cserie=11467.html
+        "Joséphine s'arrondit - HD", // ok
+        "The Finest Hours", // ok
+        //"Languedoc",
+        //"NAVIRES XXL",
+        "Le livre de la jungle", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=222692.html
+        // Téléfilm "Cloud 9: L'ultime Figure", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=228050.html
+        "Versailles", // ok
+        //"Tatouées et baisées", // X
+        "BA - Centurion", // bande annonce de film http://www.allocine.fr/film/fichefilm_gen_cfilm=142950.html
+        // "EMBARQUE : OPERATION DJIBOUTI", // Série (rmcdecouverte http://rmcdecouverte.bfmtv.com/emission/embarque-operation-djibouti/)
+        "Médecin de campagne", // ok
+        // Disney channel ... "Camp Rock", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=137308.html
+        //D "EMBARQUE : OPERATION DJIBOUTI",
+        //"Secrétaire de direction - HD", // X
+        "Insomnia", // ok
+        "Divergente 3 : au-delà du mur - extrait exclusif offert", // film (z - extrait...)
+        //"Infirmières par derrière - HD", // X
+        "L'abominable vérité - HD", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=132658.html
+        "Robin des bois, la véritable histoire - HD", // ok
+        //"Le journal du hard", // X
+        "Graziella", // ok
+        "Pixels - HD", // ok
+        "Adaline", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=227851.html
+        "Mon roi - édition spéciale", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=226416.html
+        "Amy", // ok
+        "Mon maître d'école - HD", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=241523.html
+        // "Habillé(e)s pour l'hiver 2016-2017", // TV émission
+        // "Languedoc",
+        "Le tout nouveau Testament", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=222641.html
+        // "Le 3ème anus", // X
+        // X "Secrétaire de direction - HD",
+        "Crazy Amy - HD", // ok
+        "Minuit à Paris - HD", // ok
+        "Prémonitions", // ok
+        //"France 2",
+        //"France 3 Nat",
+        "Amy", // ok
+        // X "Les secrets de Laly - HD",
+        // X "Les coiffeuses - HD",
+        "Haute sécurité - HD", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=42408.html
+        "Les aventures extraordinaires d'un apprenti détective - HD", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=223932.html
+        "Ave, César!", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=225859.html
+        "Versailles", // ok
+        "The Revenant", // ok
+        "Lord of War - HD", // ok
+        // "Il baise une Star du X - HD", // X
+        "Ant-Man", // ok
+        // "ISRAEL: SOUS LA PRESSION DES ULTRAS", // TV émission
+        "Divergente 3 : au-delà du mur - HD", // film
+        // X "Ma fille - HD",
+        "Fanboys", // ok
+        "Dallas Buyers Club", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=137097.html
+        "Charlie's Country", // ok
+        "Grease", // ok
+        "Délire express - HD", // ok http://www.allocine.fr/film/fichefilm_gen_cfilm=124707.html
+        // X "La jeune avocate - HD",
+        // X "Anissa et lola à l'école d'infirmières - HD",
+        "Creed l'héritage de Rocky Balboa", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=222968.html
+        "Dangerous housewife - HD", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=220144.html
+        "Terminator : Genisys", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=141609.html
+        "Ask Me Anything - HD", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=235009.html
+        "Le charme discret de la bourgeoisie", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=2191.html
+        // X "La banquière - HD",
+        //D "Versailles",
+        // X "La bourgeoise - HD",
+        "Michael Clayton - HD", // ok
+        // X "Elles trompent leur mari - HD",
+        "Casting", // ok
+        //"TF1",
+        //D "The Revenant - HD",
+        //"Accros à la bite", // X
+        //D "The Strain",
+        // X "Papa se tape la fille au pair - HD",
+        "Le prestige - HD", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=108998.html
+        // X "Pouvoirs étranges",
+        // X "Infirmières par derrière - HD",
+        "Au nom de ma fille - extrait offert", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=231971.html  extrait ...
+        //D "Le 3ème anus",
+        "Memento - HD", // ok
+        // "Amiennemies", // film à la TV ... http://www.allocine.fr/film/fichefilm_gen_cfilm=206147.html
+        "Janis", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=237404.html
+        "Antigang - HD", // ok
+        // "France 2",
+        "Les Tuche 2 - Le rêve américain", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=231178.html
+        "Man of steel", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=123348.html
+        // X "Lache moi la grappe c'est plus les vendanges",
+        // D "Anissa et lola à l'école d'infirmières - HD",
+        // Disney channel "Zack et Cody: Le Film", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=206738.html
+        //D "Les Tuche 2 - Le rêve américain",
+        "The Danish Girl", // ok
+        "Le cirque",
+        "Centurion", // ok
+        // X "Ballerine le jour, escorte la nuit - HD",
+        // X "Les délurées",
+        // X "Plume perverse",
+        // D "Papa se tape la fille au pair - HD",
+        "Disparue en hiver", // ok
+        "Tusk - HD",// ok
+        "Un + une - HD", // film http://www.allocine.fr/film/fichefilm_gen_cfilm=228049.html
+        // X "Spectacles intimes",
+        // "GRAVITE ZERO", // TV
+        "BA - Le tout nouveau Testament", // film --> Bande Annonce ...
+        "The Bay - HD", // ok
+        // X "Kamasutra - Les secrets du sexe - HD",
+        "Descendants", // fiml, the descendants http://www.allocine.fr/film/fichefilm_gen_cfilm=171157.html
+        // D "The Strain",
+        ];
+
+        function prepareTitle(title) {
+            return title.replace(' - HD', '')
+                .replace(/^BA - /, '')
+                .replace(/ - extrait exclusif offert$/, '')
+                .replace(/ - extrait offert$/, '')
+                .replace(/ - édition spéciale$/, '')
+
+            ;
+        }
+
+        var titles = Array.from(new Set(rawTitles));
+        let films = titles.map(title => ({
+            vodTitle: title,
+            preparedTitle: prepareTitle(title),
+        }));
+        console.log(rawTitles);
+        console.log(titles);
+        console.log(films);
+
+        function setDeezerPlay(id, type) {
+            $('#deezerFrame').attr('src', `http://www.deezer.com/plugins/player?format=classic&autoplay=false&playlist=true&width=700&height=350&color=007FEB&layout=dark&size=medium&app_id=1&type=${type}&id=${id}`);
+
+        }
+
+
+        // Musicbrainz
+        function getPlayList(film) {
+
+            let uri = 'https://musicbrainz.org/ws/2/release-group/?fmt=json&query=';
+            uri += `release:${encodeURIComponent(film.title)}%20AND%20type:soundtrack`;
+            if (film.composer && film.composer.label) {
+                uri += `%20AND%20artistname:${film.composer.label}`;
+            }
+            console.log('here');
+            return $.getJSON(uri)
+            .then(function(res) {
+                film.boCount = res.count;
+                let filtered = res['release-groups'].filter(item => item.score > 90);
+                film.boCount = filtered.length;
+                film.boTitle = filtered[0].title;
+
+                console.log(res);
+                console.log(film);
+
+                return promiseSeries(filtered.map(item => item.id), getTracks).then(function(tracks) {
+                    console.log(tracks);
+                    film.boTracks = tracks;
+                    return Promise.resolve();
+                });
+
+            });
+        }
+
+        function getTracks(rgid) {
+            return $.getJSON(`http://musicbrainz.org/ws/2/recording?fmt=json&query=rgid:${rgid}`);
+        }
+        //http://musicbrainz.org/ws/2/recording?query=rgid:c5dc46de-a7a1-4b1f-90e7-d08f55ac8d31
+
+        //https://musicbrainz.org/ws/2/release-group/?query=release:%22The%20wire%22%20AND%20type:soundtrack
+
+        // Deezer :
+
+        // Wiki data .
+
+        const baseURI = 'https://query.wikidata.org/bigdata/namespace/wdq/sparql?query=';
+        // Pure sparql
+        function queryFilmObject(frenchName) {
+            let sparql = `select distinct ?film where  {
+                ?film wdt:P31 wd:Q11424;
+                rdfs:label "${frenchName}"@en.
+            }` ;
+            return $.getJSON(baseURI + encodeURIComponent(sparql));
+        }
+
+
+
+        // Deezer API :
+        function getDeezerData(film) {
+            let uri = `https://api.deezer.com/search/album?output=jsonp&callback=?&q=album:"${encodeURIComponent(film.title)}"`;
+            // if (film.composer && film.composer.label) {
+            //     uri += `%20artist:"${encodeURIComponent(film.composer.label)}"`;
+            // }
+            return $.getJSON(uri).then(function(res) {
+                console.log(res);
+                let album = get(res, 'data', 0);
+                if (!album) {
+                    return Promise.resolve();
+                }
+
+                film.deezer = {
+                    albumId: album.id,
+                };
+
+                return $.getJSON(`https://api.deezer.com/album/${film.deezer.albumId}/tracks/?output=jsonp&callback=?`).then(function(res) {
+                    film.deezer.tracklist = res.data;
+                })
+            })
+        }
+
+        // Wikidata API to get from label
+
+        // query items with label
+        function getFilmSuggestionObjectAPI(film) {
+            // var req = new XMLHttpRequest();
+            // console.log(req);
+            // req.open('GET',
+
+            return $.getJSON(
+            `https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(prepareTitle(film.vodTitle))}&format=json&language=fr&type=item&origin=*`)
+            .then(function(res) {
+                console.log(res.search);
+
+                let items = res.search.sort((item,itemB) =>
+                    (item.description &&
+                    (item.description.indexOf('film') !== -1
+                    || item.description.indexOf('movie') !== -1)) ? -1 : 1
+                    );
+
+                console.log(items);
+
+                let checkEnrichRecursive = function(items, index) {
+                    if (index >= items.length) {
+                        return Promise.resolve(true); // Emtpy ...: (
+                    }
+                    film.preparedTitle = items[index].label;
+
+                    return enrich(film).then(function(res) {
+                        if (!film.wikiDataId) {
+                            return checkEnrichRecursive(items, index + 1);
+                        }
+
+                        console.log(film);
+                        return Promise.resolve(film);
+                    });
+                }
+
+                return checkEnrichRecursive(items, 0);
+
+            })
+            ;
+            // console.log(req.send(null));
+            // console.log(req.responseText);
+
+        }
+
+
+        // filter ? object, with the good type ?
+
+        function fetchComposer(film) {
+            $.getJSON(`https://www.wikidata.org/wiki/Special:EntityData/${film.composer}.json`)
+            .then(function(res) {
+                console.log(res);
+                let props = res.entities[film.composer].claims;
+                film.composer =  {
+                    label: getFirst(res.entities).labels.en.value,
+                    id: film.composer,
+                };
+                return Promise.resolve();
+            });
+        }
+
+
+        const originalTitle = 'P1476';
+        const composer = 'P86';
+        const musicBrainzRGID = 'P436';
+
+        function enrich(film) {
+            return queryFilmObject(film.preparedTitle
+            ).then(function(res) {
+                console.log(res.results);
+                if (res.results.bindings.length === 0) {
+                    return Promise.reject(`No results for ${film.preparedTitle}`);
+                }
+                film.wikiDataId = res.results.bindings[0].film.value.slice(31);
+
+                return $.getJSON(`https://www.wikidata.org/wiki/Special:EntityData/${film.wikiDataId}.json`);
+            }
+            ).then(function(res) {
+                console.log(res);
+
+                let props = res.entities[film.wikiDataId].claims
+
+                film.composer = get(props, composer, 0, 'mainsnak', 'datavalue', 'value', 'id');
+                film.title = get(props, originalTitle, 0, 'mainsnak', 'datavalue', 'value', 'text');
+                film.MBRGID = get(props, musicBrainzRGID, 0, 'mainsnak', 'datavalue', 'value');
+                console.log(JSON.stringify(film, null, 2));
+
+                if (film.composer) {
+                    return fetchComposer(film);
+                } else {
+                    return Promise.resolve(true);
+                }
+            }).then(function(res) {
+                return Promise.all([
+                    getPlayList(film),
+                    getDeezerData(film),
+                ]);
+            }).catch(function(msg) {
+                console.log(msg);
+                return Promise.resolve(true);
+            });
+            //(console.log.bind(console));
+        }
+
+
+        // helpers
+        function get(obj, ...prop) {
+            return prop.reduce((current, key) => current ? current[key] : undefined, obj)
+        }
+
+        function getFirst(obj) {
+            return obj[Object.keys(obj)[0]];
+        }
+
+        function promiseSeries(iterable, callback, self) {
+            var results = [];
+
+            return iterable.reduce(function(sequence, id, index, array) {
+              return sequence.then(function(res) {
+                results.push(res);
+                return callback.call(self, id, index, array);
+              });
+            }, Promise.resolve(true)).then(function(res) {
+              return new Promise(function(resolve, reject) {
+                results.push(res);
+                resolve(results.slice(1));
+              });
+            });
+          };
+
+        //function promiseFirst(iterable, callback, self) {
+
+        function percent(v) {
+            return Math.round(v * 100);
+        }
+
+        $('#searchFilm').click(function() {
+          let txt = $('#inputFilm').val();
+          console.log(txt);
+          let film = { vodTitle: txt };
+
+          getFilmSuggestionObjectAPI(film).then(function() {
+            console.log(film);
+            $('tbody').append(buildLine(film));
+
+            $('.deezer').click(function(ev) {
+                console.log(ev);
+                let d = ev.target.dataset;
+                setDeezerPlay(d.id, d.type);
+            })
+            // getPlayList(film);
+          });
+/*
+          let film = {
+            vodTitle: txt,
+            preparedTitle: prepareTitle(txt),
+          };
+          enrich(film)
+          });*/
+
+        });
+
+        // enrich({ preparedTitle: 'Edge of Tomorrow'});
+
+        function buildTrackList(tracks, origin) {
+            return tracks.map(function(track) {
+
+                let elem = '<li>';
+                if (origin === 'deezer') {
+                    elem = `<li class='${origin}' data-type='tracks' data-id='${track.id}'>`
+                }
+                return `${elem}${track.title}</li>`
+            }).join('\n');
+
+        }
+        function buildLine(film, index) {
+            let tracks = get(film, 'boTracks', 0, 'recordings') || [];
+
+            return `
+            <tr>
+                <th>${index || -1}</th>
+                <td>${film.vodTitle || ''}</td>
+                <td>${film.preparedTitle || ''}</td>
+                <td>${film.wikiDataId || ''}</td>
+                <td>${film.title || ''}</td>
+                <td>${film.composer || ''}</td>
+                <td>${film.MBRGID || ''}</td>
+                <td>${film.boCount || ''}</td>
+                <td>${film.noTitle || ''}</td>
+                <td><ol>${buildTrackList(get(film, 'boTracks', 0, 'recordings') || [])}</ol></td>
+
+                <td class="deezer" data-type="album" data-id="${get(film, 'deezer', 'albumId') || '' }" >${get(film, 'deezer', 'albumId') || '' }</td>
+                <td><ol>${buildTrackList(get(film, 'deezer', 'tracklist') || [], 'deezer')}</ol></td>
+            </tr>`
+
+
+        }
+
+        $('#processList').click(function() {
+
+            promiseSeries(films, getFilmSuggestionObjectAPI).then(function() {
+                let hasWikiDataId = films.filter(film => Boolean(film.wikiDataId));
+                let hasMBID = films.filter(film => Boolean(film.MBRGID));
+                let hasComposer = films.filter(film => Boolean(film.composer));
+                let hasBos = films.filter(film => Boolean(film.boCount));
+
+
+                console.log(`Total: ${films.length}\n\
+    hasWikiDataId: ${hasWikiDataId.length}, ${percent(hasWikiDataId.length/films.length)}\n\
+    hasMBID: ${hasMBID.length}, ${hasMBID.length/hasWikiDataId.length}, ${percent(hasMBID.length/films.length)}\n\
+    hasComposer: ${hasComposer.length}, ${percent(hasComposer.length/hasWikiDataId.length)}, ${percent(hasComposer.length/films.length)}\n\
+    hasBos: ${hasBos.length}, ${percent(hasBos.length/hasWikiDataId.length)}, ${percent(hasBos.length/films.length)}\n\
+                `);
+
+            $('tbody').append(films.map(buildLine).join('\n'));
+            });
+        });
+      </script>
+
+  </body>
+</html>
