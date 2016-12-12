@@ -8,15 +8,16 @@ module.exports = {
       },
       order: {
         before: [
+          'vendor/marionette/underscore.js',
           'vendor/jquery.min.js',
+          // 'vendor/jquery.min.js',
           //'vendor/underscore-min.js',
           //'vendor/backbone-min.js',
           //'vendor/backbone.radio.min.js',
           //'vendor/backbone.marionette.min.js',
-          'vendor/marionette/underscore.js',
           'vendor/marionette/backbone.js',
           'vendor/marionette/backbone.radio.js',
-          //'vendor/marionette/backbone.marionette.js',
+          'vendor/marionette/backbone.marionette.js',
           //'vendor/moment.min.js',
           //'vendor/moment_locale-fr.js',
           ]

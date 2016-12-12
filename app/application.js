@@ -30,7 +30,7 @@ var Application = Mn.Application.extend({
   onBeforeStart: function() {
     this.layout = new AppLayout();
     this.router = new Router();
-t
+
     if (typeof Object.freeze === 'function') {
       Object.freeze(this);
     }

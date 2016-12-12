@@ -1,4 +1,5 @@
 var MessageView = require('views/message');
+var SearchView = require('views/search');
 
 var app = undefined;
 
@@ -11,7 +12,7 @@ module.exports = Mn.View.extend({
 
   regions: {
     library: '.library',
-    search: '.searchfilms',
+    search: '.search',
     player: '.player',
     details: '.details',
     message: '.message',
@@ -23,5 +24,6 @@ module.exports = Mn.View.extend({
 
   onRender: function() {
     this.showChildView('message', new MessageView());
+    this.showChildView('search', new SearchView());
   },
 });
