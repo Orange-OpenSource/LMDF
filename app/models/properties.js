@@ -4,7 +4,7 @@ var Properties = Backbone.Model.extend({
 
   docType: 'MesInfosDataPlaygroundProperties'.toLowerCase(),
   defaults: {
-    docTypeVersion: appName(),
+    docTypeVersion: appName,
     synthSets: {},
   },
 

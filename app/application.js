@@ -45,7 +45,8 @@ var Application = Mn.Application.extend({
     // TODO : keep this, display always a random details.
     //var randomIndex = Math.floor(Math.random() * this.subsets.size());
     //this.trigger('requestform:setView', this.subsets.at(randomIndex));
-    this.trigger('message:error', 'Hello, it sohuld work : /');
+    this.trigger('message:error', 'Hello, it should work : /');
+
   },
 
 });

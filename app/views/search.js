@@ -17,6 +17,7 @@ module.exports = Mn.View.extend({
 
   initialize: function() {
     app = require('application');
+    console.log(app);
   },
 
   onRender: function() {
@@ -33,7 +34,8 @@ module.exports = Mn.View.extend({
   },
 
   found: function(ev, suggestion) {
-    app.trigger('search:foundmovie', suggestion);
+    console.log(suggestion);
+    app.trigger('search:foundWDSuggestionsMovie', suggestion);
   },
 
 });
