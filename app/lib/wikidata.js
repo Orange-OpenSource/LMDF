@@ -84,8 +84,6 @@ function getId(obj, prop) {
   return get(obj, 'claims', prop, 0, 'mainsnak', 'datavalue', 'value');
 }
 
-console.log(M);
-
 module.exports = M;
 // // Pure sparql
 // function queryFilmObject(frenchName) {

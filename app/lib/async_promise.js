@@ -14,3 +14,11 @@ module.exports.series = function(iterable, callback, self) {
     });
   });
 };
+
+module.exports.backbone2Promise = function(obj, method, options) {
+  return new Promise(function(resolve, reject) {
+    options = options || {};
+    options = $.extend(options, { success: resolve, error: reject });
+    method.call(obj, options);
+  });
+};

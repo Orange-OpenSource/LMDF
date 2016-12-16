@@ -15,7 +15,6 @@ M.getPlayList = function(movie) {
 
   return $.getJSON(uri)
   .then(function(res) {
-    console.log(res);
     let filtered = res['release-groups'].filter(item => item.score > 90);
     movie.soundtracks = filtered.map((rg) => ({
         title: rg.title,
@@ -28,11 +27,6 @@ M.getPlayList = function(movie) {
 M.getRecordings = function(movie) {
   return promiseSeries(movie.soundtracks, M.getRecording)
   .then(() => movie);
-  //   .then(function(recording) {
-  //     console.log(tracks);
-  //     film.boTracks = tracks;
-  //     return Promise.resolve();
-  // });
 };
 
 

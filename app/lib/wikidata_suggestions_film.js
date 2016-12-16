@@ -12,6 +12,9 @@ module.exports.findMovieMatches = function(filmTitle, nextSync, nextAsync) {
     // });
 };
 
+module.exports.fetchMoviesSuggestions = function(title) {
+  return getFilmSuggestionObjectAPI(title);
+};
 
 function getFilmSuggestionObjectAPI(filmTitle) {
   return $.getJSON(
