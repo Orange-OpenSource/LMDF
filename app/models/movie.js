@@ -12,6 +12,12 @@ var Movie = null;
 module.exports = Movie = CozyModel.extend({
   docType: 'Movie'.toLowerCase(),
 
+  getTitle: function() {
+    // TODO: l10n
+    const locale = 'fr';
+    return this.label;
+  },
+
   setViewed: function(videoStream) {
     let viewed = this.get('viewed') || [];
 
@@ -26,7 +32,6 @@ module.exports = Movie = CozyModel.extend({
     });
     this.set('viewed', viewed);
   },
-
 });
 
 Movie.fromWDSuggestionMovie = function(wdSuggestion) {

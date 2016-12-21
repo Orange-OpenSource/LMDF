@@ -11,6 +11,7 @@ var Movies = null;
 module.exports = Movies = Backbone.Collection.extend({
   model: Movie,
   docType: new Movie().docType.toLowerCase(),
+  comparator: (movie) => movie.getTitle(),
 
   sync: function(method, collection, options) {
     if (method !== 'read') {
@@ -50,6 +51,7 @@ module.exports = Movies = Backbone.Collection.extend({
 
       return movie.save();
     }).catch(err => {
+      console.error(err);
       return Promise.resolve();
     });
   },

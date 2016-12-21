@@ -1,0 +1,11 @@
+
+.library ul.movielibrary {
+  padding: 20px;
+  list-style: none;
+}
+
+.library .movieitem {
+  float: left;
+  padding: 10px;
+  width: 200px;
+}

@@ -5,8 +5,13 @@ var getFirst = WalkTreeUtils.getFirst;
 
 var originalTitle = 'P1476';
 var composer = 'P86';
+var genre = 'P136';
+var publicationDate = 'P577';
+var duration = 'P2047';
+var director = 'P57';
 var musicBrainzRGID = 'P436';
 var imdbID = 'P345';
+
 
 
 var M = {};
@@ -30,9 +35,19 @@ M.parseMovie = function(movie) {
   var obj = {
     wikidataId: movie.id,
     composer: get(movie, 'claims', composer, 0, 'mainsnak', 'datavalue', 'value', 'id'),
-    title: get(movie, 'claims', originalTitle, 0, 'mainsnak', 'datavalue', 'value', 'text'),
+    originalTitle: get(movie, 'claims', originalTitle, 0, 'mainsnak', 'datavalue', 'value', 'text'),
     imdbId: getId(movie, imdbID),
   };
+
+  obj.labels = { default: obj.originalTitle };
+
+  try {
+    var labels = get(movie, 'labels');
+
+    for (var k in labels) {
+      obj.labels[k] = get(labels, k, 'value');
+    }
+  } catch(e) { console.warn(e); }
 
   var musicbrainzReleaseGroupId = get(movie, musicBrainzRGID);
   if (musicbrainzReleaseGroupId) {
@@ -40,6 +55,38 @@ M.parseMovie = function(movie) {
   }
 
   return obj;
+};
+
+M.getMovieData = function(wikidataId) {
+  let sparql = `SELECT ?label ?wikiLink ?originalTitle ?composer ?composerLabel ?genre ?genreLabel ?publicationDate ?duration ?directorLabel ?musicBrainzRGId ?imdbId WHERE {
+     wd:${wikidataId} wdt:P31 wd:Q11424;
+    rdfs:label ?label.
+    OPTIONAL { wd:${wikidataId} wdt:P1476 ?originalTitle. }
+    OPTIONAL { wd:${wikidataId} wdt:P86 ?composer. }
+    OPTIONAL { wd:${wikidataId} wdt:P136 ?genre. }
+    OPTIONAL { wd:${wikidataId} wdt:P577 ?publicationDate. }
+    OPTIONAL { wd:${wikidataId} wdt:P2047 ?duration. }
+    OPTIONAL { wd:${wikidataId} wdt:P57 ?director. }
+    OPTIONAL { wd:${wikidataId} wdt:P436 ?musicBrainzRGId. }
+    OPTIONAL { wd:${wikidataId} wdt:P345 ?imdbId. }
+    OPTIONAL {
+      ?wikiLink schema:about wd:${wikidataId}.
+      ?wikiLink schema:inLanguage "fr".
+      FILTER (SUBSTR(str(?wikiLink), 1, 25) = "https://fr.wikipedia.org/")
+    }
+
+    SERVICE wikibase:label { bd:serviceParam wikibase:language "fr" . }
+
+    filter langMatches(lang(?label),'fr')
+  }
+  LIMIT 1`;
+
+  return $.getJSON(wdk.sparqlQuery(sparql))
+  .then(wdk.simplifySparqlResults)
+  .then(movies => {
+    movies[0].wikidataId = wikidataId;
+    console.log(movies[0]);
+    return movies[0];});
 };
 
 M.parseComposer = function(composer) {
@@ -60,22 +107,24 @@ M.getPoster = function(movie) {
   });
 };
 
-M.getMovieById = function(wikidataId) {
-  return M.getEntityById(wikidataId)
-    .then(M.parseMovie)
-    .then(M.getPoster)
-    .then(function(movie) {
-      if (!movie.composer) {
-        return movie;
-      }
 
-      return M.getEntityById(movie.composer)
-      .then(M.parseComposer)
-      .then(function(composer) {
-        movie.composer = composer;
-        return movie;
-      });
-    });
+M.getMovieById = function(wikidataId) {
+  return M.getMovieData(wikidataId)
+  // M.getEntityById(wikidataId)
+    // .then(M.parseMovie)
+    .then(M.getPoster);
+    // .then(function(movie) {
+      // if (!movie.composer) {
+        // return movie;
+      // }
+
+      // return M.getEntityById(movie.composer)
+      // .then(M.parseComposer)
+      // .then(function(composer) {
+        // movie.composer = composer;
+        // return movie;
+      // });
+    // });
 };
 
 
