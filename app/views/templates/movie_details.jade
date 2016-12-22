@@ -1,14 +1,37 @@
 .moviedetails
-  img.poster(src="posterUri")
+  img.poster(src=posterUri)
   h2=title
 
-  genre
-  date
-  pays
-  durée
-  VM HD ... ?
-  Réalisateur : date dernière vue.
 
-  synopsis ?
+  .details
+    b
+      if genre
+        = genre.label
+        |&ensp;|&ensp;
+      if publicationDate
+        =publicationDate.slice(0, 4)
+        |&ensp;|&ensp;
+      if countryOfOrigin
+        =countryOfOrigin.label
+        |&ensp;|&ensp;
+      if duration
+        | durée :&#x0020;
+        =duration
+        | min
+        |&ensp;|&ensp;
+      //- VM HD ... ?
+      if director
+        | Réalisé par&nbsp;
+        = director.label
+
+    if viewed
+      | — Vu le&nbsp;
+      - var last = viewed[viewed.length - 1].timestamp
+      = moment(last).format('DD/MM/YYYY')
+
+.synopsis!= synopsis
+
+if !id
+  button#save Ajouter à la bibliothèque
 .soundtracks
   h3 Musique associée

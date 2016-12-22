@@ -58,12 +58,13 @@ M.parseMovie = function(movie) {
 };
 
 M.getMovieData = function(wikidataId) {
-  let sparql = `SELECT ?label ?wikiLink ?originalTitle ?composer ?composerLabel ?genre ?genreLabel ?publicationDate ?duration ?directorLabel ?musicBrainzRGId ?imdbId WHERE {
+  let sparql = `SELECT ?label ?wikiLink ?originalTitle ?composer ?composerLabel ?genre ?genreLabel ?publicationDate ?duration ?director ?directorLabel ?musicBrainzRGId ?imdbId ?countryOfOrigin ?countryOfOriginLabel WHERE {
      wd:${wikidataId} wdt:P31 wd:Q11424;
     rdfs:label ?label.
     OPTIONAL { wd:${wikidataId} wdt:P1476 ?originalTitle. }
     OPTIONAL { wd:${wikidataId} wdt:P86 ?composer. }
     OPTIONAL { wd:${wikidataId} wdt:P136 ?genre. }
+    OPTIONAL { wd:${wikidataId} wdt:P495 ?countryOfOrigin. }
     OPTIONAL { wd:${wikidataId} wdt:P577 ?publicationDate. }
     OPTIONAL { wd:${wikidataId} wdt:P2047 ?duration. }
     OPTIONAL { wd:${wikidataId} wdt:P57 ?director. }
@@ -112,7 +113,8 @@ M.getMovieById = function(wikidataId) {
   return M.getMovieData(wikidataId)
   // M.getEntityById(wikidataId)
     // .then(M.parseMovie)
-    .then(M.getPoster);
+    .then(M.getPoster)
+    .then(M.getSynopsis);
     // .then(function(movie) {
       // if (!movie.composer) {
         // return movie;
@@ -127,6 +129,21 @@ M.getMovieById = function(wikidataId) {
     // });
 };
 
+M.getSynopsis = function(movie) {
+  if (!movie.wikiLink) {
+    console.warn('no wiki link');
+    return movie;
+  }
+  let uri = movie.wikiLink.replace('/wiki/' , '/w/api.php?origin=*&action=parse&format=json&prop=text&section=1&disablelimitreport=1&disableeditsection=1&disabletoc=1&page=');
+  return $.getJSON(uri).then(data => {
+    let html = data.parse.text['*'];
+    //movie.synopsis = $(html).text().slice(8);
+    movie.synopsis = html;
+
+    return movie;
+  });
+
+};
 
 // Helper
 function getId(obj, prop) {

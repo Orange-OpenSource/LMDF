@@ -21,12 +21,12 @@ var Application = Mn.Application.extend({
 
   prepare: function() {
     this.movies = new MoviesCollection();
-    return Promise.resolve();
+    return bPromise(this.movies, this.movies.fetch)
+    // return Promise.resolve();
   },
 
   prepareInBackground: function() {
-    bPromise(this.movies, this.movies.fetch)
-    .then(() => this.movies.addFromVideoStreams());
+    return this.movies.addFromVideoStreams();
   },
 
 
@@ -50,9 +50,8 @@ var Application = Mn.Application.extend({
       Backbone.history.start({ pushState: false });
     }
     // TODO : keep this, display always a random details.
-    //var randomIndex = Math.floor(Math.random() * this.subsets.size());
-    //this.trigger('requestform:setView', this.subsets.at(randomIndex));
-    // this.trigger('message:error', 'Hello, it should work : /');
+    var randomIndex = Math.floor(Math.random() * this.movies.size());
+    this.layout.showMovieDetails(this.movies.at(randomIndex));
   },
 });
 

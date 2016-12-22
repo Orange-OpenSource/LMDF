@@ -1,6 +1,6 @@
 var MessageView = require('views/message');
 var SearchView = require('views/search');
-var DetailsView = require('views/details');
+var DetailsView = require('views/movie_details');
 var LibraryView = require('views/movie_library');
 
 var Movie = require('models/movie');
@@ -26,21 +26,24 @@ module.exports = Mn.View.extend({
     app = require('application');
 
     var self = this;
-    this.listenTo(app, 'search:foundWDSuggestionsMovie', function(wdSuggestionMovie) {
+    this.listenTo(app, 'search:foundWDSuggestionsMovie', wdSuggestionMovie => {
       console.log('toto2');
-      Movie.fromWDSuggestionMovie(wdSuggestionMovie).then(
-        function(movie) {
-          console.log('toto3');
-          console.log(movie);
-          self.showChildView('details', new DetailsView({ model: movie }));
-        });
-      });
+      Movie.fromWDSuggestionMovie(wdSuggestionMovie).then(movie => {
+        console.log('toto3');
+        this.showMovieDetails(movie);
+      }, console.log.bind(console));
+    });
+
+    this.listenTo(app, 'details:show', this.showMovieDetails);
   },
 
   onRender: function() {
     this.showChildView('message', new MessageView());
     this.showChildView('search', new SearchView());
     this.showChildView('library', new LibraryView({ collection: app.movies }));
+  },
 
+  showMovieDetails: function(movie) {
+    this.showChildView('details', new DetailsView({ model: movie }));
   },
 });
