@@ -2,6 +2,7 @@ var MessageView = require('views/message');
 var SearchView = require('views/search');
 var DetailsView = require('views/movie_details');
 var LibraryView = require('views/movie_library');
+var PlayerView = require('views/player');
 
 var Movie = require('models/movie');
 
@@ -41,6 +42,8 @@ module.exports = Mn.View.extend({
     this.showChildView('message', new MessageView());
     this.showChildView('search', new SearchView());
     this.showChildView('library', new LibraryView({ collection: app.movies }));
+    this.showChildView('player', new PlayerView());
+
   },
 
   showMovieDetails: function(movie) {

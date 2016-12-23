@@ -1,17 +1,21 @@
 'use_strict'
 
 const promiseSeries = require('./async_promise').series;
+const WalkTreeUtils = require('./walktree_utils');
+
+const get = WalkTreeUtils.get;
+
 
 var M = {};
 
 // Musicbrainz
 M.getPlayList = function(movie) {
   let uri = 'https://musicbrainz.org/ws/2/release-group/?fmt=json&query=';
-  uri += `release:${encodeURIComponent(movie.title)}%20AND%20type:soundtrack`;
+  uri += `release:${encodeURIComponent(movie.originalTitle)}%20AND%20type:soundtrack`;
 
-  if (movie.composer && movie.composer.label) {
-      uri += `%20AND%20artistname:${movie.composer.label}`;
-  }
+  // if (movie.composer && movie.composer.label) {
+  //     uri += `%20AND%20artistname:${movie.composer.label}`;
+  // }
 
   return $.getJSON(uri)
   .then(function(res) {
@@ -19,6 +23,7 @@ M.getPlayList = function(movie) {
     movie.soundtracks = filtered.map((rg) => ({
         title: rg.title,
         musicbrainzReleaseGroupId: rg.id,
+        artist: get(rg, 'artist-credits', 0, 'name'),
     }));
     return movie;
   });
