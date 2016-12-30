@@ -10,15 +10,16 @@ module.exports = Mn.Behavior.extend({
   },
 
   onExpand: function() {
-    console.log('toto');
     this.setExpanded(true);
   },
 
   onContract: function() {
+    console.log('toto');
     this.setExpanded(false);
   },
 
   onToggle: function() {
+    console.log('yeee');
     var isVisible = this.$el.attr('aria-expanded') === 'true';
     this.setExpanded(!isVisible);
   },

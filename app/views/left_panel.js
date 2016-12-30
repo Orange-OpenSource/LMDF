@@ -11,6 +11,8 @@ module.exports = Mn.View.extend({
     Toggle: {},
   },
 
+  ui: {},
+
   triggers: {
     'click': 'expand',
   },
@@ -24,6 +26,7 @@ module.exports = Mn.View.extend({
 
   onRender: function() {
     this.showChildView('search', new SearchView());
+    $('.toggle-drawer').click(() => this.triggerMethod('toggle'))
   },
 
 });

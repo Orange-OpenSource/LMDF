@@ -31,6 +31,8 @@ module.exports = Mn.View.extend({
       async: true,
       display: 'label',
     });
+    console.log(this.ui);
+
   },
 
   onSubmit: function(ev) {
