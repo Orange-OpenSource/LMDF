@@ -10,6 +10,7 @@ module.exports = Mn.View.extend({
   },
 
   playAlbum: function(album) {
+    console.log('there');
     if (album.deezerAlbumId) {
       this.setDeezerPlay(album.deezerAlbumId, 'album');
     } else {
@@ -18,6 +19,6 @@ module.exports = Mn.View.extend({
   },
 
   setDeezerPlay: function(id, type) {
-    $('#deezerFrame').attr('src', `http://www.deezer.com/plugins/player?format=classic&autoplay=false&playlist=true&width=700&height=350&color=007FEB&layout=dark&size=medium&app_id=1&type=${type}&id=${id}`);
+    $('#deezerFrame').attr('src', `http://www.deezer.com/plugins/player?format=classic&autoplay=false&playlist=true&width=600&height=350&color=007FEB&layout=dark&size=medium&app_id=1&type=${type}&id=${id}`);
   },
 });

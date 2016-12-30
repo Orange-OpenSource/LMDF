@@ -1,27 +1,33 @@
 module.exports = Mn.Behavior.extend({
 
-  events: {
-    'click .toggle': 'toggleExpand',
+  triggers: {
+    'click .toggle': 'toggle',
+    'click @ui.toggle': 'toggle',
+    'click .contract': 'contract',
+    'click @ui.contract': 'contract',
+    'click .expand': 'expand',
+    'click @ui.expand': 'expand',
   },
 
+  onExpand: function() {
+    console.log('toto');
+    this.setExpanded(true);
+  },
 
-  toggleExpand: function() {
-    this.$el.toggleClass('compact');
-    this.$el.toggleClass('expanded');
+  onContract: function() {
+    this.setExpanded(false);
+  },
 
-    // if (this.ui.toHide) {
-    //   if (this.expanded) {
-    //     this.ui.toHide.hide();
-    //   } else {
-    //     this.ui.toHide.show();
-    //   }
-    // }
+  onToggle: function() {
+    var isVisible = this.$el.attr('aria-expanded') === 'true';
+    this.setExpanded(!isVisible);
+  },
 
-    // this.expanded = !this.expanded;
+  setExpanded: function(isExpanded) {
+    this.$el.attr('aria-expanded', isExpanded);
   },
 
   onRender: function() {
-    this.$el.addClass('compact');
-    // this.expanded = false;
-  }
+    this.onContract();
+  },
 });

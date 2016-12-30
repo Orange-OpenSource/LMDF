@@ -1,24 +1,237 @@
-.library {
-  width: 60%;
-  display: inline-block;
+* {
+  box-sizing: border-box;  
 }
 
-.library ul.movielibrary {
-  padding: 20px;
+.close {
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  cursor: pointer;
+}
+
+.close:before {
+  content: '❌';
+}
+
+body {
+  background: white;
+  font-family: helvetica, arial;
+  margin: 0px;
+  /*height: 100%;*/
+}
+
+[role="application"] {
+  width: 100vw;
+  height: 100vh;
+  /*! position: relative; */
+
+  display: -webkit-flex;
+	display: flex;
+	-webkit-flex-direction: row;
+	flex-direction: row;
+}
+
+.message {
+  position: fixed;  
+}
+
+.drawer {
+  background-color: black;
+  position: relative;
+}
+
+.drawer[aria-expanded=false] {
+  /*! flex-basis: 34px; */
+  /*! flex-grow: 0; */
+  width: 34px;
+}
+
+.drawer[aria-expanded=true] {
+  flex-basis: 16.25rem;
+}
+
+.drawer button.toggle {
+  position: absolute;
+  bottom: 0px;
+  left:0px;
+
+  box-sizing: border-box;
+  color: white;
+  background: black;
+  border: none;
+  border-top: solid 1px #666666;
+  width: calc(100% - 14px);
+  margin: 7px;
+  font-size: 16px;
+  text-align: right;
+}
+.drawer .tools {
+  position: absolute;
+  top: 42px;
+  height: calc( 100% - 67);
+  width: 100%;
+}
+
+.drawer[aria-expanded=false] button:before {
+  content: "▶"; 
+}
+.drawer[aria-expanded=true] button:before {
+  content: "◀";
+}
+
+.drawer .search {
+  box-sizing: border-box;
+  border-right: solid 1px #999999;
+  width: 100%;
+  overflow-x: hidden;
+  /*! overflow-y:  visible; */
+  
+  /*! min-height: 42px; */
+  background: white !important;
+  padding-left: 34px;
+  /*! z-index: 1000; */
+}
+
+.drawer .search:before {
+  content: '➕';
+  font-size: 30px;
+  line-height: 42px;
+  position: absolute;
+  left:6px;
+  color: black;
+
+}
+
+
+.drawer .search input {
+  height: 42px;
+  /*! line-height; */ 42px;
+  border: none;
+  font-size: 16px;
+  background: white !important;
+}
+
+.drawer .search .tt-menu {
+  position: unset !important;
+  
+}
+
+.drawer .search pre {
+  display: none;
+}
+
+.drawer .search .tt-suggestion.tt-selectable {
+  line-height: 42px;
+}
+
+
+
+main {
+  flex: 1;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  margin-left: 30px;
+}
+
+ul.movielibrary {
+  padding: 0px;
   list-style: none;
 }
 
-.library ul li {
+ul.movielibrary li {
   display: inline-block;
+  padding: 10px;
 }
 
-.library .movieitem {
-  /*float: left;*/
-  padding: 10px;
-  width: 200px;
+ul.movielibrary .movieitem {
+  width: 134px;
+  height: 200px;
+  text-align: center;
+  line-height: 100%;
+}
+
+ul.movielibrary .movieitem img {
+  vertical-align: middle;
+  height: auto;
+  width: auto;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.searchresults {
+  position: relative;  
 }
 
 .details {
-  width: 39%;
-  display: inline-block;
+  /*flex-basis: 660px;*/
+  height: auto;
+  background: black;
+
+  color: white;
+  font-size: 15px;
+  box-sizing: border-box;
+  overflow: auto;
+  position: relative;
 }
+
+.details > div {
+  padding: 30px;
+  width: 660px;
+}
+
+.details .poster {
+  height: 260px;
+  float: left;
+}
+
+.details .movieabout h2 {
+  margin-top: 0px;
+  font-size: 21px;
+}
+
+.details .movieabout {
+  height: 260px;
+  padding-left:30px;
+  overflow: hidden;  
+}
+
+
+.details .movieabout .characteristics {
+  margin: 20px 0px;
+}
+
+.details hr {
+  margin: 20px 0;
+  position: relative;
+  padding: 0;
+  border: none;
+  border-top: 1px solid white;
+}
+
+.details hr:before { 
+  content:"";
+  position: absolute;
+  left: 50%;
+  padding-left: -5px;
+  top: 0px;
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-top: 10px solid white;
+  border-right: 10px solid transparent;
+}
+
+.details hr:after { 
+  content:"";
+  position: absolute;
+  left:50%;
+  padding-left: -5px;
+  top: -2px;
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-top: 10px solid black;
+  border-right: 10px solid transparent;
+}
+

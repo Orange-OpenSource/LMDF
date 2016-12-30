@@ -12,11 +12,12 @@ module.exports = Mn.View.extend({
 
   events: {
     'typeahead:select @ui.search': 'found',
-  //   'change @ui.search': '',
+    'keyup @ui.search': 'processKey',
   },
 
   initialize: function() {
     app = require('application');
+    this.listenTo(app, 'search:close', this.onEnd);
   },
 
   onRender: function() {
@@ -32,8 +33,24 @@ module.exports = Mn.View.extend({
     });
   },
 
-  found: function(ev, suggestion) {
-    app.trigger('search:foundWDSuggestionsMovie', suggestion);
+  onSubmit: function(ev) {
+    app.trigger('search', { q: this.ui.search.val() })
   },
 
+  onEnd: function() {
+    this.ui.search.typeahead('val', '');
+  },
+
+  found: function(ev, suggestion) {
+    app.trigger('search', {
+      q: this.ui.search.val(),
+      selected: suggestion,
+    });
+  },
+
+  processKey: function(e) {
+    if (e.which === 13) {
+      this.onSubmit();
+    }
+  },
 });

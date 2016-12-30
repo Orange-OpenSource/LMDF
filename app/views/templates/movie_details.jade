@@ -1,39 +1,42 @@
 .moviedetails
   img.poster(src=posterUri)
-  h2=title
+  .movieabout
+    h2=label
 
+    if !id
+      button#save Ajouter à la bibliothèque
 
-  .details
-    b
-      if genre
-        = genre.label
-        |&ensp;|&ensp;
-      if publicationDate
-        =publicationDate.slice(0, 4)
-        |&ensp;|&ensp;
-      if countryOfOrigin
-        =countryOfOrigin.label
-        |&ensp;|&ensp;
-      if duration
-        | durée :&#x0020;
-        =duration
-        | min
-        |&ensp;|&ensp;
-      //- VM HD ... ?
-      if director
-        | Réalisé par&nbsp;
-        = director.label
+    .characteristics
+      b
+        if genre
+          = genre.label
+          |&ensp;|&ensp;
+        if publicationDate
+          =publicationDate.slice(0, 4)
+          |&ensp;|&ensp;
+        if countryOfOrigin
+          =countryOfOrigin.label
+          |&ensp;|&ensp;
+        if duration
+          | durée :&#x0020;
+          =duration
+          | min
+          |&ensp;|&ensp;
+        //- VM HD ... ?
+        if director
+          | Réalisé par&nbsp;
+          = director.label
 
-    if viewed
-      | — Vu le&nbsp;
-      - var last = viewed[viewed.length - 1].timestamp
-      = moment(last).format('DD/MM/YYYY')
+      if viewed
+        | — Vu le&nbsp;
+        - var last = viewed[viewed.length - 1].timestamp
+        = moment(last).format('DD/MM/YYYY')
 
-.synopsis!= synopsis
+    .synopsis!= synopsis
 
-if !id
-  button#save Ajouter à la bibliothèque
+hr
 .soundtracks
   h3 Musique associée
-  button.play Jouer
+  .player
 
+.close

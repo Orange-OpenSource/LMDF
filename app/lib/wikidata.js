@@ -137,8 +137,8 @@ M.getSynopsis = function(movie) {
   let uri = movie.wikiLink.replace('/wiki/' , '/w/api.php?origin=*&action=parse&format=json&prop=text&section=1&disablelimitreport=1&disableeditsection=1&disabletoc=1&page=');
   return $.getJSON(uri).then(data => {
     let html = data.parse.text['*'];
-    //movie.synopsis = $(html).text().slice(8);
-    movie.synopsis = html;
+    movie.synopsis = $(html).text().slice(7);
+    // movie.synopsis = html;
 
     return movie;
   });

@@ -34,7 +34,6 @@ module.exports = Movies = Backbone.Collection.extend({
   },
 
 
-
   addVideoStreamToLibrary: function(videoStream) {
     return Promise.resolve().then(() => {
       let movie = this.find(movie => movie.get('orangeTitle') === videoStream.title);
