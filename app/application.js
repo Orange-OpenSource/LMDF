@@ -49,6 +49,7 @@ var Application = Mn.Application.extend({
     if (Backbone.history) {
       Backbone.history.start({ pushState: false });
     }
+    this.trigger('message:error', 'toto message');
     // TODO : keep this, display always a random details.
     var randomIndex = Math.floor(Math.random() * this.movies.size());
     this.layout.showMovieDetails(this.movies.at(randomIndex));

@@ -16,7 +16,7 @@ module.exports = Mn.View.extend({
     this.messages = {};
     this.listenTo(app, 'message:display', this.onDisplay);
     this.listenTo(app, 'message:hide', this.onHide);
-    this.listenTo(app, 'message:error', this.onDisplay);
+    this.listenTo(app, 'message:error', this.onError);
   },
 
   serializeData: function() {
@@ -24,11 +24,23 @@ module.exports = Mn.View.extend({
   },
 
   onError: function(message) {
-    this.onDisplay(Math.ceil(Math.random() * 10000), message);
+    this.display(Math.ceil(Math.random() * 10000), {
+      label: message.toString(),
+      type: 'error',
+      message: message,
+    });
   },
 
   onDisplay: function(id, message) {
-    console.log(message);
+    this.display(id, {
+      type: 'info',
+      lable: message.toString(),
+      message: message,
+    });
+  },
+
+  display: function(id, message) {
+    console.debug(message);
     this.messages[id] = message;
     this.render();
   },

@@ -1,7 +1,7 @@
 mixin displayMessage(id, m)
-  li
-    span.display= m
-    span.close(data-messageid=id) X
+  li(class=m.type)
+    span.display= m.label
+    span.close(data-messageid=id) &nbsp;
 
 if (messages.length != 0)
   ul
