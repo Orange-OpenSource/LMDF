@@ -1,13 +1,7 @@
-var app = undefined
+'use-strict';
 
 module.exports = Backbone.Router.extend({
-    routes: {
-        '': 'index',
-    },
-
-    initialize: function() {
-      app = require('application');
-    },
-
-
-    });
+  routes: {
+    '': 'index',
+  },
+});

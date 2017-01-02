@@ -24,22 +24,23 @@ module.exports = Mn.View.extend({
   },
 
   onError: function(message) {
-    this.display(Math.ceil(Math.random() * 10000), {
+    console.error(message);
+    this.display({
       label: message.toString(),
       type: 'error',
       message: message,
-    });
+    }, Math.ceil(Math.random() * 10000));
   },
 
-  onDisplay: function(id, message) {
-    this.display(id, {
+  onDisplay: function(message, id) {
+    this.display({
       type: 'info',
       lable: message.toString(),
       message: message,
-    });
+    }, id);
   },
 
-  display: function(id, message) {
+  display: function(message, id) {
     console.debug(message);
     this.messages[id] = message;
     this.render();

@@ -20,6 +20,26 @@ body {
   /*height: 100%;*/
 }
 
+.splash {
+  width: 100vw;
+  height: 100vh;
+  background: #8073B1;
+}
+
+.splash img {
+  position: absolute;
+  height: 100%; 
+  right: 0;
+  bottom: 0;
+}
+
+.splash h1  {
+  position: absolute;
+  top: 10%;
+  left: 5%;
+  margin-right: 5%;
+}
+
 [role="application"] {
   width: 100vw;
   height: 100vh;

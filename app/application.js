@@ -1,40 +1,50 @@
+'use-strict';
+
 // Main application that create a Mn.Application singleton and
 // exposes it.
-var AsyncPromise = require('./lib/async_promise');
-var MoviesCollection = require('./collections/movies');
+const AsyncPromise = require('./lib/async_promise');
+const MoviesCollection = require('./collections/movies');
+const Router = require('router');
+const AppLayout = require('views/app_layout');
 
-var Router = require('router');
-var AppLayout = require('views/app_layout');
-
-var bPromise = AsyncPromise.backbone2Promise;
+const bPromise = AsyncPromise.backbone2Promise;
 
 
 // var Properties = require('models/properties');
 require('views/behaviors');
 
-var Application = Mn.Application.extend({
+const Application = Mn.Application.extend({
 
-  initialize: function() {
-
-    // this.properties = Properties;
-  },
-
-  prepare: function() {
+  prepare: function () {
+    this._splashMessages();
     this.movies = new MoviesCollection();
-    return bPromise(this.movies, this.movies.fetch)
-    // return Promise.resolve();
+    return this._defineViews()
+    .then(() => bPromise(this.movies, this.movies.fetch));
   },
 
-  prepareInBackground: function() {
-    return this.movies.addFromVideoStreams();
+  prepareInBackground: function () {
+    return this.movies.addFromVideoStreams()
+    .catch(err => this.trigger('message:error', err));
   },
 
-
-  _defineViews: function() {
-
+  _splashMessages: function () {
+    this.listenTo(this, 'message:display message:error',
+      message => $('#splashmessage').html(message));
   },
 
-  onBeforeStart: function() {
+  _defineViews: function () {
+    this.trigger('message:display', 'Préparation de la liste de film', 'defineviews');
+    return Promise.all([
+      this.movies.defineMovieAllView(),
+      this.movies.defineVideoStreamMoviesByDateView()])
+    .then(() => this.trigger('message:hide', 'defineviews'))
+    .catch((err) => {
+      console.err(err);
+      this.trigger('message:error', 'Erreur à la définition des vues.');
+    });
+  },
+
+  onBeforeStart: function () {
     this.layout = new AppLayout();
     this.router = new Router();
 
@@ -43,25 +53,26 @@ var Application = Mn.Application.extend({
     }
   },
 
-  onStart: function() {
+  onStart: function () {
     this.layout.render();
     // prohibit pushState because URIs mapped from cozy-home rely on fragment
     if (Backbone.history) {
       Backbone.history.start({ pushState: false });
     }
-    this.trigger('message:error', 'toto message');
     // TODO : keep this, display always a random details.
-    var randomIndex = Math.floor(Math.random() * this.movies.size());
-    this.layout.showMovieDetails(this.movies.at(randomIndex));
+    // let randomIndex = Math.floor(Math.random() * this.movies.size());
+    // this.layout.showMovieDetails(this.movies.at(randomIndex));
   },
 });
 
-var application = new Application();
+const application = new Application();
 
 module.exports = application;
+window.app = application;
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', () => {
   application.prepare()
-    .then(function() { return application.prepareInBackground();})
-    .then(application.start.bind(application));
+  .then(() => application.prepareInBackground())
+  .then(() => application.start());
 });
+

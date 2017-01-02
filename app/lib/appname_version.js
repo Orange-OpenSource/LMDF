@@ -1,4 +1,7 @@
-var name = 'lamusiquedemesfilms';
-var version = '0.0.1-dev';
+'use-strict';
 
-module.exports = name + '-' + version;
+const name = 'lamusiquedemesfilms';
+// use brunch-version plugin to populate these.
+const version = '{!major!}.{!minor!}.{!maintenance!}';
+
+module.exports = `${name}-${version}`;
