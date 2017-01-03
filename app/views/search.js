@@ -1,10 +1,11 @@
-var findWikidataMovieMatches = require('../lib/wikidata_suggestions_film').findMovieMatches
+'use-strict';
 
-var app = null;
+const findWikidataMovieMatches = require('../lib/wikidata_suggestions_film').findMovieMatches;
+const template = require('views/templates/search');
 
 module.exports = Mn.View.extend({
   tagName: 'div',
-  template: require('views/templates/search'),
+  template: template,
 
   ui: {
     search: 'input',
@@ -15,12 +16,11 @@ module.exports = Mn.View.extend({
     'keyup @ui.search': 'processKey',
   },
 
-  initialize: function() {
-    app = require('application');
+  initialize: function () {
     this.listenTo(app, 'search:close', this.onEnd);
   },
 
-  onRender: function() {
+  onRender: function () {
     this.ui.search.typeahead({
       hint: true,
       highlight: true,
@@ -31,26 +31,24 @@ module.exports = Mn.View.extend({
       async: true,
       display: 'label',
     });
-    console.log(this.ui);
-
   },
 
-  onSubmit: function(ev) {
-    app.trigger('search', { q: this.ui.search.val() })
+  onSubmit: function () {
+    app.trigger('search', { q: this.ui.search.val() });
   },
 
-  onEnd: function() {
+  onEnd: function () {
     this.ui.search.typeahead('val', '');
   },
 
-  found: function(ev, suggestion) {
+  found: function (ev, suggestion) {
     app.trigger('search', {
       q: this.ui.search.val(),
       selected: suggestion,
     });
   },
 
-  processKey: function(e) {
+  processKey: function (e) {
     if (e.which === 13) {
       this.onSubmit();
     }

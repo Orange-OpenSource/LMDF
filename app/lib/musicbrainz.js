@@ -1,4 +1,4 @@
-'use_strict'
+'use_strict';
 
 const promiseSeries = require('./async_promise').series;
 const WalkTreeUtils = require('./walktree_utils');
@@ -6,10 +6,10 @@ const WalkTreeUtils = require('./walktree_utils');
 const get = WalkTreeUtils.get;
 
 
-var M = {};
+const M = {};
 
 // Musicbrainz
-M.getPlayList = function(movie) {
+M.getPlayList = function (movie) {
   let uri = 'https://musicbrainz.org/ws/2/release-group/?fmt=json&query=';
   uri += `release:${encodeURIComponent(movie.originalTitle)}%20AND%20type:soundtrack`;
 
@@ -18,26 +18,26 @@ M.getPlayList = function(movie) {
   // }
 
   return $.getJSON(uri)
-  .then(function(res) {
-    let filtered = res['release-groups'].filter(item => item.score > 90);
-    movie.soundtracks = filtered.map((rg) => ({
-        title: rg.title,
-        musicbrainzReleaseGroupId: rg.id,
-        artist: get(rg, 'artist-credits', 0, 'name'),
+  .then((res) => {
+    const filtered = res['release-groups'].filter(item => item.score > 90);
+    movie.soundtracks = filtered.map(rg => ({
+      title: rg.title,
+      musicbrainzReleaseGroupId: rg.id,
+      artist: get(rg, 'artist-credits', 0, 'name'),
     }));
     return movie;
   });
-}
+};
 
-M.getRecordings = function(movie) {
+M.getRecordings = function (movie) {
   return promiseSeries(movie.soundtracks, M.getRecording)
   .then(() => movie);
 };
 
 
-M.getRecording = function(releaseGroup) {
+M.getRecording = function (releaseGroup) {
   return $.getJSON(`http://musicbrainz.org/ws/2/recording?fmt=json&query=rgid:${releaseGroup.musicbrainzReleaseGroupId}`)
-  .then(function(res) {
+  .then((res) => {
     if (res.recordings) {
       releaseGroup.tracks = res.recordings;
     }
@@ -46,12 +46,11 @@ M.getRecording = function(releaseGroup) {
 };
 
 
-M.getSoundtracks = function(movie) {
+M.getSoundtracks = function (movie) {
   return Promise.resolve(
     (movie.soundtracks && movie.soundtracks[0] &&
     movie.soundtracks[0].musicbrainzReleaseGroupId) ? movie : M.getPlayList(movie)
-  )
-  .then(M.getRecordings);
+  ).then(M.getRecordings);
 };
 
 module.exports = M;

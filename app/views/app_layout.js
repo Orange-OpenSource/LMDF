@@ -1,16 +1,14 @@
-var MessageView = require('views/message');
-var DetailsView = require('views/movie_details');
-var LibraryView = require('views/movie_library');
-var SearchResultsView = require('views/movie_searchresults');
-var LeftPanelView = require('views/left_panel');
+'use-strict';
 
-var Movie = require('models/movie');
-
-var app = undefined;
+const MessageView = require('views/message');
+const DetailsView = require('views/movie_details');
+const LibraryView = require('views/movie_library');
+const SearchResultsView = require('views/movie_searchresults');
+const LeftPanelView = require('views/left_panel');
+const template = require('views/templates/app_layout');
 
 module.exports = Mn.View.extend({
-
-  template: require('views/templates/app_layout'),
+  template: template,
   el: '[role="application"]',
 
   behaviors: {},
@@ -30,25 +28,28 @@ module.exports = Mn.View.extend({
     message: '.message',
   },
 
-  initialize: function() {
-    app = require('application');
-
+  initialize: function () {
     this.listenTo(app, 'search', this.showSearchResults);
     this.listenTo(app, 'search:close', this.closeSearchResults);
     this.listenTo(app, 'details:show', this.showMovieDetails);
   },
 
-  onRender: function() {
+  onRender: function () {
     this.showChildView('message', new MessageView());
     this.showChildView('library', new LibraryView({ collection: app.movies }));
     this.showChildView('leftpanel', new LeftPanelView());
   },
 
-  showMovieDetails: function(movie) {
+  showMovieDetails: function (movie) {
     this.showChildView('details', new DetailsView({ model: movie }));
   },
 
-  showSearchResults: function(query) {
+  onChildviewDetailsClose: function () {
+    this.getRegion('details').empty();
+  },
+
+
+  showSearchResults: function (query) {
     if (!this.getRegion('searchresults').hasView()) {
       this.getRegion('library').$el.hide();
       this.showChildView('searchresults', new SearchResultsView({
@@ -57,12 +58,8 @@ module.exports = Mn.View.extend({
     }
   },
 
-  closeSearchResults: function() {
+  closeSearchResults: function () {
     this.getRegion('searchresults').empty();
     this.getRegion('library').$el.show();
-  },
-
-  onChildviewDetailsClose: function() {
-    this.getRegion('details').empty();
   },
 });

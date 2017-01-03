@@ -1,37 +1,38 @@
-'use strict'
+'use strict';
 
 // query items with label
-module.exports.findMovieMatches = function(filmTitle, nextSync, nextAsync) {
-    nextSync();
-    getFilmSuggestionObjectAPI(filmTitle).then(nextAsync);
-
-    //     function(items) {
-    //     let labels = items.map(item => item.label);
-    //     console.log(labels);
-    //     nextAsync(labels);
-    // });
+module.exports.findMovieMatches = function (filmTitle, nextSync, nextAsync) {
+  nextSync();
+  getFilmSuggestionObjectAPI(filmTitle).then(nextAsync);
 };
 
-module.exports.fetchMoviesSuggestions = function(title) {
+module.exports.fetchMoviesSuggestions = function (title) {
   return getFilmSuggestionObjectAPI(title);
 };
 
 function getFilmSuggestionObjectAPI(filmTitle) {
+  const params = {
+    action: 'wbsearchentities',
+    search: filmTitle,
+    language: 'fr',
+    type: 'item',
+    format: 'json',
+    origin: '*',
+  };
   return $.getJSON(
-    `https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(filmTitle)}&format=json&language=fr&type=item&origin=*`)
-    .then(function(res) {
-      console.log(res.search);
+    `https://www.wikidata.org/w/api.php?${$.param(params)}`)
+  .then((res) => {
+    const items = res.search.filter(item => item.description &&
+       (item.description.indexOf('film') !== -1
+       || item.description.indexOf('movie') !== -1));
 
-      // let items = res.search.sort((item,itemB) =>
-      //   (item.description &&
-      //   (item.description.indexOf('film') !== -1
-      //   || item.description.indexOf('movie') !== -1)) ? -1 : 1
-      //   );
+    // Option: sort instead of filter.
+    // let items = res.search.sort((item,itemB) =>
+    //   (item.description &&
+    //   (item.description.indexOf('film') !== -1
+    //   || item.description.indexOf('movie') !== -1)) ? -1 : 1
+    //   );
 
-      let items = res.search.filter(item => item.description &&
-         (item.description.indexOf('film') !== -1
-         || item.description.indexOf('movie') !== -1));
-      console.log(items);
-      return Promise.resolve(items);
-    });
+    return Promise.resolve(items);
+  });
 }

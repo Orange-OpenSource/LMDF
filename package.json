@@ -6,7 +6,8 @@
   "cozy-displayName": "La Musique de mes films",
   "scripts": {
     "watch": "brunch watch",
-    "build": "brunch build --production"
+    "build": "brunch build --production",
+    "lint": "eslint -c .eslintrc.json app/"
   },
   "dependencies": {},
   "devDependencies": {
@@ -14,8 +15,14 @@
     "brunch": "^2.0.0",
     "clean-css-brunch": "^2.0.0",
     "css-brunch": "^2.0.0",
+    "eslint": "^3.12.2",
+    "eslint-config-airbnb": "^13.0.0",
+    "eslint-plugin-import": "^2.2.0",
+    "eslint-plugin-jsx-a11y": "^2.2.3",
+    "eslint-plugin-react": "^6.8.0",
     "jade-brunch": "2.8.0",
     "javascript-brunch": "^2.0.0",
-    "uglify-js-brunch": "^2.0.0"
+    "uglify-js-brunch": "^2.0.0",
+    "version-brunch": "^1.0.1"
   }
 }

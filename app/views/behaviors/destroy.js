@@ -1,10 +1,11 @@
-module.exports = Mn.Behavior.extend({
+'use-strict';
 
+module.exports = Mn.Behavior.extend({
   events: {
     'click .delete': 'destroyObject',
   },
 
-  destroyObject: function() {
+  destroyObject: function () {
     if (this.options.onDestroy) {
       this.view[this.options.onDestroy]();
     } else {

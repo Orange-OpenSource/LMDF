@@ -1,11 +1,12 @@
-var SearchView = require('views/search');
+'use-strict';
 
-var app = null;
+const SearchView = require('views/search');
+const template = require('./templates/left_panel');
 
 module.exports = Mn.View.extend({
   tagName: 'aside',
   className: 'drawer',
-  template: require('./templates/left_panel'),
+  template: template,
 
   behaviors: {
     Toggle: {},
@@ -14,19 +15,16 @@ module.exports = Mn.View.extend({
   ui: {},
 
   triggers: {
+    //eslint-disable-next-line
     'click': 'expand',
   },
   regions: {
     search: '.search',
   },
 
-  initialize: function() {
-    app = require('application');
-  },
-
-  onRender: function() {
+  onRender: function () {
     this.showChildView('search', new SearchView());
-    $('.toggle-drawer').click(() => this.triggerMethod('toggle'))
+    // Listen to toggle from responsive topbar button toggle-drawer.
+    $('.toggle-drawer').click(() => this.triggerMethod('toggle'));
   },
-
 });

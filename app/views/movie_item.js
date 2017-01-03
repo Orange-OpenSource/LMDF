@@ -1,23 +1,23 @@
+'use-strict';
+
+const template = require('./templates/movie_item');
 
 module.exports = Mn.View.extend({
-  template: require('./templates/movie_item'),
+  template: template,
   tagName: 'li',
 
   events: {
+    //eslint-disable-next-line
     'click': 'showDetails',
   },
 
-  initialize: function() {
-    app = require('application');
-  },
-
-  serializeData: function() {
-    var json = this.model.toJSON();
+  serializeData: function () {
+    const json = this.model.toJSON();
     json.title = this.model.getTitle();
     return json;
   },
 
-  showDetails: function() {
+  showDetails: function () {
     app.trigger('details:show', this.model);
   },
 });

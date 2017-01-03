@@ -1,61 +1,57 @@
-'use strict'
-const AsyncPromise = require('./async_promise');
+'use strict';
+
 const WalkTreeUtils = require('./walktree_utils');
 
 const get = WalkTreeUtils.get;
 
+const M = {};
 
-let M = {};
-
-M.musicbrainzToDeezer = function(album) {
+M.musicbrainzToDeezer = function (album) {
   let uri = `https://api.deezer.com/search/album?output=jsonp&callback=?&q=album:"${encodeURIComponent(album.title)}"`;
   if (album.artist) {
     uri += `%20artist:"${encodeURIComponent(album.artist)}"`;
   }
 
-  return $.getJSON(uri).then(res => {
-    console.log(res);
-    let deezerAlbum = get(res, 'data', 0);
-    if (!deezerAlbum) {
-        return Promise.resolve();
-    }
+  return $.getJSON(uri).then((res) => {
+    const deezerAlbum = get(res, 'data', 0);
+    if (!deezerAlbum) { return Promise.resolve(); }
     album.deezerAlbumId = deezerAlbum.id;
 
     return album;
   });
 };
 
-M.getAlbumId = function(movie) {
-  let uri = `https://api.deezer.com/search/album?output=jsonp&callback=?&q=album:"${encodeURIComponent(movie.originalTitle)}"`;
+
+M.getAlbumId = function (movie) {
+  const uri = `https://api.deezer.com/search/album?output=jsonp&callback=?&q=album:"${encodeURIComponent(movie.originalTitle)}"`;
+
   // if (film.composer && film.composer.label) {
   //     uri += `%20artist:"${encodeURIComponent(film.composer.label)}"`;
   // }
-  return $.getJSON(uri).then(res => {
-    console.log(res);
-    let album = get(res, 'data', 0);
-    if (!album) {
-        return Promise.resolve();
-    }
 
-    let soundtrack = {
+  return $.getJSON(uri).then((res) => {
+    const album = get(res, 'data', 0);
+    if (!album) { return Promise.resolve(); }
+
+    const soundtrack = {
       deezerAlbumId: album.id,
     };
+
+    // TODO: mix with musicbrainz soundtrack, ...
     movie.soundtracks = [soundtrack];
     return movie;
-    // return M.getTraklist(soundtrack).then(() => movie);
   });
 };
 
-M.getTraklist = function(soundtrack) {
+M.getTraklist = function (soundtrack) {
   return $.getJSON(`https://api.deezer.com/album/${soundtrack.deezerAlbumId}/tracks/?output=jsonp&callback=?`)
-  .then(res => {
-      soundtrack.tracks = res.data;
+  .then((res) => {
+    soundtrack.tracks = res.data;
   });
 };
 
 
-
-M.getSoundtracks = function(movie) {
+M.getSoundtracks = function (movie) {
   // return AsyncPromise.series(movie.soundtracks, M.musicbrainzToDeezer)
   // .then(() => movie);
 

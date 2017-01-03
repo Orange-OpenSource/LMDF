@@ -1,9 +1,10 @@
-var PlayerView = require('views/player');
-var app = undefined;
+'use-strict';
 
+const PlayerView = require('views/player');
+const template = require('./templates/movie_details');
 
 module.exports = Mn.View.extend({
-  template: require('./templates/movie_details'),
+  template: template,
 
   regions: {
     player: '.player',
@@ -17,28 +18,25 @@ module.exports = Mn.View.extend({
     'click .close': 'details:close',
   },
 
-  initialize: function() {
-    app = require('../application');
-  },
-  serializeData: function() {
-    var json = this.model.toJSON();
+  serializeData: function () {
+    const json = this.model.toJSON();
     json.title = this.model.getTitle();
     return json;
   },
 
-  onRender: function() {
-    var player = new PlayerView();
-    this.showChildView('player', player);
+  onRender: function () {
+    this.showChildView('player', new PlayerView());
+    // TODO: could we avoid this with dom:refresh view event ?
     setTimeout(this.playSoundtrack.bind(this), 100);
   },
 
-  saveMovie: function() {
+  saveMovie: function () {
     this.model.save();
-    // TODO : add to collection !
+    // TODO : add to collection and update !
   },
 
-  playSoundtrack: function() {
-    let soundtracks = this.model.get('soundtracks');
+  playSoundtrack: function () {
+    const soundtracks = this.model.get('soundtracks');
     if (!soundtracks || soundtracks.length === 0) {
       return app.trigger('error', 'Pas de bande originale');
     }
@@ -46,4 +44,3 @@ module.exports = Mn.View.extend({
     app.trigger('play:album', soundtracks[soundtracks.length - 1]);
   },
 });
-

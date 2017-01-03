@@ -1,5 +1,6 @@
-module.exports = Mn.Behavior.extend({
+'use-strict';
 
+module.exports = Mn.Behavior.extend({
   triggers: {
     'click .toggle': 'toggle',
     'click @ui.toggle': 'toggle',
@@ -9,26 +10,23 @@ module.exports = Mn.Behavior.extend({
     'click @ui.expand': 'expand',
   },
 
-  onExpand: function() {
+  onExpand: function () {
     this.setExpanded(true);
   },
 
-  onContract: function() {
-    console.log('toto');
+  onContract: function () {
     this.setExpanded(false);
   },
 
-  onToggle: function() {
-    console.log('yeee');
-    var isVisible = this.$el.attr('aria-expanded') === 'true';
-    this.setExpanded(!isVisible);
+  onToggle: function () {
+    this.setExpanded(!(this.$el.attr('aria-expanded') === 'true'));
   },
 
-  setExpanded: function(isExpanded) {
+  setExpanded: function (isExpanded) {
     this.$el.attr('aria-expanded', isExpanded);
   },
 
-  onRender: function() {
+  onRender: function () {
     this.onContract();
   },
 });

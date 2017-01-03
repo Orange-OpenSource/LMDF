@@ -252,7 +252,7 @@ ul.movielibrary .movieitem img {
 }
 
 .details {
-  flex-basis: 660px;
+  /*flex-basis: 660px;*/
   height: auto;
   background: black;
 
@@ -265,7 +265,7 @@ ul.movielibrary .movieitem img {
 
 .details > div {
   padding: 30px;
-  /*! width: 660px; */
+  width: 660px;
 }
 
 .details .poster {

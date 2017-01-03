@@ -1,22 +1,22 @@
-var appName = require('../lib/appname_version');
+'use-strict';
+
+const appName = require('../lib/appname_version');
 
 module.exports = Backbone.Model.extend({
   docType: '',
-
   defaults: {
     docTypeVersion: appName,
   },
 
-  parse: function(raw) {
+  parse: function (raw) {
     raw.id = raw._id;
     return raw;
   },
 
-  sync: function(method, model, options) {
-    var callback = function(err, res) {
-      if (err) { return options.error(err); }
-      options.success(res);
-    }
+  sync: function (method, model, options) {
+    const callback = (err, res) => {
+      return err ? options.error(err) : options.success(res);
+    };
 
     if (method === 'create') {
       return cozysdk.create(this.docType, model.attributes, callback);

@@ -23,8 +23,14 @@ Backbone.Collection.extend({
     .then((movie) => {
       this.add(movie);
       return movie;
+    }).catch((err) => {
+      const msg = `Erreur à la récupération des données pour le film ${wdSuggestion.id}`;
+      console.error(msg);
+      console.error(err);
+      // Fail silently
     });
   },
+
 
   fromKeyword: function (keyword) {
     return WikidataSuggestions.fetchMoviesSuggestions(keyword)
@@ -33,4 +39,3 @@ Backbone.Collection.extend({
     }).catch(err => console.error(err)); // Fail silently.
   },
 });
-
