@@ -72,7 +72,7 @@ M.getSynopsis = function (movie) {
   return $.getJSON(uri).then((data) => {
     // TODO: not good enough.
     const html = data.parse.text['*'];
-    movie.synopsis = $(html).text().slice(7);
+    movie.synopsis = $(html).text();
 
     return movie;
   });

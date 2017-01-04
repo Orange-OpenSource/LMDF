@@ -6,11 +6,11 @@ const AsyncPromise = require('./lib/async_promise');
 const MoviesCollection = require('./collections/movies');
 const Router = require('router');
 const AppLayout = require('views/app_layout');
+const Properties = require('models/properties');
 
 const bPromise = AsyncPromise.backbone2Promise;
 
 
-// var Properties = require('models/properties');
 require('views/behaviors');
 
 const Application = Mn.Application.extend({
@@ -18,7 +18,10 @@ const Application = Mn.Application.extend({
   prepare: function () {
     this._splashMessages();
     this.movies = new MoviesCollection();
-    return this._defineViews()
+    this.properties = Properties;
+
+    return this.properties.fetch()
+    .then(() => this._defineViews())
     .then(() => bPromise(this.movies, this.movies.fetch));
   },
 

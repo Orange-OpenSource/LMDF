@@ -31,8 +31,8 @@ module.exports = Mn.View.extend({
   },
 
   saveMovie: function () {
+    app.movies.add(this.model);
     this.model.save();
-    // TODO : add to collection and update !
   },
 
   playSoundtrack: function () {

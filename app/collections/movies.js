@@ -6,6 +6,7 @@ const Movie = require('../models/movie');
 module.exports = Backbone.Collection.extend({
   model: Movie,
   docType: Movie.prototype.docType.toLowerCase(),
+  modelId: attrs => attrs.wikidataId,
   comparator: movie => movie.getTitle(),
 
   sync: function (method, collection, options) {
@@ -45,14 +46,23 @@ module.exports = Backbone.Collection.extend({
   },
 
 
-  addFromVideoStreams: function (since) {
-    // TODO : remove hack !
-    // TODO : implement since !
+  addFromVideoStreams: function () {
+    const since = app.properties.get('lastVideoStream') || '';
+    let last = since;
     return cozysdk.run('videostream', 'moviesByDate',
-    { startkey: "2016-09-07T00:47:20Z", limit: 3, include_docs: true })
+    { startkey: since, include_docs: true }) // TODO : remove limit !
     .then((results) => {
+      const lastResult = results[results.length - 1];
+      if (lastResult && lastResult.key > since) {
+        last = lastResult.key;
+      }
+
       const videoStreams = results.map(res => res.doc);
       return AsyncPromise.series(videoStreams, this.addVideoStreamToLibrary, this);
+    })
+    .then(() => {
+      app.properties.set('lastVideoStream', last);
+      return app.properties.save();
     });
   },
 

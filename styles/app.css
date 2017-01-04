@@ -222,7 +222,7 @@ ul.movielibrary {
   list-style: none;
 }
 
-ul.movielibrary li {
+ul.movielibrary > li {
   display: inline-block;
   padding: 10px;
 }

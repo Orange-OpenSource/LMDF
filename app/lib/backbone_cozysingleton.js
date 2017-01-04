@@ -13,7 +13,6 @@ module.exports = CozyModel.extend({
       .then(options.success, options.error);
     }
 
-    //eslint-disable-next-line
-    return CozyModel.prototype.sync.call(this, arguments);
+    return CozyModel.prototype.sync.call(this, method, model, options);
   },
 });

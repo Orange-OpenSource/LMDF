@@ -11,6 +11,7 @@ module.exports.fetchMoviesSuggestions = function (title) {
 };
 
 function getFilmSuggestionObjectAPI(filmTitle) {
+
   const params = {
     action: 'wbsearchentities',
     search: filmTitle,
