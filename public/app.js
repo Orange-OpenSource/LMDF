@@ -345,6 +345,7 @@ const Movie = require('../models/movie');
 module.exports =
 Backbone.Collection.extend({
   model: Movie,
+  modelId: attrs => attrs.wikidataId,
 
   findByWDId: function (wdId) {
     return this.findWhere({ wikidataId: wdId });
@@ -384,7 +385,7 @@ require.register("lib/appname_version.js", function(exports, require, module) {
 
 const name = 'lamusiquedemesfilms';
 // use brunch-version plugin to populate these.
-const version = '0.0.1';
+const version = '0.0.2';
 
 module.exports = `${name}-${version}`;
 
@@ -510,7 +511,7 @@ M.getAlbumId = function (movie) {
 
   return $.getJSON(uri).then((res) => {
     const album = get(res, 'data', 0);
-    if (!album) { return Promise.resolve(); }
+    if (!album) { return Promise.resolve(movie); }
 
     const soundtrack = {
       deezerAlbumId: album.id,
@@ -624,7 +625,7 @@ M.getMovieData = function (wikidataId) {
       ?genre ?genreLabel ?publicationDate ?duration ?director ?directorLabel
       ?musicBrainzRGId ?imdbId ?countryOfOrigin ?countryOfOriginLabel
     WHERE {
-     wd:${wikidataId} wdt:P31 wd:Q11424;
+     wd:${wikidataId} wdt:P31/wdt:P279* wd:Q11424;
     rdfs:label ?label.
     OPTIONAL { wd:${wikidataId} wdt:P1476 ?originalTitle. }
     OPTIONAL { wd:${wikidataId} wdt:P86 ?composer. }
@@ -786,19 +787,21 @@ module.exports = M;
 // query items with label
 module.exports.findMovieMatches = function (filmTitle, nextSync, nextAsync) {
   nextSync();
-  getFilmSuggestionObjectAPI(filmTitle).then(nextAsync);
+  getFilmSuggestionObjectAPI(filmTitle, 10).then(nextAsync);
 };
 
 module.exports.fetchMoviesSuggestions = function (title) {
   return getFilmSuggestionObjectAPI(title);
 };
 
-function getFilmSuggestionObjectAPI(filmTitle) {
+function getFilmSuggestionObjectAPI(filmTitle, limit) {
+  limit = limit || 50;
   const params = {
     action: 'wbsearchentities',
     search: filmTitle,
     language: 'fr',
     type: 'item',
+    limit: limit,
     format: 'json',
     origin: '*',
   };
@@ -859,7 +862,8 @@ Movie.fromWDSuggestionMovie = function (wdSuggestion) {
   return Wikidata.getMovieById(wdSuggestion.id)
   // .then(Musicbrainz.getSoundtracks) // TODO: restore musicbrainz.
   .then(Deezer.getSoundtracks)
-  .then(attrs => new Movie(attrs));
+  .then(attrs => new Movie(attrs))
+  ;
 };
 
 Movie.fromOrangeTitle = function (title) {
@@ -1179,8 +1183,10 @@ module.exports = Mn.View.extend({
 
   onRender: function () {
     this.showChildView('player', new PlayerView());
-    // TODO: could we avoid this with dom:refresh view event ?
-    setTimeout(this.playSoundtrack.bind(this), 100);
+  },
+
+  onDomRefresh: function () {
+    this.playSoundtrack();
   },
 
   saveMovie: function () {
@@ -1263,6 +1269,7 @@ const SearchResultsView = Mn.CollectionView.extend({
   },
 
   onQueryMovie: function (query) {
+    this.collection.reset();
     if (query.selected) {
       this.collection.fromWDSuggestionMovie(query.selected)
       .then((movie) => {
@@ -1384,11 +1391,12 @@ module.exports = Mn.View.extend({
       hint: true,
       highlight: true,
       minLength: 3,
+      // limit: 10,
     }, {
       name: 'movie',
       source: _.debounce(findWikidataMovieMatches, 300),
       async: true,
-      display: 'label',
+      display: suggestion => suggestion.match.text
     });
   },
 
