@@ -7,7 +7,7 @@ M.getMovieData = function (wikidataId) {
       ?genre ?genreLabel ?publicationDate ?duration ?director ?directorLabel
       ?musicBrainzRGId ?imdbId ?countryOfOrigin ?countryOfOriginLabel
     WHERE {
-     wd:${wikidataId} wdt:P31 wd:Q11424;
+     wd:${wikidataId} wdt:P31/wdt:P279* wd:Q11424;
     rdfs:label ?label.
     OPTIONAL { wd:${wikidataId} wdt:P1476 ?originalTitle. }
     OPTIONAL { wd:${wikidataId} wdt:P86 ?composer. }

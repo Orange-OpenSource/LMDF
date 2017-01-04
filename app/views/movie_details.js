@@ -26,8 +26,10 @@ module.exports = Mn.View.extend({
 
   onRender: function () {
     this.showChildView('player', new PlayerView());
-    // TODO: could we avoid this with dom:refresh view event ?
-    setTimeout(this.playSoundtrack.bind(this), 100);
+  },
+
+  onDomRefresh: function () {
+    this.playSoundtrack();
   },
 
   saveMovie: function () {

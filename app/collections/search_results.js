@@ -8,6 +8,7 @@ const Movie = require('../models/movie');
 module.exports =
 Backbone.Collection.extend({
   model: Movie,
+  modelId: attrs => attrs.wikidataId,
 
   findByWDId: function (wdId) {
     return this.findWhere({ wikidataId: wdId });

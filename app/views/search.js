@@ -25,11 +25,12 @@ module.exports = Mn.View.extend({
       hint: true,
       highlight: true,
       minLength: 3,
+      // limit: 10,
     }, {
       name: 'movie',
       source: _.debounce(findWikidataMovieMatches, 300),
       async: true,
-      display: 'label',
+      display: suggestion => suggestion.match.text
     });
   },
 

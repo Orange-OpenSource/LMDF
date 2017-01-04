@@ -34,7 +34,8 @@ Movie.fromWDSuggestionMovie = function (wdSuggestion) {
   return Wikidata.getMovieById(wdSuggestion.id)
   // .then(Musicbrainz.getSoundtracks) // TODO: restore musicbrainz.
   .then(Deezer.getSoundtracks)
-  .then(attrs => new Movie(attrs));
+  .then(attrs => new Movie(attrs))
+  ;
 };
 
 Movie.fromOrangeTitle = function (title) {

@@ -3,19 +3,21 @@
 // query items with label
 module.exports.findMovieMatches = function (filmTitle, nextSync, nextAsync) {
   nextSync();
-  getFilmSuggestionObjectAPI(filmTitle).then(nextAsync);
+  getFilmSuggestionObjectAPI(filmTitle, 10).then(nextAsync);
 };
 
 module.exports.fetchMoviesSuggestions = function (title) {
   return getFilmSuggestionObjectAPI(title);
 };
 
-function getFilmSuggestionObjectAPI(filmTitle) {
+function getFilmSuggestionObjectAPI(filmTitle, limit) {
+  limit = limit || 50;
   const params = {
     action: 'wbsearchentities',
     search: filmTitle,
     language: 'fr',
     type: 'item',
+    limit: limit,
     format: 'json',
     origin: '*',
   };

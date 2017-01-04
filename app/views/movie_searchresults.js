@@ -17,6 +17,7 @@ const SearchResultsView = Mn.CollectionView.extend({
   },
 
   onQueryMovie: function (query) {
+    this.collection.reset();
     if (query.selected) {
       this.collection.fromWDSuggestionMovie(query.selected)
       .then((movie) => {

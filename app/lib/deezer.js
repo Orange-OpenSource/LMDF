@@ -32,7 +32,7 @@ M.getAlbumId = function (movie) {
 
   return $.getJSON(uri).then((res) => {
     const album = get(res, 'data', 0);
-    if (!album) { return Promise.resolve(); }
+    if (!album) { return Promise.resolve(movie); }
 
     const soundtrack = {
       deezerAlbumId: album.id,
