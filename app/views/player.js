@@ -33,6 +33,6 @@ module.exports = Mn.View.extend({
       id: id,
     };
 
-    $('#deezerFrame').attr('src', `http://www.deezer.com/plugins/player?${$.param(params)}`);
+    $('#deezerFrame').attr('src', `//www.deezer.com/plugins/player?${$.param(params)}`);
   },
 });

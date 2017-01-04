@@ -11,7 +11,6 @@ module.exports.fetchMoviesSuggestions = function (title) {
 };
 
 function getFilmSuggestionObjectAPI(filmTitle) {
-
   const params = {
     action: 'wbsearchentities',
     search: filmTitle,
@@ -21,7 +20,7 @@ function getFilmSuggestionObjectAPI(filmTitle) {
     origin: '*',
   };
   return $.getJSON(
-    `https://www.wikidata.org/w/api.php?${$.param(params)}`)
+    `//www.wikidata.org/w/api.php?${$.param(params)}`)
   .then((res) => {
     const items = res.search.filter(item => item.description &&
        (item.description.indexOf('film') !== -1

@@ -75,7 +75,19 @@ window.app = application;
 
 document.addEventListener('DOMContentLoaded', () => {
   application.prepare()
+  .catch((err) => {
+    const msg = "Erreur pendant la préparation de l'application";
+    console.error(msg);
+    console.error(err);
+    application.trigger('message:error', msg);
+  })
   .then(() => application.prepareInBackground())
-  .then(() => application.start());
+  .then(() => application.start())
+  .catch((err) => {
+    const msg = "Erreur au lancement de l'application";
+    console.error(msg);
+    console.error(err);
+    application.trigger('message:error', msg);
+  });
 });
 

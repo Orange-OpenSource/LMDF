@@ -7,7 +7,7 @@ const get = WalkTreeUtils.get;
 const M = {};
 
 M.musicbrainzToDeezer = function (album) {
-  let uri = `https://api.deezer.com/search/album?output=jsonp&callback=?&q=album:"${encodeURIComponent(album.title)}"`;
+  let uri = `//api.deezer.com/search/album?output=jsonp&callback=?&q=album:"${encodeURIComponent(album.title)}"`;
   if (album.artist) {
     uri += `%20artist:"${encodeURIComponent(album.artist)}"`;
   }
@@ -23,7 +23,8 @@ M.musicbrainzToDeezer = function (album) {
 
 
 M.getAlbumId = function (movie) {
-  const uri = `https://api.deezer.com/search/album?output=jsonp&callback=?&q=album:"${encodeURIComponent(movie.originalTitle)}"`;
+  let uri = '//api.deezer.com/search/album?output=jsonp&callback=?';
+  uri += `&q=album:"${encodeURIComponent(movie.originalTitle)}"`;
 
   // if (film.composer && film.composer.label) {
   //     uri += `%20artist:"${encodeURIComponent(film.composer.label)}"`;
@@ -44,7 +45,7 @@ M.getAlbumId = function (movie) {
 };
 
 M.getTraklist = function (soundtrack) {
-  return $.getJSON(`https://api.deezer.com/album/${soundtrack.deezerAlbumId}/tracks/?output=jsonp&callback=?`)
+  return $.getJSON(`//api.deezer.com/album/${soundtrack.deezerAlbumId}/tracks/?output=jsonp&callback=?`)
   .then((res) => {
     soundtrack.tracks = res.data;
   });

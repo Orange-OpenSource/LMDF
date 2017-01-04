@@ -10,7 +10,7 @@ const M = {};
 
 // Musicbrainz
 M.getPlayList = function (movie) {
-  let uri = 'https://musicbrainz.org/ws/2/release-group/?fmt=json&query=';
+  let uri = '//musicbrainz.org/ws/2/release-group/?fmt=json&query=';
   uri += `release:${encodeURIComponent(movie.originalTitle)}%20AND%20type:soundtrack`;
 
   // if (movie.composer && movie.composer.label) {
@@ -36,7 +36,7 @@ M.getRecordings = function (movie) {
 
 
 M.getRecording = function (releaseGroup) {
-  return $.getJSON(`http://musicbrainz.org/ws/2/recording?fmt=json&query=rgid:${releaseGroup.musicbrainzReleaseGroupId}`)
+  return $.getJSON(`//musicbrainz.org/ws/2/recording?fmt=json&query=rgid:${releaseGroup.musicbrainzReleaseGroupId}`)
   .then((res) => {
     if (res.recordings) {
       releaseGroup.tracks = res.recordings;

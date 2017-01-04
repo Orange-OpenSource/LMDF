@@ -40,7 +40,7 @@ M.getMovieData = function (wikidataId) {
 
 
 M.getPoster = function (movie) {
-  return $.getJSON(`http://www.omdbapi.com/?plot=short&r=json&i=${movie.imdbId}`)
+  return $.getJSON(`//www.omdbapi.com/?plot=short&r=json&i=${movie.imdbId}`)
   .then((res) => {
     movie.posterUri = res.Poster;
     return movie;
