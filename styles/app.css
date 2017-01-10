@@ -13,6 +13,11 @@
   content: '❌';
 }
 
+.loading {
+  cursor: progress;
+}
+
+
 body {
   background: white;
   font-family: helvetica, arial;
@@ -249,6 +254,10 @@ ul.movielibrary .movieitem img {
 .searchresults h2 {
   margin-top: 0;
   padding: 10px 10px 0;
+}
+
+.searchresults .loading .empty {
+  display: none;
 }
 
 .details {

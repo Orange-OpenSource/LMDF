@@ -36,7 +36,7 @@ Backbone.Collection.extend({
   fromKeyword: function (keyword) {
     return WikidataSuggestions.fetchMoviesSuggestions(keyword)
     .then((suggestions) => {
-      AsyncPromise.series(suggestions, this.fromWDSuggestionMovie, this);
+      return AsyncPromise.series(suggestions, this.fromWDSuggestionMovie, this);
     }).catch(err => console.error(err)); // Fail silently.
   },
 });

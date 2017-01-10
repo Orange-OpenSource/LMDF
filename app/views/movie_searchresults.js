@@ -18,18 +18,26 @@ const SearchResultsView = Mn.CollectionView.extend({
 
   onQueryMovie: function (query) {
     this.collection.reset();
-    if (query.selected) {
-      this.collection.fromWDSuggestionMovie(query.selected)
-      .then((movie) => {
-        if (!movie) { return console.log('no film for this suggestion !'); }
-        app.trigger('details:show', movie);
-      }).then(() => this.collection.fromKeyword(query.q));
-    } else {
-      this.collection.fromKeyword(query.q);
-    }
+    Promise.resolve().then(() => {
+      this.$el.toggleClass('loading', true);
+      if (query.selected) {
+        return this.collection.fromWDSuggestionMovie(query.selected)
+        .then((movie) => {
+          if (!movie) { return console.log('no film for this suggestion !'); }
+          app.trigger('details:show', movie);
+        }).then(() => this.collection.fromKeyword(query.q));
+      } else {
+        return this.collection.fromKeyword(query.q);
+      }
+    }).then(() => {
+      this.$el.toggleClass('loading', false);
+    });
   },
 
-  emptyView: Mn.View.extend({ template: emptyViewTemplate, }),
+  emptyView: Mn.View.extend({
+    className: 'empty',
+    template: emptyViewTemplate,
+  }),
 });
 
 
@@ -53,9 +61,12 @@ module.exports = Mn.View.extend({
   },
 
   initialize: function () {
-    this.listenTo(app, 'search', query => this.ui.query.html(query.q));
+    this.listenTo(app, 'search', this.onSearch);
   },
 
+  onSearch: function(query) {
+    this.ui.query.html(query.q);
+  },
   onRender: function () {
     const searchResultsView = new SearchResultsView();
     searchResultsView.onQueryMovie(this.model.attributes);
