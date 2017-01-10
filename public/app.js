@@ -275,12 +275,12 @@ module.exports = Backbone.Collection.extend({
 
   addVideoStreamToLibrary: function (videoStream) {
     return Promise.resolve().then(() => {
-      const movie = this.find(movie => movie.get('orangeTitle') === videoStream.title);
+      const movie = this.find(movie => movie.get('orangeTitle') === videoStream.content.title);
 
       if (movie) {
         return movie;
       }
-      return Movie.fromOrangeTitle(videoStream.title);
+      return Movie.fromOrangeTitle(videoStream.content.title);
     }).then((movie) => {
       movie.setViewed(videoStream);
       this.add(movie);
@@ -323,8 +323,8 @@ module.exports = Backbone.Collection.extend({
   defineVideoStreamMoviesByDateView: function () {
     const mapFun = function (doc) {
       if (doc.action === 'Visualisation'
-        && doc.fromOffer !== 'AVSP TV LIVE' && doc.fromOffer !== 'OTV'
-        && !(doc.subTitle && doc.subTitle !== '')) {
+        && doc.details.offerName !== 'AVSP TV LIVE' && doc.details.offerName !== 'OTV'
+        && !(doc.content.subTitle && doc.content.subTitle !== '')) {
         emit(doc.timestamp);
       }
     };
@@ -373,7 +373,7 @@ Backbone.Collection.extend({
   fromKeyword: function (keyword) {
     return WikidataSuggestions.fetchMoviesSuggestions(keyword)
     .then((suggestions) => {
-      AsyncPromise.series(suggestions, this.fromWDSuggestionMovie, this);
+      return AsyncPromise.series(suggestions, this.fromWDSuggestionMovie, this);
     }).catch(err => console.error(err)); // Fail silently.
   },
 });
@@ -1270,18 +1270,26 @@ const SearchResultsView = Mn.CollectionView.extend({
 
   onQueryMovie: function (query) {
     this.collection.reset();
-    if (query.selected) {
-      this.collection.fromWDSuggestionMovie(query.selected)
-      .then((movie) => {
-        if (!movie) { return console.log('no film for this suggestion !'); }
-        app.trigger('details:show', movie);
-      }).then(() => this.collection.fromKeyword(query.q));
-    } else {
-      this.collection.fromKeyword(query.q);
-    }
+    this.$el.toggleClass('loading', true);
+    Promise.resolve().then(() => {
+      if (query.selected) {
+        return this.collection.fromWDSuggestionMovie(query.selected)
+        .then((movie) => {
+          if (!movie) { return console.log('no film for this suggestion !'); }
+          app.trigger('details:show', movie);
+        });
+      }
+    }).then(() => {
+      return this.collection.fromKeyword(query.q);
+    }).then(() => {
+      this.$el.toggleClass('loading', false);
+    });
   },
 
-  emptyView: Mn.View.extend({ template: emptyViewTemplate, }),
+  emptyView: Mn.View.extend({
+    className: 'empty',
+    template: emptyViewTemplate,
+  }),
 });
 
 
@@ -1305,9 +1313,12 @@ module.exports = Mn.View.extend({
   },
 
   initialize: function () {
-    this.listenTo(app, 'search', query => this.ui.query.html(query.q));
+    this.listenTo(app, 'search', this.onSearch);
   },
 
+  onSearch: function (query) {
+    this.ui.query.html(query.q);
+  },
   onRender: function () {
     const searchResultsView = new SearchResultsView();
     searchResultsView.onQueryMovie(this.model.attributes);
@@ -1588,7 +1599,7 @@ var buf = [];
 var jade_mixins = {};
 var jade_interp;
 
-buf.push("<p>Il n'y a aucun film dans votre vidéothèque Cozy !</p><p>Pour en ajouter, vous pouvez<ul><li>Si vous êtes client Livebox Orange, récupérer votre historique de VOD et Replay via en activant le&nbsp;<a href=\"/#apps/konnectors/konnector/orange_vod\" about=\"_blank\">connecteur Orange VOD.</a></li><li>Tout simplement, rechercher et ajouter un film avec la barre de recherche à gauche.</li></ul></p>");;return buf.join("");
+buf.push("<p>Il n'y a aucun film dans votre vidéothèque Cozy !</p><p>Pour en ajouter, vous pouvez<ul><li>Si vous êtes client Livebox Orange, récupérer votre historique de VOD et Replay via en activant le&nbsp;<a href=\"/#apps/konnectors/konnector/orange_vod\" target=\"_blank\">connecteur Orange VOD.</a></li><li>Tout simplement, rechercher et ajouter un film avec la barre de recherche à gauche.</li></ul></p>");;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {

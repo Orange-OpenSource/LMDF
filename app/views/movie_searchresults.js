@@ -18,17 +18,17 @@ const SearchResultsView = Mn.CollectionView.extend({
 
   onQueryMovie: function (query) {
     this.collection.reset();
+    this.$el.toggleClass('loading', true);
     Promise.resolve().then(() => {
-      this.$el.toggleClass('loading', true);
       if (query.selected) {
         return this.collection.fromWDSuggestionMovie(query.selected)
         .then((movie) => {
           if (!movie) { return console.log('no film for this suggestion !'); }
           app.trigger('details:show', movie);
-        }).then(() => this.collection.fromKeyword(query.q));
-      } else {
-        return this.collection.fromKeyword(query.q);
+        });
       }
+    }).then(() => {
+      return this.collection.fromKeyword(query.q);
     }).then(() => {
       this.$el.toggleClass('loading', false);
     });
@@ -64,7 +64,7 @@ module.exports = Mn.View.extend({
     this.listenTo(app, 'search', this.onSearch);
   },
 
-  onSearch: function(query) {
+  onSearch: function (query) {
     this.ui.query.html(query.q);
   },
   onRender: function () {
