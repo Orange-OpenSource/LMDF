@@ -27,12 +27,12 @@ module.exports = Backbone.Collection.extend({
 
   addVideoStreamToLibrary: function (videoStream) {
     return Promise.resolve().then(() => {
-      const movie = this.find(movie => movie.get('orangeTitle') === videoStream.title);
+      const movie = this.find(movie => movie.get('orangeTitle') === videoStream.content.title);
 
       if (movie) {
         return movie;
       }
-      return Movie.fromOrangeTitle(videoStream.title);
+      return Movie.fromOrangeTitle(videoStream.content.title);
     }).then((movie) => {
       movie.setViewed(videoStream);
       this.add(movie);
@@ -75,8 +75,8 @@ module.exports = Backbone.Collection.extend({
   defineVideoStreamMoviesByDateView: function () {
     const mapFun = function (doc) {
       if (doc.action === 'Visualisation'
-        && doc.fromOffer !== 'AVSP TV LIVE' && doc.fromOffer !== 'OTV'
-        && !(doc.subTitle && doc.subTitle !== '')) {
+        && doc.details.offerName !== 'AVSP TV LIVE' && doc.details.offerName !== 'OTV'
+        && !(doc.content.subTitle && doc.content.subTitle !== '')) {
         emit(doc.timestamp);
       }
     };
