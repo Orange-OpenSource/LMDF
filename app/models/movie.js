@@ -4,6 +4,8 @@ const CozyModel = require('../lib/backbone_cozymodel');
 const Wikidata = require('../lib/wikidata');
 const WikidataSuggestions = require('../lib/wikidata_suggestions_film');
 const Deezer = require('../lib/deezer');
+const Musicbrainz = require('../lib/musicbrainz');
+
 
 let Movie = null;
 
@@ -32,8 +34,12 @@ module.exports = Movie = CozyModel.extend({
 
 Movie.fromWDSuggestionMovie = function (wdSuggestion) {
   return Wikidata.getMovieById(wdSuggestion.id)
-  // .then(Musicbrainz.getSoundtracks) // TODO: restore musicbrainz.
-  .then(Deezer.getSoundtracks)
+  .then(Musicbrainz.getSoundtracks) // TODO: restore musicbrainz.
+  // .then(Deezer.getSoundtracks)
+  .then(attrs => {
+    console.log(attrs);
+    return attrs;
+  })
   .then(attrs => new Movie(attrs))
   ;
 };

@@ -1,13 +1,18 @@
 'use-strict';
 
-const PlayerView = require('views/player');
+const PlayerView = require('./player');
+const SoundTracksView = require('./soundtracks');
 const template = require('./templates/movie_details');
 
 module.exports = Mn.View.extend({
   template: template,
 
   regions: {
-    player: '.player',
+    //player: '.player',
+    soundtracks: {
+      el: '.soundtracks > ul',
+      replaceElement: true,
+    },
   },
 
   events: {
@@ -25,7 +30,11 @@ module.exports = Mn.View.extend({
   },
 
   onRender: function () {
-    this.showChildView('player', new PlayerView());
+    // this.showChildView('player', new PlayerView());
+    console.log('toto');
+    this.showChildView('soundtracks', new SoundTracksView({
+      collection: new Backbone.Collection(this.model.get('soundtracks')),
+    }));
   },
 
   onDomRefresh: function () {
