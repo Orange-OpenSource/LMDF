@@ -1,6 +1,7 @@
 'use strict';
 
 const WalkTreeUtils = require('./walktree_utils');
+const AsyncPromise = require('./async_promise');
 
 const get = WalkTreeUtils.get;
 
@@ -52,11 +53,33 @@ M.getTraklist = function (soundtrack) {
 };
 
 
-M.getSoundtracks = function (movie) {
-  // return AsyncPromise.series(movie.soundtracks, M.musicbrainzToDeezer)
-  // .then(() => movie);
+M.musicbrainz2DeezerTrack = function(track, album) {
+  let params = {
+    album: album.title,
+    track: track.title,
+    // artist: track.artists,
+    //artist: get(track, 'artist-credit', 0, 'artist', 'name'),
+    dur_min: Math.round(track.length / 1000 * 0.9),
+    dur_max: Math.round(track.length / 1000 * 1.1),
+  };
+  params = _.pairs(params).map(kv => `${kv[0]}:"${kv[1]}"`).join(' ');
+  console.log(params);
+  return $.getJSON(`//api.deezer.com/search/track/?output=jsonp&callback=?&strict=on&q=${params}`)
+  .then((res) => {
+    console.log('Deezer Track');
+    console.log(res);
+    const deezerTrack = res.data[0];
+    track.deezerId = deezerTrack.id;
+    track.deezer = deezerTrack;
+  }).catch(res => console.log(res));
+};
 
-  return M.getAlbumId(movie);
+M.getSoundtracks = function (movie) {
+  return AsyncPromise.series(movie.soundtracks,
+    (album) => AsyncPromise.series(album.tracks, track => M.musicbrainz2DeezerTrack(track, album)))
+  .then(() => movie);
+
+  // return M.getAlbumId(movie);
 };
 
 module.exports = M;

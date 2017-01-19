@@ -30,11 +30,32 @@ module.exports = Movie = CozyModel.extend({
     });
     this.set('viewed', viewed);
   },
+
+  _fetchMusic: function() {
+    const attrs = this.attributes;
+    return Musicbrainz.getSoundtracks(attrs)
+    // .then(Deezer.getSoundtracks)
+    .then(() => {
+      console.log('after getSoundtracks');
+      console.log(attrs);
+      this.set(attrs);
+      return attrs.soundtracks;
+    });
+  },
+
+  getSoundtracks: function() {
+    const soundtracks = this.get('soundtracks');
+    if (soundtracks) {
+      return Promise.resolve(soundtracks);
+    } else {
+      return this._fetchMusic();
+    }
+  },
 });
 
 Movie.fromWDSuggestionMovie = function (wdSuggestion) {
   return Wikidata.getMovieById(wdSuggestion.id)
-  .then(Musicbrainz.getSoundtracks) // TODO: restore musicbrainz.
+  // .then(Musicbrainz.getSoundtracks) // TODO: restore musicbrainz.
   // .then(Deezer.getSoundtracks)
   .then(attrs => {
     console.log(attrs);

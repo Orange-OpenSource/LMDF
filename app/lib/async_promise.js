@@ -15,6 +15,24 @@ module.exports.series = function (iterable, callback, self) {
   }));
 };
 
+module.exports.find = function (iterable, predicate) {
+  const recursive = (list) => {
+    const current = list.shift();
+    if (current === undefined) { return Promise.resolve(undefined); }
+
+    return predicate(current)
+    .then((res) => {
+      if (res === false) {
+        return recursive(list);
+      } else {
+        return res;
+      }
+    });
+  };
+
+  return recursive(iterable.slice());
+};
+
 module.exports.backbone2Promise = function (obj, method, options) {
   return new Promise((resolve, reject) => {
     options = options || {};

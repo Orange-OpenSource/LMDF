@@ -7,6 +7,8 @@ mixin displayTrack(track, idx)
     span.artists= track.artists
     | &nbsp;
     span.length= moment.utc(track.length).format('mm:ss')
+    | &nbsp;
+    span.deezerId= track.deezerId
 
 .albuminfo
   h3.title= title

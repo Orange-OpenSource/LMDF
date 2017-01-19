@@ -4,6 +4,8 @@ const PlayerView = require('./player');
 const SoundTracksView = require('./soundtracks');
 const template = require('./templates/movie_details');
 
+const Deezer = require('../lib/deezer');
+
 module.exports = Mn.View.extend({
   template: template,
 
@@ -30,11 +32,20 @@ module.exports = Mn.View.extend({
   },
 
   onRender: function () {
+    console.log(this.model.attributes);
     // this.showChildView('player', new PlayerView());
-    console.log('toto');
-    this.showChildView('soundtracks', new SoundTracksView({
-      collection: new Backbone.Collection(this.model.get('soundtracks')),
-    }));
+    this.model.getSoundtracks()
+    .then((soundtracks) => {
+      this.showChildView('soundtracks', new SoundTracksView({
+      collection: new Backbone.Collection(soundtracks) }));
+    });
+
+
+    // Deezer.getSoundtracks(this.model.attributes).then(
+    //   () => {
+    // this.showChildView('soundtracks', new SoundTracksView({
+    //   collection: new Backbone.Collection(this.model.get('soundtracks')),
+    // }));
   },
 
   onDomRefresh: function () {
