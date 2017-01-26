@@ -45,6 +45,8 @@ M.getAlbumId = function (movie) {
   });
 };
 
+
+
 M.getTraklist = function (soundtrack) {
   return $.getJSON(`//api.deezer.com/album/${soundtrack.deezerAlbumId}/tracks/?output=jsonp&callback=?`)
   .then((res) => {
@@ -52,6 +54,24 @@ M.getTraklist = function (soundtrack) {
   });
 };
 
+M.musicbrainz2DeezerAlbum = function(soundtrack) {
+  console.log("musicbrainz2DeezerAlbum");
+  console.log(soundtrack);
+  let uri = '//api.deezer.com/search/album?output=jsonp&callback=?';
+  uri += `&q=album:"${encodeURIComponent(soundtrack.title)}"`;
+  uri += ` label:"${encodeURIComponent(soundtrack.musicLabel)}"`;
+
+  // if (film.composer && film.composer.label) {
+  //     uri += `%20artist:"${encodeURIComponent(film.composer.label)}"`;
+  // }
+
+  return $.getJSON(uri).then((res) => {
+    const album = get(res, 'data', 0);
+    if (!album) { return;}
+
+    soundtrack.deezerAlbumId = album.id;
+  });
+};
 
 M.musicbrainz2DeezerTrack = function(track, album) {
   let params = {
@@ -63,20 +83,28 @@ M.musicbrainz2DeezerTrack = function(track, album) {
     dur_max: Math.round(track.length / 1000 * 1.1),
   };
   params = _.pairs(params).map(kv => `${kv[0]}:"${kv[1]}"`).join(' ');
-  console.log(params);
   return $.getJSON(`//api.deezer.com/search/track/?output=jsonp&callback=?&strict=on&q=${params}`)
   .then((res) => {
-    console.log('Deezer Track');
-    console.log(res);
     const deezerTrack = res.data[0];
-    track.deezerId = deezerTrack.id;
-    track.deezer = deezerTrack;
+    if (deezerTrack) {
+      track.deezerId = deezerTrack.id;
+      track.deezer = deezerTrack;
+    } else {
+      console.info(`Track: ${track.title} not found`);
+    }
   }).catch(res => console.log(res));
+};
+
+
+M.getTracksId = function(album) {
+  const toFind = album.tracks.filter(track => !track.deezerId);
+  return Promise.all(toFind.map(track => M.musicbrainz2DeezerTrack(track, album)));
 };
 
 M.getSoundtracks = function (movie) {
   return AsyncPromise.series(movie.soundtracks,
-    (album) => AsyncPromise.series(album.tracks, track => M.musicbrainz2DeezerTrack(track, album)))
+    // (album) => AsyncPromise.series(album.tracks, track => M.musicbrainz2DeezerTrack(track, album)))
+    M.musicbrainz2DeezerAlbum)
   .then(() => movie);
 
   // return M.getAlbumId(movie);

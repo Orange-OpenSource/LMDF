@@ -15,7 +15,13 @@ module.exports.series = function (iterable, callback, self) {
   }));
 };
 
-module.exports.find = function (iterable, predicate) {
+const waitPromise = function (period) {
+  return new Promise((resolve, reject) => {
+    setTimeout(resolve, period);
+  });
+};
+
+module.exports.find = function (iterable, predicate, period) {
   const recursive = (list) => {
     const current = list.shift();
     if (current === undefined) { return Promise.resolve(undefined); }
@@ -23,7 +29,7 @@ module.exports.find = function (iterable, predicate) {
     return predicate(current)
     .then((res) => {
       if (res === false) {
-        return recursive(list);
+        return waitPromise(period).then(() => { recursive(list)});
       } else {
         return res;
       }

@@ -51,6 +51,25 @@ module.exports = Movie = CozyModel.extend({
       return this._fetchMusic();
     }
   },
+
+  getDeezerIds: function() {
+    const soundtracks = this.get('soundtracks');
+    if (soundtracks && soundtracks[0]) {
+      // TODO: handle only the first one now.
+      return Deezer.getTracksId(soundtracks[0])
+      .then((changes) => {
+        if (changes && changes.length > 0) {
+          this.set('soundtracks', soundtracks);
+          return this.save();
+        }
+      })
+      .then(() => {
+        return soundtracks[0].tracks.map(track => track.deezerId);
+      });
+    } else {
+      return Promise.resolve([]);
+    }
+  },
 });
 
 Movie.fromWDSuggestionMovie = function (wdSuggestion) {

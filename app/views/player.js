@@ -8,14 +8,21 @@ module.exports = Mn.View.extend({
 
   initialize: function () {
     this.listenTo(app, 'play:album', this.playAlbum);
+    this.listenTo(app, 'play:tracks', this.playTracks);
   },
 
   playAlbum: function (album) {
+    console.log('truc');
+    console.log(album);
     if (album.deezerAlbumId) {
       this.setDeezerPlay(album.deezerAlbumId, 'album');
     } else {
       return app.trigger('error', "Pas d'ID deezer");
     }
+  },
+
+  playTracks: function(tracksId) {
+    this.setDeezerPlay(tracksId.join(','), 'tracks');
   },
 
   setDeezerPlay: function (id, type) {

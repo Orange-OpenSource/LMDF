@@ -7,6 +7,7 @@ M.getMovieData = function (wikidataId) {
       ?genre ?genreLabel ?publicationDate ?duration ?director ?directorLabel
       ?musicBrainzRGId ?imdbId ?countryOfOrigin
       ?countryOfOriginLabel ?countryOfOriginLanguageCode
+      ?soundtrackLabel
     WHERE {
      wd:${wikidataId} wdt:P31/wdt:P279* wd:Q11424;
         rdfs:label ?label.
@@ -24,6 +25,12 @@ M.getMovieData = function (wikidataId) {
     OPTIONAL { wd:${wikidataId} wdt:P577 ?publicationDate. }
     OPTIONAL { wd:${wikidataId} wdt:P2047 ?duration. }
     OPTIONAL { wd:${wikidataId} wdt:P57 ?director. }
+    OPTIONAL {
+      wd:${wikidataId} wdt:P406 ?soundtrackAlbum.
+      ?soundtrackAlbum wdt:P436 ?musicBrainzRGId.
+      ?soundtrackAlbum rdfs:label ?soundtrackLabel.
+    }
+
     OPTIONAL { wd:${wikidataId} wdt:P436 ?musicBrainzRGId. }
     OPTIONAL { wd:${wikidataId} wdt:P345 ?imdbId. }
     OPTIONAL {
