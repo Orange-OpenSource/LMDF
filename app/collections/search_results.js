@@ -26,9 +26,14 @@ Backbone.Collection.extend({
       return movie;
     }).catch((err) => {
       const msg = `Erreur à la récupération des données pour le film ${wdSuggestion.id}`;
-      console.error(msg);
-      console.error(err);
-      // Fail silently
+      if (err.message === 'this ID is not a movie') {
+        // Fail silently and quitely
+        console.info(`Cette entité ${wdSuggestion.id} n'est pas un film.`)
+      } else {
+        // Fail silently
+        console.error(msg);
+        console.error(err);
+      }
     });
   },
 

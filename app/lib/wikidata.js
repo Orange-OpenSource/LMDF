@@ -5,14 +5,22 @@ const M = {};
 M.getMovieData = function (wikidataId) {
   const sparql = `SELECT ?label ?wikiLink ?originalTitle ?composer ?composerLabel
       ?genre ?genreLabel ?publicationDate ?duration ?director ?directorLabel
-      ?musicBrainzRGId ?imdbId ?countryOfOrigin ?countryOfOriginLabel
+      ?musicBrainzRGId ?imdbId ?countryOfOrigin
+      ?countryOfOriginLabel ?countryOfOriginLanguageCode
     WHERE {
      wd:${wikidataId} wdt:P31/wdt:P279* wd:Q11424;
-    rdfs:label ?label.
+        rdfs:label ?label.
+
     OPTIONAL { wd:${wikidataId} wdt:P1476 ?originalTitle. }
     OPTIONAL { wd:${wikidataId} wdt:P86 ?composer. }
     OPTIONAL { wd:${wikidataId} wdt:P136 ?genre. }
+    FILTER NOT EXISTS { wd:${wikidataId} wdt:P136/wdt:P279* wd:Q291. }
     OPTIONAL { wd:${wikidataId} wdt:P495 ?countryOfOrigin. }
+    OPTIONAL {
+      wd:${wikidataId} wdt:P495 ?_country.
+      ?_country wdt:P37 ?_language.
+      ?_language wdt:P218 ?countryOfOriginLanguageCode.
+    }
     OPTIONAL { wd:${wikidataId} wdt:P577 ?publicationDate. }
     OPTIONAL { wd:${wikidataId} wdt:P2047 ?duration. }
     OPTIONAL { wd:${wikidataId} wdt:P57 ?director. }
@@ -33,6 +41,8 @@ M.getMovieData = function (wikidataId) {
   return $.getJSON(wdk.sparqlQuery(sparql))
   .then(wdk.simplifySparqlResults)
   .then((movies) => {
+    if (!movies || movies.length === 0) { throw new Error('this ID is not a movie');}
+
     movies[0].wikidataId = wikidataId;
     return movies[0];
   });
@@ -83,8 +93,26 @@ M.getMovieById = function (wikidataId) {
   return M.getMovieData(wikidataId)
   .then(M.getPoster)
   .then(M.getSynopsis);
+  ;
 };
 
+
+M.prefetchMovieTitle = function (lastMod) {
+  const sparql = `SELECT ?item ?itemLabel ?imdbId WHERE {
+  ?item wdt:P31/wdt:P279* wd:Q11424;
+    wdt:P345 ?imdbId;
+    schema:dateModified ?date;
+    rdfs:label ?itemLabel.
+
+  FILTER langMatches(lang(?itemLabel),'fr')
+  FILTER (?date > "${lastMod}"^^xsd:dateTime)
+
+  }
+  `;
+  return $.getJSON(wdk.sparqlQuery(sparql))
+  .then(wdk.simplifySparqlResults)
+  .then(console.log.bind(console));
+};
 
 module.exports = M;
 

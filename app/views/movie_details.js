@@ -25,6 +25,10 @@ module.exports = Mn.View.extend({
     'click .close': 'details:close',
   },
 
+  behaviors: {
+    Destroy: {},
+  },
+
   serializeData: function () {
     const json = this.model.toJSON();
     json.title = this.model.getTitle();
