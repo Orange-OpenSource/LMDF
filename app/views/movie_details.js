@@ -46,7 +46,7 @@ module.exports = Mn.View.extend({
     this.model.save();
   },
 
-  playSoundtrack: function() {
+  playSoundtrack: function () {
     // TODO: initialize spinner !
 
     // initialize player
@@ -55,7 +55,7 @@ module.exports = Mn.View.extend({
     this.model.getDeezerIds()
     // launch music.
     .then((deezerIds) => {
-        app.trigger('play:tracks', deezerIds);
+      app.trigger('play:tracks', deezerIds);
     });
   },
 });

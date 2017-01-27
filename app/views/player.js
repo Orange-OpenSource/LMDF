@@ -13,8 +13,6 @@ module.exports = Mn.View.extend({
   },
 
   playAlbum: function (album) {
-    console.log('truc');
-    console.log(album);
     if (album.deezerAlbumId) {
       this.setDeezerPlay(album.deezerAlbumId, 'album');
     } else {
@@ -22,9 +20,7 @@ module.exports = Mn.View.extend({
     }
   },
 
-  playTracks: function(tracksId) {
-    console.log('machin');
-    console.log(tracksId);
+  playTracks: function (tracksId) {
     this.setDeezerPlay(tracksId.join(','), 'tracks');
   },
 

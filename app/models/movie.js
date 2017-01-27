@@ -27,7 +27,7 @@ module.exports = Movie = CozyModel.extend({
     this.set('viewed', viewed);
   },
 
-  _fetchMusic: function() {
+  _fetchMusic: function () {
     const attrs = this.attributes;
     return Musicbrainz.getSoundtrack(attrs)
     // .then(Deezer.getSoundtracks)
@@ -39,29 +39,28 @@ module.exports = Movie = CozyModel.extend({
     });
   },
 
-  getSoundtrack: function() {
+  getSoundtrack: function () {
     const soundtrack = this.get('soundtrack');
     return Promise.resolve(
       soundtrack.tracks ? soundtrack : this._fetchMusic());
   },
 
-  getDeezerIds: function() {
+  getDeezerIds: function () {
     const soundtrack = this.get('soundtrack');
-    if (soundtrack) {
-      // TODO: handle only the first one now.
-      return Deezer.getTracksId(soundtrack)
-      .then((changes) => {
-        if (changes && changes.length > 0) {
-          this.set('soundtrack', soundtrack);
-          // return this.save();
-        }
-      })
-      .then(() => {
-        return soundtrack.tracks.map(track => track.deezerId);
-      });
-    } else {
+    if (!soundtrack) {
       return Promise.resolve([]);
     }
+    // TODO: handle only the first one now.
+    return Deezer.getTracksId(soundtrack)
+    .then((changes) => {
+      if (changes && changes.length > 0) {
+        this.set('soundtrack', soundtrack);
+        // return this.save();
+      }
+    })
+    .then(() => {
+      return soundtrack.tracks.map(track => track.deezerId);
+    });
   },
 });
 

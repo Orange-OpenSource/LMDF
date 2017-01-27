@@ -32,11 +32,11 @@ M.getPlayList = function (movie) {
   });
 };
 
-M._getReleaseGroupById = function(rgId) {
+M._getReleaseGroupById = function (rgId) {
   return $.getJSON(`//musicbrainz.org/ws/2/release-group/${rgId}/?fmt=json&inc=url-rels+releases&status=official`);
 };
 
-M._findReleaseGroup = function(movie) {
+M._findReleaseGroup = function (movie) {
   // Find the release group with the same imdbId.
   const title = movie.soundtrack.label || movie.originalTitle;
 
@@ -53,40 +53,37 @@ M._findReleaseGroup = function(movie) {
     return res['release-groups'].sort((a, b) => {
       if (a.score > 90 || b.score > 90) {
         return (a.score === b.score) ? b.count - a.count : b.score - a.score;
-      } else {
-        // sort with more releases first, then the best title match first,
-        return (a.count === b.count) ? b.score - a.score : b.count - a.count;
       }
+
+      // sort with more releases first, then the best title match first,
+      return (a.count === b.count) ? b.score - a.score : b.count - a.count;
     });
   })
-  .then(d => { console.log(d); return d; })
   .then((releaseGroups) => { // Look in each releasegroup, the one with imdbid.
     return promiseFind(releaseGroups, (releaseGroup) => {
       return M._getReleaseGroupById(releaseGroup.id)
       .then((releaseGroup) => {
-        const withSameIMDBId = releaseGroup.relations.some(relation => {
-          return relation.url.resource === `http://www.imdb.com/title/${movie.imdbId}/`;});
+        const withSameIMDBId = releaseGroup.relations.some(
+          relation => relation.url.resource === `http://www.imdb.com/title/${movie.imdbId}/`);
 
         if (withSameIMDBId) {
           return releaseGroup;
-        } else {
-          return false;
         }
+        return false;
       });
     }, 1000);
   });
 };
 
 M.getBestRecording = function (movie) {
-  return Promise.resolve()//() => {
+  return Promise.resolve()
   .then(() => {
     if (movie.soundtrack.musicbrainzReleaseGroupId) {
       return M._getReleaseGroupById(movie.soundtrack.musicbrainzReleaseGroupId);
-    } else {
-      return M._findReleaseGroup(movie);
     }
+
+    return M._findReleaseGroup(movie);
   })
-  .then(d => { console.log(d); return d; })
   .then((releaseGroup) => {
     movie.soundtrack = $.extend(movie.soundtrack, {
       musicbrainzReleaseGroupId: releaseGroup.id,
@@ -96,31 +93,21 @@ M.getBestRecording = function (movie) {
   })
   .then((releaseGroup) => { // choose oldest release, and or right lang.
     const releases = releaseGroup.releases.sort((a, b) => {
-      const extractYear = (releaseGroup) => {
-        const date = a.date || a['first-release-date'];
-        if (date) {
-          return a.date.slice(0, 4);
-        } else {
-          return new Date().getFullYear().toString();
-        }
-      }
+      const extractYear = (rg) => {
+        const date = rg.date || rg['first-release-date'];
+        return date ? date.slice(0, 4) : new Date().getFullYear().toString();
+      };
       const yearA = extractYear(a);
       const yearB = extractYear(b);
-      if (yearA < yearB) {
-        return -1;
-      } else if (yearA > yearB) {
-        return 1;
-      } else {
-        if (a.country === 'FR') {
-          return -1
-        } else {
-          return 1;
-        }
+
+      if (yearA === yearB) {
+        return (a.country === 'FR') ? -1 : 1;
       }
+
+      return (yearA < yearB) ? -1 : 1;
     });
     return releases[0];
   })
-  .then(d => { console.log(d); return d; })
   .then((release) => { // get recordings for the specified group.
     return $.getJSON(`//musicbrainz.org/ws/2/release/${release.id}/?fmt=json&inc=recordings+artist-credits+labels`)
     .then((res) => {

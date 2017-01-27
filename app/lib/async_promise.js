@@ -16,7 +16,7 @@ module.exports.series = function (iterable, callback, self) {
 };
 
 const waitPromise = function (period) {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => { // this promise always resolve :)
     setTimeout(resolve, period);
   });
 };
@@ -29,10 +29,10 @@ module.exports.find = function (iterable, predicate, period) {
     return predicate(current)
     .then((res) => {
       if (res === false) {
-        return waitPromise(period).then(() => { recursive(list)});
-      } else {
-        return res;
+        return waitPromise(period).then(() => recursive(list));
       }
+
+      return res;
     });
   };
 

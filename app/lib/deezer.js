@@ -1,7 +1,6 @@
 'use strict';
 
 const WalkTreeUtils = require('./walktree_utils');
-const AsyncPromise = require('./async_promise');
 
 const get = WalkTreeUtils.get;
 
@@ -46,7 +45,6 @@ M.getAlbumId = function (movie) {
 };
 
 
-
 M.getTraklist = function (soundtrack) {
   return $.getJSON(`//api.deezer.com/album/${soundtrack.deezerAlbumId}/tracks/?output=jsonp&callback=?`)
   .then((res) => {
@@ -54,9 +52,8 @@ M.getTraklist = function (soundtrack) {
   });
 };
 
-M.musicbrainz2DeezerAlbum = function(soundtrack) {
-  console.log("musicbrainz2DeezerAlbum");
-  console.log(soundtrack);
+
+M.musicbrainz2DeezerAlbum = function (soundtrack) {
   let uri = '//api.deezer.com/search/album?output=jsonp&callback=?';
   uri += `&q=album:"${encodeURIComponent(soundtrack.title)}"`;
   uri += ` label:"${encodeURIComponent(soundtrack.musicLabel)}"`;
@@ -67,17 +64,17 @@ M.musicbrainz2DeezerAlbum = function(soundtrack) {
 
   return $.getJSON(uri).then((res) => {
     const album = get(res, 'data', 0);
-    if (!album) { return;}
+    if (!album) { return; }
 
     soundtrack.deezerAlbumId = album.id;
   });
 };
 
-M.musicbrainz2DeezerTrack = function(track, album) {
+M.musicbrainz2DeezerTrack = function (track, album) {
   let params = {
     album: album.title,
     track: track.title,
-    // artist: track.artist,
+      // artist: track.artist,
     dur_min: Math.round(track.length / 1000 * 0.9),
     dur_max: Math.round(track.length / 1000 * 1.1),
   };
@@ -87,7 +84,7 @@ M.musicbrainz2DeezerTrack = function(track, album) {
     const deezerTrack = res.data[0];
     if (deezerTrack) {
       track.deezerId = deezerTrack.id;
-      //track.deezer = deezerTrack;
+      // track.deezer = deezerTrack;
     } else {
       console.info(`Track: ${track.title} not found`);
     }
@@ -95,7 +92,7 @@ M.musicbrainz2DeezerTrack = function(track, album) {
 };
 
 
-M.getTracksId = function(album) {
+M.getTracksId = function (album) {
   const toFind = album.tracks.filter(track => !track.deezerId);
   return Promise.all(toFind.map(track => M.musicbrainz2DeezerTrack(track, album)));
 };

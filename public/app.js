@@ -255,7 +255,7 @@ module.exports = Backbone.Collection.extend({
   model: Movie,
   docType: Movie.prototype.docType.toLowerCase(),
   modelId: attrs => attrs.wikidataId,
-  comparator: movie => movie.getTitle(),
+  comparator: 'label',
 
   sync: function (method, collection, options) {
     if (method !== 'read') {
@@ -363,9 +363,14 @@ Backbone.Collection.extend({
       return movie;
     }).catch((err) => {
       const msg = `Erreur à la récupération des données pour le film ${wdSuggestion.id}`;
-      console.error(msg);
-      console.error(err);
-      // Fail silently
+      if (err.message === 'this ID is not a movie') {
+        // Fail silently and quitely
+        console.info(`Cette entité ${wdSuggestion.id} n'est pas un film.`);
+      } else {
+        // Fail silently
+        console.error(msg);
+        console.error(err);
+      }
     });
   },
 
@@ -385,7 +390,7 @@ require.register("lib/appname_version.js", function(exports, require, module) {
 
 const name = 'lamusiquedemesfilms';
 // use brunch-version plugin to populate these.
-const version = '0.0.2';
+const version = '0.2.0';
 
 module.exports = `${name}-${version}`;
 
@@ -407,6 +412,30 @@ module.exports.series = function (iterable, callback, self) {
     results.push(res);
     resolve(results.slice(1));
   }));
+};
+
+const waitPromise = function (period) {
+  return new Promise((resolve) => { // this promise always resolve :)
+    setTimeout(resolve, period);
+  });
+};
+
+module.exports.find = function (iterable, predicate, period) {
+  const recursive = (list) => {
+    const current = list.shift();
+    if (current === undefined) { return Promise.resolve(undefined); }
+
+    return predicate(current)
+    .then((res) => {
+      if (res === false) {
+        return waitPromise(period).then(() => recursive(list));
+      }
+
+      return res;
+    });
+  };
+
+  return recursive(iterable.slice());
 };
 
 module.exports.backbone2Promise = function (obj, method, options) {
@@ -523,6 +552,7 @@ M.getAlbumId = function (movie) {
   });
 };
 
+
 M.getTraklist = function (soundtrack) {
   return $.getJSON(`//api.deezer.com/album/${soundtrack.deezerAlbumId}/tracks/?output=jsonp&callback=?`)
   .then((res) => {
@@ -531,11 +561,53 @@ M.getTraklist = function (soundtrack) {
 };
 
 
-M.getSoundtracks = function (movie) {
-  // return AsyncPromise.series(movie.soundtracks, M.musicbrainzToDeezer)
-  // .then(() => movie);
+M.musicbrainz2DeezerAlbum = function (soundtrack) {
+  let uri = '//api.deezer.com/search/album?output=jsonp&callback=?';
+  uri += `&q=album:"${encodeURIComponent(soundtrack.title)}"`;
+  uri += ` label:"${encodeURIComponent(soundtrack.musicLabel)}"`;
 
-  return M.getAlbumId(movie);
+  // if (film.composer && film.composer.label) {
+  //     uri += `%20artist:"${encodeURIComponent(film.composer.label)}"`;
+  // }
+
+  return $.getJSON(uri).then((res) => {
+    const album = get(res, 'data', 0);
+    if (!album) { return; }
+
+    soundtrack.deezerAlbumId = album.id;
+  });
+};
+
+M.musicbrainz2DeezerTrack = function (track, album) {
+  let params = {
+    album: album.title,
+    track: track.title,
+      // artist: track.artist,
+    dur_min: Math.round(track.length / 1000 * 0.9),
+    dur_max: Math.round(track.length / 1000 * 1.1),
+  };
+  params = _.pairs(params).map(kv => `${kv[0]}:"${kv[1]}"`).join(' ');
+  return $.getJSON(`//api.deezer.com/search/track/?output=jsonp&callback=?&strict=on&q=${params}`)
+  .then((res) => {
+    const deezerTrack = res.data[0];
+    if (deezerTrack) {
+      track.deezerId = deezerTrack.id;
+      // track.deezer = deezerTrack;
+    } else {
+      console.info(`Track: ${track.title} not found`);
+    }
+  }).catch(res => console.log(res));
+};
+
+
+M.getTracksId = function (album) {
+  const toFind = album.tracks.filter(track => !track.deezerId);
+  return Promise.all(toFind.map(track => M.musicbrainz2DeezerTrack(track, album)));
+};
+
+M.getSoundtracks = function (movie) {
+  return M.musicbrainz2DeezerAlbum(movie.soundtrack)
+  .then(() => movie);
 };
 
 module.exports = M;
@@ -545,9 +617,11 @@ module.exports = M;
 require.register("lib/musicbrainz.js", function(exports, require, module) {
 'use_strict';
 
-const promiseSeries = require('./async_promise').series;
+const AsyncPromise = require('./async_promise');
 const WalkTreeUtils = require('./walktree_utils');
 
+const promiseSeries = AsyncPromise.series;
+const promiseFind = AsyncPromise.find;
 const get = WalkTreeUtils.get;
 
 
@@ -564,15 +638,113 @@ M.getPlayList = function (movie) {
 
   return $.getJSON(uri)
   .then((res) => {
+    console.log(res);
     const filtered = res['release-groups'].filter(item => item.score > 90);
     movie.soundtracks = filtered.map(rg => ({
       title: rg.title,
       musicbrainzReleaseGroupId: rg.id,
-      artist: get(rg, 'artist-credits', 0, 'name'),
+      artist: get(rg, 'artist-credits', 0, 'artist', 'name'),
     }));
     return movie;
   });
 };
+
+M._getReleaseGroupById = function (rgId) {
+  return $.getJSON(`//musicbrainz.org/ws/2/release-group/${rgId}/?fmt=json&inc=url-rels+releases&status=official`);
+};
+
+M._findReleaseGroup = function (movie) {
+  // Find the release group with the same imdbId.
+  const title = movie.soundtrack.label || movie.originalTitle;
+
+  let uri = '//musicbrainz.org/ws/2/release-group/?fmt=json&query=';
+  uri += `release:${encodeURIComponent(title)}%20AND%20type:soundtrack`;
+
+  // Doesnt work : always empty result...
+  // if (movie.composer && movie.composer.label) {
+  //     uri += `%20AND%20artistname:${movie.composer.label}`;
+  // }
+
+  return $.getJSON(uri)
+  .then((res) => { // highlight best release-groups candidates.
+    return res['release-groups'].sort((a, b) => {
+      if (a.score > 90 || b.score > 90) {
+        return (a.score === b.score) ? b.count - a.count : b.score - a.score;
+      }
+
+      // sort with more releases first, then the best title match first,
+      return (a.count === b.count) ? b.score - a.score : b.count - a.count;
+    });
+  })
+  .then((releaseGroups) => { // Look in each releasegroup, the one with imdbid.
+    return promiseFind(releaseGroups, (releaseGroup) => {
+      return M._getReleaseGroupById(releaseGroup.id)
+      .then((releaseGroup) => {
+        const withSameIMDBId = releaseGroup.relations.some(
+          relation => relation.url.resource === `http://www.imdb.com/title/${movie.imdbId}/`);
+
+        if (withSameIMDBId) {
+          return releaseGroup;
+        }
+        return false;
+      });
+    }, 1000);
+  });
+};
+
+M.getBestRecording = function (movie) {
+  return Promise.resolve()
+  .then(() => {
+    if (movie.soundtrack.musicbrainzReleaseGroupId) {
+      return M._getReleaseGroupById(movie.soundtrack.musicbrainzReleaseGroupId);
+    }
+
+    return M._findReleaseGroup(movie);
+  })
+  .then((releaseGroup) => {
+    movie.soundtrack = $.extend(movie.soundtrack, {
+      musicbrainzReleaseGroupId: releaseGroup.id,
+      artist: get(releaseGroup, 'artist-credits', 0, 'artist', 'name'),
+    });
+    return releaseGroup;
+  })
+  .then((releaseGroup) => { // choose oldest release, and or right lang.
+    const releases = releaseGroup.releases.sort((a, b) => {
+      const extractYear = (rg) => {
+        const date = rg.date || rg['first-release-date'];
+        return date ? date.slice(0, 4) : new Date().getFullYear().toString();
+      };
+      const yearA = extractYear(a);
+      const yearB = extractYear(b);
+
+      if (yearA === yearB) {
+        return (a.country === 'FR') ? -1 : 1;
+      }
+
+      return (yearA < yearB) ? -1 : 1;
+    });
+    return releases[0];
+  })
+  .then((release) => { // get recordings for the specified group.
+    return $.getJSON(`//musicbrainz.org/ws/2/release/${release.id}/?fmt=json&inc=recordings+artist-credits+labels`)
+    .then((res) => {
+      const soundtrack = movie.soundtrack;
+      let tracks = get(res, 'media', 0, 'tracks');
+      tracks = tracks.map(track => ({
+        artist: get(track, 'artist-credit', 0, 'artist', 'name'),
+        number: track.number,
+        musicbrainzId: track.id,
+        length: track.length,
+        title: track.title,
+      }));
+      soundtrack.tracks = tracks;
+      soundtrack.title = res.title;
+      soundtrack.musicLabel = get(res, 'label-info', 0, 'label', 'name');
+    });
+  })
+  .then(() => movie);
+};
+
 
 M.getRecordings = function (movie) {
   return promiseSeries(movie.soundtracks, M.getRecording)
@@ -591,11 +763,10 @@ M.getRecording = function (releaseGroup) {
 };
 
 
-M.getSoundtracks = function (movie) {
-  return Promise.resolve(
-    (movie.soundtracks && movie.soundtracks[0] &&
-    movie.soundtracks[0].musicbrainzReleaseGroupId) ? movie : M.getPlayList(movie)
-  ).then(M.getRecordings);
+M.getSoundtrack = function (movie) {
+  return M.getBestRecording(movie);
+  // return Promise.resolve(
+  //   movie.soundtrack.musicbrainzReleaseGroupId ? movie : M.getBestRecording(movie));
 };
 
 module.exports = M;
@@ -623,17 +794,31 @@ const M = {};
 M.getMovieData = function (wikidataId) {
   const sparql = `SELECT ?label ?wikiLink ?originalTitle ?composer ?composerLabel
       ?genre ?genreLabel ?publicationDate ?duration ?director ?directorLabel
-      ?musicBrainzRGId ?imdbId ?countryOfOrigin ?countryOfOriginLabel
+      ?musicBrainzRGId ?imdbId ?countryOfOrigin
+      ?countryOfOriginLabel ?countryOfOriginLanguageCode
+      ?soundtrack
     WHERE {
      wd:${wikidataId} wdt:P31/wdt:P279* wd:Q11424;
-    rdfs:label ?label.
+        rdfs:label ?label.
+
     OPTIONAL { wd:${wikidataId} wdt:P1476 ?originalTitle. }
     OPTIONAL { wd:${wikidataId} wdt:P86 ?composer. }
     OPTIONAL { wd:${wikidataId} wdt:P136 ?genre. }
+    FILTER NOT EXISTS { wd:${wikidataId} wdt:P136/wdt:P279* wd:Q291. }
     OPTIONAL { wd:${wikidataId} wdt:P495 ?countryOfOrigin. }
+    OPTIONAL {
+      wd:${wikidataId} wdt:P495 ?_country.
+      ?_country wdt:P37 ?_language.
+      ?_language wdt:P218 ?countryOfOriginLanguageCode.
+    }
     OPTIONAL { wd:${wikidataId} wdt:P577 ?publicationDate. }
     OPTIONAL { wd:${wikidataId} wdt:P2047 ?duration. }
     OPTIONAL { wd:${wikidataId} wdt:P57 ?director. }
+    OPTIONAL {
+      wd:${wikidataId} wdt:P406 ?soundtrackAlbum.
+      ?soundtrackAlbum wdt:P436 ?musicBrainzRGId.
+    }
+
     OPTIONAL { wd:${wikidataId} wdt:P436 ?musicBrainzRGId. }
     OPTIONAL { wd:${wikidataId} wdt:P345 ?imdbId. }
     OPTIONAL {
@@ -651,8 +836,24 @@ M.getMovieData = function (wikidataId) {
   return $.getJSON(wdk.sparqlQuery(sparql))
   .then(wdk.simplifySparqlResults)
   .then((movies) => {
-    movies[0].wikidataId = wikidataId;
-    return movies[0];
+    if (!movies || movies.length === 0) { throw new Error('this ID is not a movie'); }
+
+    const movie = movies[0];
+
+    if (movie.countryOfOriginLanguageCode && movie.countryOfOrigin) {
+      movie.countryOfOrigin.languageCode = movie.countryOfOriginLanguageCode;
+      delete movie.countryOfOriginLanguageCode;
+    }
+
+    movie.soundtrack = $.extend({
+      musicbrainzReleaseGroupId: movie.musicBrainzRGId,
+      artist: movie.composer.label,
+    }, movie.soundtrack);
+    delete movie.composer;
+    delete movie.musicBrainzRGId;
+
+    movie.wikidataId = wikidataId;
+    return movie;
   });
 };
 
@@ -703,6 +904,23 @@ M.getMovieById = function (wikidataId) {
   .then(M.getSynopsis);
 };
 
+
+M.prefetchMovieTitle = function (lastMod) {
+  const sparql = `SELECT ?item ?itemLabel ?imdbId WHERE {
+  ?item wdt:P31/wdt:P279* wd:Q11424;
+    wdt:P345 ?imdbId;
+    schema:dateModified ?date;
+    rdfs:label ?itemLabel.
+
+  FILTER langMatches(lang(?itemLabel),'fr')
+  FILTER (?date > "${lastMod}"^^xsd:dateTime)
+
+  }
+  `;
+  return $.getJSON(wdk.sparqlQuery(sparql))
+  .then(wdk.simplifySparqlResults)
+  .then(console.log.bind(console));
+};
 
 module.exports = M;
 
@@ -832,15 +1050,13 @@ const CozyModel = require('../lib/backbone_cozymodel');
 const Wikidata = require('../lib/wikidata');
 const WikidataSuggestions = require('../lib/wikidata_suggestions_film');
 const Deezer = require('../lib/deezer');
+const Musicbrainz = require('../lib/musicbrainz');
+
 
 let Movie = null;
 
 module.exports = Movie = CozyModel.extend({
-  docType: 'Movie'.toLowerCase(),
-
-  getTitle: function () {
-    return this.label;
-  },
+  docType: 'movie',
 
   setViewed: function (videoStream) {
     const viewed = this.get('viewed') || [];
@@ -856,12 +1072,46 @@ module.exports = Movie = CozyModel.extend({
     });
     this.set('viewed', viewed);
   },
+
+  _fetchMusic: function () {
+    const attrs = this.attributes;
+    return Musicbrainz.getSoundtrack(attrs)
+    // .then(Deezer.getSoundtracks)
+    .then(() => {
+      console.log('after getSoundtracks');
+      console.log(attrs);
+      this.set(attrs);
+      return attrs.soundtrack;
+    });
+  },
+
+  getSoundtrack: function () {
+    const soundtrack = this.get('soundtrack');
+    return Promise.resolve(
+      soundtrack.tracks ? soundtrack : this._fetchMusic());
+  },
+
+  getDeezerIds: function () {
+    const soundtrack = this.get('soundtrack');
+    if (!soundtrack) {
+      return Promise.resolve([]);
+    }
+    // TODO: handle only the first one now.
+    return Deezer.getTracksId(soundtrack)
+    .then((changes) => {
+      if (changes && changes.length > 0) {
+        this.set('soundtrack', soundtrack);
+        // return this.save();
+      }
+    })
+    .then(() => {
+      return soundtrack.tracks.map(track => track.deezerId);
+    });
+  },
 });
 
 Movie.fromWDSuggestionMovie = function (wdSuggestion) {
   return Wikidata.getMovieById(wdSuggestion.id)
-  // .then(Musicbrainz.getSoundtracks) // TODO: restore musicbrainz.
-  .then(Deezer.getSoundtracks)
   .then(attrs => new Movie(attrs))
   ;
 };
@@ -918,6 +1168,18 @@ module.exports = Backbone.Router.extend({
   routes: {
     '': 'index',
   },
+});
+
+});
+
+require.register("views/album.js", function(exports, require, module) {
+'use-strict';
+
+const template = require('./templates/album');
+
+module.exports = Mn.View.extend({
+  template: template,
+  className: 'album',
 });
 
 });
@@ -1157,36 +1419,45 @@ module.exports = Mn.View.extend({
 require.register("views/movie_details.js", function(exports, require, module) {
 'use-strict';
 
-const PlayerView = require('views/player');
+const PlayerView = require('./player');
+const AlbumView = require('./album');
 const template = require('./templates/movie_details');
+
 
 module.exports = Mn.View.extend({
   template: template,
 
   regions: {
-    player: '.player',
+    player: {
+      el: '.player',
+      replaceElement: true,
+    },
+    soundtrack: {
+      el: '.soundtrack > .album',
+      replaceElement: true,
+    },
   },
 
   events: {
     'click #save': 'saveMovie',
+    'click #play': 'playSoundtrack',
   },
 
   triggers: {
     'click .close': 'details:close',
   },
 
-  serializeData: function () {
-    const json = this.model.toJSON();
-    json.title = this.model.getTitle();
-    return json;
+  behaviors: {
+    Destroy: {},
   },
 
   onRender: function () {
-    this.showChildView('player', new PlayerView());
-  },
-
-  onDomRefresh: function () {
-    this.playSoundtrack();
+    // TODO : some spinners !
+    console.log(this.model.attributes);
+    this.model.getSoundtrack()
+    .then((soundtrack) => {
+      return this.showChildView('soundtrack', new AlbumView({ model: new Backbone.Model(soundtrack), }));
+    });
   },
 
   saveMovie: function () {
@@ -1195,12 +1466,16 @@ module.exports = Mn.View.extend({
   },
 
   playSoundtrack: function () {
-    const soundtracks = this.model.get('soundtracks');
-    if (!soundtracks || soundtracks.length === 0) {
-      return app.trigger('error', 'Pas de bande originale');
-    }
+    // TODO: initialize spinner !
 
-    app.trigger('play:album', soundtracks[soundtracks.length - 1]);
+    // initialize player
+    this.showChildView('player', new PlayerView());
+    // Fetch deezer ids
+    this.model.getDeezerIds()
+    // launch music.
+    .then((deezerIds) => {
+      app.trigger('play:tracks', deezerIds);
+    });
   },
 });
 
@@ -1218,12 +1493,6 @@ module.exports = Mn.View.extend({
   events: {
     //eslint-disable-next-line
     'click': 'showDetails',
-  },
-
-  serializeData: function () {
-    const json = this.model.toJSON();
-    json.title = this.model.getTitle();
-    return json;
   },
 
   showDetails: function () {
@@ -1339,10 +1608,12 @@ const template = require('views/templates/player');
 
 module.exports = Mn.View.extend({
   tagName: 'div',
+  className: 'player',
   template: template,
 
   initialize: function () {
     this.listenTo(app, 'play:album', this.playAlbum);
+    this.listenTo(app, 'play:tracks', this.playTracks);
   },
 
   playAlbum: function (album) {
@@ -1353,13 +1624,17 @@ module.exports = Mn.View.extend({
     }
   },
 
+  playTracks: function (tracksId) {
+    this.setDeezerPlay(tracksId.join(','), 'tracks');
+  },
+
   setDeezerPlay: function (id, type) {
     const params = {
       format: 'classic',
-      autoplay: 'false',
+      autoplay: 'true',
       playlist: true,
       width: 600,
-      height: 350,
+      height: 60,
       color: '007FEB',
       layout: 'dark',
       size: 'medium',
@@ -1435,7 +1710,66 @@ module.exports = Mn.View.extend({
 
 });
 
-require.register("views/templates/app_layout.jade", function(exports, require, module) {
+require.register("views/soundtracks.js", function(exports, require, module) {
+'use strict';
+
+const AlbumView = require('./album');
+
+module.exports = Mn.CollectionView.extend({
+  tagName: 'ul',
+  // className: 'movielibrary',
+  childView: AlbumView,
+});
+
+});
+
+require.register("views/templates/album.jade", function(exports, require, module) {
+var __templateData = function template(locals) {
+var buf = [];
+var jade_mixins = {};
+var jade_interp;
+;var locals_for_with = (locals || {});(function (artist, title, tracks, undefined) {
+jade_mixins["displayTrack"] = jade_interp = function(track, idx){
+var block = (this && this.block), attributes = (this && this.attributes) || {};
+buf.push("<li><span class=\"title\">" + (jade.escape(null == (jade_interp = track.title) ? "" : jade_interp)) + "</span>&emsp;par&nbsp;<span class=\"artist\">" + (jade.escape(null == (jade_interp = track.artist) ? "" : jade_interp)) + "</span>&nbsp;<span class=\"length\">" + (jade.escape(null == (jade_interp = moment.utc(track.length).format('mm:ss')) ? "" : jade_interp)) + "</span>&nbsp;</li>");
+};
+buf.push("<div class=\"albuminfo\"><h3 class=\"title\">" + (jade.escape(null == (jade_interp = title) ? "" : jade_interp)) + "&nbsp;par&nbsp;<span class=\"artist\">" + (jade.escape(null == (jade_interp = artist) ? "" : jade_interp)) + "</span></h3></div><ol class=\"tracks\">");
+// iterate tracks
+;(function(){
+  var $$obj = tracks;
+  if ('number' == typeof $$obj.length) {
+
+    for (var idx = 0, $$l = $$obj.length; idx < $$l; idx++) {
+      var track = $$obj[idx];
+
+jade_mixins["displayTrack"](track, idx);
+    }
+
+  } else {
+    var $$l = 0;
+    for (var idx in $$obj) {
+      $$l++;      var track = $$obj[idx];
+
+jade_mixins["displayTrack"](track, idx);
+    }
+
+  }
+}).call(this);
+
+buf.push("</ol>");}.call(this,"artist" in locals_for_with?locals_for_with.artist:typeof artist!=="undefined"?artist:undefined,"title" in locals_for_with?locals_for_with.title:typeof title!=="undefined"?title:undefined,"tracks" in locals_for_with?locals_for_with.tracks:typeof tracks!=="undefined"?tracks:undefined,"undefined" in locals_for_with?locals_for_with.undefined:typeof undefined!=="undefined"?undefined:undefined));;return buf.join("");
+};
+if (typeof define === 'function' && define.amd) {
+  define([], function() {
+    return __templateData;
+  });
+} else if (typeof module === 'object' && module && module.exports) {
+  module.exports = __templateData;
+} else {
+  __templateData;
+}
+});
+
+;require.register("views/templates/app_layout.jade", function(exports, require, module) {
 var __templateData = function template(locals) {
 var buf = [];
 var jade_mixins = {};
@@ -1533,6 +1867,10 @@ if ( !id)
 {
 buf.push("<button id=\"save\">Ajouter à la bibliothèque</button>");
 }
+else
+{
+buf.push("<button class=\"delete\">Supprimer de la bibliothèque</button>");
+}
 buf.push("<div class=\"characteristics\"><b>");
 if ( genre)
 {
@@ -1561,7 +1899,7 @@ buf.push("— Vu le&nbsp;");
 var last = viewed[viewed.length - 1].timestamp
 buf.push(jade.escape(null == (jade_interp = moment(last).format('DD/MM/YYYY')) ? "" : jade_interp));
 }
-buf.push("</div><div class=\"synopsis\">" + (null == (jade_interp = synopsis) ? "" : jade_interp) + "</div></div></div><hr/><div class=\"soundtracks\"><h3>Musique associée</h3><div class=\"player\"></div></div><div class=\"close\"></div>");}.call(this,"countryOfOrigin" in locals_for_with?locals_for_with.countryOfOrigin:typeof countryOfOrigin!=="undefined"?countryOfOrigin:undefined,"director" in locals_for_with?locals_for_with.director:typeof director!=="undefined"?director:undefined,"duration" in locals_for_with?locals_for_with.duration:typeof duration!=="undefined"?duration:undefined,"genre" in locals_for_with?locals_for_with.genre:typeof genre!=="undefined"?genre:undefined,"id" in locals_for_with?locals_for_with.id:typeof id!=="undefined"?id:undefined,"label" in locals_for_with?locals_for_with.label:typeof label!=="undefined"?label:undefined,"posterUri" in locals_for_with?locals_for_with.posterUri:typeof posterUri!=="undefined"?posterUri:undefined,"publicationDate" in locals_for_with?locals_for_with.publicationDate:typeof publicationDate!=="undefined"?publicationDate:undefined,"synopsis" in locals_for_with?locals_for_with.synopsis:typeof synopsis!=="undefined"?synopsis:undefined,"viewed" in locals_for_with?locals_for_with.viewed:typeof viewed!=="undefined"?viewed:undefined));;return buf.join("");
+buf.push("</div><div class=\"synopsis\">" + (null == (jade_interp = synopsis) ? "" : jade_interp) + "</div></div></div><hr/><div class=\"soundtrack\"><h3>Musique associée</h3><div class=\"album\"></div><div class=\"player\"><button id=\"play\">Écouter la bande originale</button></div></div><div class=\"close\"></div>");}.call(this,"countryOfOrigin" in locals_for_with?locals_for_with.countryOfOrigin:typeof countryOfOrigin!=="undefined"?countryOfOrigin:undefined,"director" in locals_for_with?locals_for_with.director:typeof director!=="undefined"?director:undefined,"duration" in locals_for_with?locals_for_with.duration:typeof duration!=="undefined"?duration:undefined,"genre" in locals_for_with?locals_for_with.genre:typeof genre!=="undefined"?genre:undefined,"id" in locals_for_with?locals_for_with.id:typeof id!=="undefined"?id:undefined,"label" in locals_for_with?locals_for_with.label:typeof label!=="undefined"?label:undefined,"posterUri" in locals_for_with?locals_for_with.posterUri:typeof posterUri!=="undefined"?posterUri:undefined,"publicationDate" in locals_for_with?locals_for_with.publicationDate:typeof publicationDate!=="undefined"?publicationDate:undefined,"synopsis" in locals_for_with?locals_for_with.synopsis:typeof synopsis!=="undefined"?synopsis:undefined,"viewed" in locals_for_with?locals_for_with.viewed:typeof viewed!=="undefined"?viewed:undefined));;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {
@@ -1579,8 +1917,8 @@ var __templateData = function template(locals) {
 var buf = [];
 var jade_mixins = {};
 var jade_interp;
-;var locals_for_with = (locals || {});(function (posterUri, title) {
-buf.push("<div class=\"movieitem\"><img" + (jade.attr("src", posterUri, true, false)) + (jade.attr("title", title, true, false)) + "/></div>");}.call(this,"posterUri" in locals_for_with?locals_for_with.posterUri:typeof posterUri!=="undefined"?posterUri:undefined,"title" in locals_for_with?locals_for_with.title:typeof title!=="undefined"?title:undefined));;return buf.join("");
+;var locals_for_with = (locals || {});(function (label, posterUri) {
+buf.push("<div class=\"movieitem\"><img" + (jade.attr("src", posterUri, true, false)) + (jade.attr("title", label, true, false)) + "/></div>");}.call(this,"label" in locals_for_with?locals_for_with.label:typeof label!=="undefined"?label:undefined,"posterUri" in locals_for_with?locals_for_with.posterUri:typeof posterUri!=="undefined"?posterUri:undefined));;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {

@@ -47,7 +47,7 @@ M.getMovieData = function (wikidataId) {
   return $.getJSON(wdk.sparqlQuery(sparql))
   .then(wdk.simplifySparqlResults)
   .then((movies) => {
-    if (!movies || movies.length === 0) { throw new Error('this ID is not a movie');}
+    if (!movies || movies.length === 0) { throw new Error('this ID is not a movie'); }
 
     const movie = movies[0];
 
@@ -113,7 +113,6 @@ M.getMovieById = function (wikidataId) {
   return M.getMovieData(wikidataId)
   .then(M.getPoster)
   .then(M.getSynopsis);
-  ;
 };
 
 

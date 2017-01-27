@@ -28,7 +28,7 @@ Backbone.Collection.extend({
       const msg = `Erreur à la récupération des données pour le film ${wdSuggestion.id}`;
       if (err.message === 'this ID is not a movie') {
         // Fail silently and quitely
-        console.info(`Cette entité ${wdSuggestion.id} n'est pas un film.`)
+        console.info(`Cette entité ${wdSuggestion.id} n'est pas un film.`);
       } else {
         // Fail silently
         console.error(msg);
