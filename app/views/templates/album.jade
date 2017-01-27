@@ -3,15 +3,16 @@ mixin displayTrack(track, idx)
     //- span.number= idx + 1
     //- | &nbsp;
     span.title= track.title
-    | &nbsp;par&nbsp;
-    span.artists= track.artists
+    | &emsp;par&nbsp;
+    span.artist= track.artist
     | &nbsp;
     span.length= moment.utc(track.length).format('mm:ss')
     | &nbsp;
-    span.deezerId= track.deezerId
 
 .albuminfo
   h3.title= title
+    | &nbsp;par&nbsp;
+    span.artist= artist
 
 ol.tracks
   each track, idx in tracks

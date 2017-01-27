@@ -38,9 +38,10 @@ M._getReleaseGroupById = function(rgId) {
 
 M._findReleaseGroup = function(movie) {
   // Find the release group with the same imdbId.
+  const title = movie.soundtrack.label || movie.originalTitle;
 
   let uri = '//musicbrainz.org/ws/2/release-group/?fmt=json&query=';
-  uri += `release:${encodeURIComponent(movie.originalTitle)}%20AND%20type:soundtrack`;
+  uri += `release:${encodeURIComponent(title)}%20AND%20type:soundtrack`;
 
   // Doesnt work : always empty result...
   // if (movie.composer && movie.composer.label) {
@@ -76,22 +77,21 @@ M._findReleaseGroup = function(movie) {
   });
 };
 
-M.getBestRecordings = function (movie) {
+M.getBestRecording = function (movie) {
   return Promise.resolve()//() => {
   .then(() => {
-    if (movie.musicBrainzRGId) {
-      // console.log('toto');
-      return M._getReleaseGroupById(movie.musicBrainzRGId);
+    if (movie.soundtrack.musicbrainzReleaseGroupId) {
+      return M._getReleaseGroupById(movie.soundtrack.musicbrainzReleaseGroupId);
     } else {
       return M._findReleaseGroup(movie);
     }
   })
   .then(d => { console.log(d); return d; })
   .then((releaseGroup) => {
-    movie.soundtracks = [{
+    movie.soundtrack = $.extend(movie.soundtrack, {
       musicbrainzReleaseGroupId: releaseGroup.id,
       artist: get(releaseGroup, 'artist-credits', 0, 'artist', 'name'),
-    }];
+    });
     return releaseGroup;
   })
   .then((releaseGroup) => { // choose oldest release, and or right lang.
@@ -122,9 +122,17 @@ M.getBestRecordings = function (movie) {
   })
   .then(d => { console.log(d); return d; })
   .then((release) => { // get recordings for the specified group.
-    return $.getJSON(`//musicbrainz.org/ws/2/release/${release.id}/?fmt=json&inc=recordings+artist-credits+labels`).then((res) => {
-      const tracks = get(res, 'media', 0, 'tracks');
-      let soundtrack = movie.soundtracks[0];
+    return $.getJSON(`//musicbrainz.org/ws/2/release/${release.id}/?fmt=json&inc=recordings+artist-credits+labels`)
+    .then((res) => {
+      const soundtrack = movie.soundtrack;
+      let tracks = get(res, 'media', 0, 'tracks');
+      tracks = tracks.map(track => ({
+        artist: get(track, 'artist-credit', 0, 'artist', 'name'),
+        number: track.number,
+        musicbrainzId: track.id,
+        length: track.length,
+        title: track.title,
+      }));
       soundtrack.tracks = tracks;
       soundtrack.title = res.title;
       soundtrack.musicLabel = get(res, 'label-info', 0, 'label', 'name');
@@ -132,6 +140,7 @@ M.getBestRecordings = function (movie) {
   })
   .then(() => movie);
 };
+
 
 M.getRecordings = function (movie) {
   return promiseSeries(movie.soundtracks, M.getRecording)
@@ -150,12 +159,10 @@ M.getRecording = function (releaseGroup) {
 };
 
 
-M.getSoundtracks = function (movie) {
-  return Promise.resolve(
-    (movie.soundtracks && movie.soundtracks[0] &&
-    movie.soundtracks[0].musicbrainzReleaseGroupId) ? movie : M.getBestRecordings(movie));
-    //M.getPlayList(movie)
-  // ).then(M.getRecordings);
+M.getSoundtrack = function (movie) {
+  return M.getBestRecording(movie);
+  // return Promise.resolve(
+  //   movie.soundtrack.musicbrainzReleaseGroupId ? movie : M.getBestRecording(movie));
 };
 
 module.exports = M;

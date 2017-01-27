@@ -7,7 +7,7 @@ M.getMovieData = function (wikidataId) {
       ?genre ?genreLabel ?publicationDate ?duration ?director ?directorLabel
       ?musicBrainzRGId ?imdbId ?countryOfOrigin
       ?countryOfOriginLabel ?countryOfOriginLanguageCode
-      ?soundtrackLabel
+      ?soundtrack
     WHERE {
      wd:${wikidataId} wdt:P31/wdt:P279* wd:Q11424;
         rdfs:label ?label.
@@ -28,7 +28,6 @@ M.getMovieData = function (wikidataId) {
     OPTIONAL {
       wd:${wikidataId} wdt:P406 ?soundtrackAlbum.
       ?soundtrackAlbum wdt:P436 ?musicBrainzRGId.
-      ?soundtrackAlbum rdfs:label ?soundtrackLabel.
     }
 
     OPTIONAL { wd:${wikidataId} wdt:P436 ?musicBrainzRGId. }
@@ -50,8 +49,22 @@ M.getMovieData = function (wikidataId) {
   .then((movies) => {
     if (!movies || movies.length === 0) { throw new Error('this ID is not a movie');}
 
-    movies[0].wikidataId = wikidataId;
-    return movies[0];
+    const movie = movies[0];
+
+    if (movie.countryOfOriginLanguageCode && movie.countryOfOrigin) {
+      movie.countryOfOrigin.languageCode = movie.countryOfOriginLanguageCode;
+      delete movie.countryOfOriginLanguageCode;
+    }
+
+    movie.soundtrack = $.extend({
+      musicbrainzReleaseGroupId: movie.musicBrainzRGId,
+      artist: movie.composer.label,
+    }, movie.soundtrack);
+    delete movie.composer;
+    delete movie.musicBrainzRGId;
+
+    movie.wikidataId = wikidataId;
+    return movie;
   });
 };
 

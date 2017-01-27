@@ -4,6 +4,7 @@ const template = require('views/templates/player');
 
 module.exports = Mn.View.extend({
   tagName: 'div',
+  className: 'player',
   template: template,
 
   initialize: function () {
@@ -22,16 +23,18 @@ module.exports = Mn.View.extend({
   },
 
   playTracks: function(tracksId) {
+    console.log('machin');
+    console.log(tracksId);
     this.setDeezerPlay(tracksId.join(','), 'tracks');
   },
 
   setDeezerPlay: function (id, type) {
     const params = {
       format: 'classic',
-      autoplay: 'false',
+      autoplay: 'true',
       playlist: true,
       width: 600,
-      height: 350,
+      height: 60,
       color: '007FEB',
       layout: 'dark',
       size: 'medium',

@@ -77,8 +77,7 @@ M.musicbrainz2DeezerTrack = function(track, album) {
   let params = {
     album: album.title,
     track: track.title,
-    // artist: track.artists,
-    //artist: get(track, 'artist-credit', 0, 'artist', 'name'),
+    // artist: track.artist,
     dur_min: Math.round(track.length / 1000 * 0.9),
     dur_max: Math.round(track.length / 1000 * 1.1),
   };
@@ -88,7 +87,7 @@ M.musicbrainz2DeezerTrack = function(track, album) {
     const deezerTrack = res.data[0];
     if (deezerTrack) {
       track.deezerId = deezerTrack.id;
-      track.deezer = deezerTrack;
+      //track.deezer = deezerTrack;
     } else {
       console.info(`Track: ${track.title} not found`);
     }
@@ -102,12 +101,8 @@ M.getTracksId = function(album) {
 };
 
 M.getSoundtracks = function (movie) {
-  return AsyncPromise.series(movie.soundtracks,
-    // (album) => AsyncPromise.series(album.tracks, track => M.musicbrainz2DeezerTrack(track, album)))
-    M.musicbrainz2DeezerAlbum)
+  return M.musicbrainz2DeezerAlbum(movie.soundtrack)
   .then(() => movie);
-
-  // return M.getAlbumId(movie);
 };
 
 module.exports = M;

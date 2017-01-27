@@ -10,11 +10,7 @@ const Musicbrainz = require('../lib/musicbrainz');
 let Movie = null;
 
 module.exports = Movie = CozyModel.extend({
-  docType: 'Movie'.toLowerCase(),
-
-  getTitle: function () {
-    return this.label;
-  },
+  docType: 'movie',
 
   setViewed: function (videoStream) {
     const viewed = this.get('viewed') || [];
@@ -33,38 +29,35 @@ module.exports = Movie = CozyModel.extend({
 
   _fetchMusic: function() {
     const attrs = this.attributes;
-    return Musicbrainz.getSoundtracks(attrs)
+    return Musicbrainz.getSoundtrack(attrs)
     // .then(Deezer.getSoundtracks)
     .then(() => {
       console.log('after getSoundtracks');
       console.log(attrs);
       this.set(attrs);
-      return attrs.soundtracks;
+      return attrs.soundtrack;
     });
   },
 
-  getSoundtracks: function() {
-    const soundtracks = this.get('soundtracks');
-    if (soundtracks) {
-      return Promise.resolve(soundtracks);
-    } else {
-      return this._fetchMusic();
-    }
+  getSoundtrack: function() {
+    const soundtrack = this.get('soundtrack');
+    return Promise.resolve(
+      soundtrack.tracks ? soundtrack : this._fetchMusic());
   },
 
   getDeezerIds: function() {
-    const soundtracks = this.get('soundtracks');
-    if (soundtracks && soundtracks[0]) {
+    const soundtrack = this.get('soundtrack');
+    if (soundtrack) {
       // TODO: handle only the first one now.
-      return Deezer.getTracksId(soundtracks[0])
+      return Deezer.getTracksId(soundtrack)
       .then((changes) => {
         if (changes && changes.length > 0) {
-          this.set('soundtracks', soundtracks);
-          return this.save();
+          this.set('soundtrack', soundtrack);
+          // return this.save();
         }
       })
       .then(() => {
-        return soundtracks[0].tracks.map(track => track.deezerId);
+        return soundtrack.tracks.map(track => track.deezerId);
       });
     } else {
       return Promise.resolve([]);
@@ -74,12 +67,6 @@ module.exports = Movie = CozyModel.extend({
 
 Movie.fromWDSuggestionMovie = function (wdSuggestion) {
   return Wikidata.getMovieById(wdSuggestion.id)
-  // .then(Musicbrainz.getSoundtracks) // TODO: restore musicbrainz.
-  // .then(Deezer.getSoundtracks)
-  .then(attrs => {
-    console.log(attrs);
-    return attrs;
-  })
   .then(attrs => new Movie(attrs))
   ;
 };

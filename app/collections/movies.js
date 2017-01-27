@@ -7,7 +7,7 @@ module.exports = Backbone.Collection.extend({
   model: Movie,
   docType: Movie.prototype.docType.toLowerCase(),
   modelId: attrs => attrs.wikidataId,
-  comparator: movie => movie.getTitle(),
+  comparator: 'label',
 
   sync: function (method, collection, options) {
     if (method !== 'read') {
