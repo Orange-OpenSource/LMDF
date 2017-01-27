@@ -51,14 +51,14 @@ M.getMovieData = function (wikidataId) {
 
     const movie = movies[0];
 
-    if (movie.countryOfOriginLanguageCode && movie.countryOfOrigin) {
-      movie.countryOfOrigin.languageCode = movie.countryOfOriginLanguageCode;
-      delete movie.countryOfOriginLanguageCode;
-    }
+    movie.countryOfOrigin = $.extend({
+      languageCode: movie.countryOfOriginLanguageCode,
+    }, movie.countryOfOrigin);
+    delete movie.countryOfOriginLanguageCode;
 
     movie.soundtrack = $.extend({
       musicbrainzReleaseGroupId: movie.musicBrainzRGId,
-      artist: movie.composer.label,
+      artist: (movie.composer) ? movie.composer.label : undefined,
     }, movie.soundtrack);
     delete movie.composer;
     delete movie.musicBrainzRGId;

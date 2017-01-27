@@ -59,6 +59,7 @@ M._findReleaseGroup = function (movie) {
       return (a.count === b.count) ? b.score - a.score : b.count - a.count;
     });
   })
+  // TODO: handle no releaseGroups case.
   .then((releaseGroups) => { // Look in each releasegroup, the one with imdbid.
     return promiseFind(releaseGroups, (releaseGroup) => {
       return M._getReleaseGroupById(releaseGroup.id)
@@ -81,7 +82,6 @@ M.getBestRecording = function (movie) {
     if (movie.soundtrack.musicbrainzReleaseGroupId) {
       return M._getReleaseGroupById(movie.soundtrack.musicbrainzReleaseGroupId);
     }
-
     return M._findReleaseGroup(movie);
   })
   .then((releaseGroup) => {

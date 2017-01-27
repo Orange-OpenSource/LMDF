@@ -390,7 +390,7 @@ require.register("lib/appname_version.js", function(exports, require, module) {
 
 const name = 'lamusiquedemesfilms';
 // use brunch-version plugin to populate these.
-const version = '0.2.0';
+const version = '0.2.1';
 
 module.exports = `${name}-${version}`;
 
@@ -676,6 +676,7 @@ M._findReleaseGroup = function (movie) {
       return (a.count === b.count) ? b.score - a.score : b.count - a.count;
     });
   })
+  // TODO: handle no releaseGroups case.
   .then((releaseGroups) => { // Look in each releasegroup, the one with imdbid.
     return promiseFind(releaseGroups, (releaseGroup) => {
       return M._getReleaseGroupById(releaseGroup.id)
@@ -698,7 +699,6 @@ M.getBestRecording = function (movie) {
     if (movie.soundtrack.musicbrainzReleaseGroupId) {
       return M._getReleaseGroupById(movie.soundtrack.musicbrainzReleaseGroupId);
     }
-
     return M._findReleaseGroup(movie);
   })
   .then((releaseGroup) => {
@@ -840,14 +840,14 @@ M.getMovieData = function (wikidataId) {
 
     const movie = movies[0];
 
-    if (movie.countryOfOriginLanguageCode && movie.countryOfOrigin) {
-      movie.countryOfOrigin.languageCode = movie.countryOfOriginLanguageCode;
-      delete movie.countryOfOriginLanguageCode;
-    }
+    movie.countryOfOrigin = $.extend({
+      languageCode: movie.countryOfOriginLanguageCode,
+    }, movie.countryOfOrigin);
+    delete movie.countryOfOriginLanguageCode;
 
     movie.soundtrack = $.extend({
       musicbrainzReleaseGroupId: movie.musicBrainzRGId,
-      artist: movie.composer.label,
+      artist: (movie.composer) ? movie.composer.label : undefined,
     }, movie.soundtrack);
     delete movie.composer;
     delete movie.musicBrainzRGId;
