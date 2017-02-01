@@ -27,6 +27,19 @@ module.exports = Movie = CozyModel.extend({
     this.set('viewed', viewed);
   },
 
+  fetchDetails: function() {
+    if (this.has('synopsis')) {
+      return Promise.resolve(this);
+    }
+
+    return Wikidata.getSynopsis(this.attributes)
+    .then((attrs) => {
+      // this.set(attrs);
+      this.trigger('change:synopsis', attrs.synopsis);
+      return this;
+    });
+  },
+
   _fetchMusic: function () {
     const attrs = this.attributes;
     return Musicbrainz.getSoundtrack(attrs)

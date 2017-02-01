@@ -12,7 +12,7 @@ module.exports = Mn.View.extend({
   },
 
   events: {
-    'typeahead:select @ui.search': 'found',
+    'typeahead:select @ui.search': 'onSubmit',
     'keyup @ui.search': 'processKey',
   },
 
@@ -30,7 +30,7 @@ module.exports = Mn.View.extend({
       name: 'movie',
       source: _.debounce(findWikidataMovieMatches, 300),
       async: true,
-      display: suggestion => suggestion.match.text
+      //display: suggestion => suggestion.match.text
     });
   },
 

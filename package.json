@@ -4,6 +4,8 @@
   "description": "Re-découvrez la musique des films que vous avez regardés sur votre LiveBox Orange.",
   "cozy-type": "static",
   "cozy-displayName": "La Musique de mes films",
+  "icon-path": "img/app_icon.svg",
+  "cozy-color": "#FF6600",
   "scripts": {
     "watch": "brunch watch",
     "build": "eslint -c .eslintrc.json app/ && brunch build --production",

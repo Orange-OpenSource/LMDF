@@ -176,8 +176,12 @@ body {
 
 .drawer .search .tt-suggestion.tt-selectable {
   line-height: 42px;
+  cursor: pointer;
 }
-
+.drawer .search .tt-suggestion.tt-selectable.tt-cursor {
+  text-decoration: underline;
+  font-weight: 800;
+}
 
 .container {
   flex: 1;

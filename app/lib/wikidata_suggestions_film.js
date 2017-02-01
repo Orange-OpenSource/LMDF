@@ -3,7 +3,12 @@
 // query items with label
 module.exports.findMovieMatches = function (filmTitle, nextSync, nextAsync) {
   nextSync();
-  getFilmSuggestionObjectAPI(filmTitle, 10).then(nextAsync);
+  getFilmSuggestionObjectAPI(filmTitle, 10)
+  .then((items) => {
+    items = items.map(item => item.match.text.toLowerCase());
+    return Array.from(new Set(items));
+  })
+  .then(nextAsync);
 };
 
 module.exports.fetchMoviesSuggestions = function (title) {
