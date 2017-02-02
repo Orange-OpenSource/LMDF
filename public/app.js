@@ -390,7 +390,7 @@ require.register("lib/appname_version.js", function(exports, require, module) {
 
 const name = 'lamusiquedemesfilms';
 // use brunch-version plugin to populate these.
-const version = '0.2.1';
+const version = '0.2.2';
 
 module.exports = `${name}-${version}`;
 
@@ -1005,7 +1005,12 @@ module.exports = M;
 // query items with label
 module.exports.findMovieMatches = function (filmTitle, nextSync, nextAsync) {
   nextSync();
-  getFilmSuggestionObjectAPI(filmTitle, 10).then(nextAsync);
+  getFilmSuggestionObjectAPI(filmTitle, 10)
+  .then((items) => {
+    items = items.map(item => item.match.text.toLowerCase());
+    return Array.from(new Set(items));
+  })
+  .then(nextAsync);
 };
 
 module.exports.fetchMoviesSuggestions = function (title) {
@@ -1073,14 +1078,28 @@ module.exports = Movie = CozyModel.extend({
     this.set('viewed', viewed);
   },
 
+  fetchDetails: function () {
+    if (this.has('synopsis')) {
+      return Promise.resolve(this);
+    }
+
+    return Wikidata.getSynopsis(this.attributes)
+    .then((attrs) => {
+      // this.set(attrs);
+      this.trigger('change:synopsis', attrs.synopsis);
+      return this;
+    });
+  },
+
   _fetchMusic: function () {
     const attrs = this.attributes;
     return Musicbrainz.getSoundtrack(attrs)
     // .then(Deezer.getSoundtracks)
     .then(() => {
-      console.log('after getSoundtracks');
-      console.log(attrs);
       this.set(attrs);
+      if (!this.isNew()) {
+        this.save();
+      }
       return attrs.soundtrack;
     });
   },
@@ -1101,6 +1120,9 @@ module.exports = Movie = CozyModel.extend({
     .then((changes) => {
       if (changes && changes.length > 0) {
         this.set('soundtrack', soundtrack);
+        if (!this.isNew()) {
+          this.save();
+        }
         // return this.save();
       }
     })
@@ -1394,7 +1416,7 @@ module.exports = Mn.View.extend({
   onDisplay: function (message, id) {
     this.display({
       type: 'info',
-      lable: message.toString(),
+      label: message.toString(),
       message: message,
     }, id);
   },
@@ -1443,6 +1465,10 @@ module.exports = Mn.View.extend({
     'click #play': 'playSoundtrack',
   },
 
+  modelEvents: {
+    change: 'render',
+  },
+
   triggers: {
     'click .close': 'details:close',
   },
@@ -1451,11 +1477,13 @@ module.exports = Mn.View.extend({
     Destroy: {},
   },
 
+
   onRender: function () {
     // TODO : some spinners !
-    console.log(this.model.attributes);
+    app.trigger('message:display', `Recherche de la bande originale de ${this.model.get('label')}`, 'search_ost');
     this.model.getSoundtrack()
     .then((soundtrack) => {
+      app.trigger('message:hide', 'search_ost');
       return this.showChildView('soundtrack', new AlbumView({ model: new Backbone.Model(soundtrack), }));
     });
   },
@@ -1664,7 +1692,7 @@ module.exports = Mn.View.extend({
   },
 
   events: {
-    'typeahead:select @ui.search': 'found',
+    'typeahead:select @ui.search': 'onSubmit',
     'keyup @ui.search': 'processKey',
   },
 
@@ -1682,7 +1710,7 @@ module.exports = Mn.View.extend({
       name: 'movie',
       source: _.debounce(findWikidataMovieMatches, 300),
       async: true,
-      display: suggestion => suggestion.match.text
+      //display: suggestion => suggestion.match.text
     });
   },
 
@@ -1733,7 +1761,7 @@ jade_mixins["displayTrack"] = jade_interp = function(track, idx){
 var block = (this && this.block), attributes = (this && this.attributes) || {};
 buf.push("<li><span class=\"title\">" + (jade.escape(null == (jade_interp = track.title) ? "" : jade_interp)) + "</span>&emsp;par&nbsp;<span class=\"artist\">" + (jade.escape(null == (jade_interp = track.artist) ? "" : jade_interp)) + "</span>&nbsp;<span class=\"length\">" + (jade.escape(null == (jade_interp = moment.utc(track.length).format('mm:ss')) ? "" : jade_interp)) + "</span>&nbsp;</li>");
 };
-buf.push("<div class=\"albuminfo\"><h3 class=\"title\">" + (jade.escape(null == (jade_interp = title) ? "" : jade_interp)) + "&nbsp;par&nbsp;<span class=\"artist\">" + (jade.escape(null == (jade_interp = artist) ? "" : jade_interp)) + "</span></h3></div><ol class=\"tracks\">");
+buf.push("<div class=\"albuminfo\"><h3 class=\"title\">" + (jade.escape(null == (jade_interp = title) ? "" : jade_interp)) + "&nbsp;par&nbsp;<span class=\"artist\">" + (jade.escape(null == (jade_interp = artist) ? "" : jade_interp)) + "</span>&emsp;<button id=\"play\">▶ Écouter la bande originale</button></h3></div><ol class=\"tracks\">");
 // iterate tracks
 ;(function(){
   var $$obj = tracks;
@@ -1862,16 +1890,7 @@ var buf = [];
 var jade_mixins = {};
 var jade_interp;
 ;var locals_for_with = (locals || {});(function (countryOfOrigin, director, duration, genre, id, label, posterUri, publicationDate, synopsis, viewed) {
-buf.push("<div class=\"moviedetails\"><img" + (jade.attr("src", posterUri, true, false)) + " class=\"poster\"/><div class=\"movieabout\"><h2>" + (jade.escape(null == (jade_interp = label) ? "" : jade_interp)) + "</h2>");
-if ( !id)
-{
-buf.push("<button id=\"save\">Ajouter à la bibliothèque</button>");
-}
-else
-{
-buf.push("<button class=\"delete\">Supprimer de la bibliothèque</button>");
-}
-buf.push("<div class=\"characteristics\"><b>");
+buf.push("<div class=\"moviedetails\"><img" + (jade.attr("src", posterUri, true, false)) + " class=\"poster\"/><div class=\"movieabout\"><h2>" + (jade.escape(null == (jade_interp = label) ? "" : jade_interp)) + "</h2><div class=\"characteristics\"><b>");
 if ( genre)
 {
 buf.push((jade.escape(null == (jade_interp = genre.label) ? "" : jade_interp)) + "&ensp;|&ensp;");
@@ -1895,11 +1914,20 @@ buf.push("Réalisé par&nbsp;" + (jade.escape(null == (jade_interp = director.la
 buf.push("</b>");
 if ( viewed)
 {
-buf.push("— Vu le&nbsp;");
+buf.push("&ensp;— Vu le&nbsp;");
 var last = viewed[viewed.length - 1].timestamp
 buf.push(jade.escape(null == (jade_interp = moment(last).format('DD/MM/YYYY')) ? "" : jade_interp));
 }
-buf.push("</div><div class=\"synopsis\">" + (null == (jade_interp = synopsis) ? "" : jade_interp) + "</div></div></div><hr/><div class=\"soundtrack\"><h3>Musique associée</h3><div class=\"album\"></div><div class=\"player\"><button id=\"play\">Écouter la bande originale</button></div></div><div class=\"close\"></div>");}.call(this,"countryOfOrigin" in locals_for_with?locals_for_with.countryOfOrigin:typeof countryOfOrigin!=="undefined"?countryOfOrigin:undefined,"director" in locals_for_with?locals_for_with.director:typeof director!=="undefined"?director:undefined,"duration" in locals_for_with?locals_for_with.duration:typeof duration!=="undefined"?duration:undefined,"genre" in locals_for_with?locals_for_with.genre:typeof genre!=="undefined"?genre:undefined,"id" in locals_for_with?locals_for_with.id:typeof id!=="undefined"?id:undefined,"label" in locals_for_with?locals_for_with.label:typeof label!=="undefined"?label:undefined,"posterUri" in locals_for_with?locals_for_with.posterUri:typeof posterUri!=="undefined"?posterUri:undefined,"publicationDate" in locals_for_with?locals_for_with.publicationDate:typeof publicationDate!=="undefined"?publicationDate:undefined,"synopsis" in locals_for_with?locals_for_with.synopsis:typeof synopsis!=="undefined"?synopsis:undefined,"viewed" in locals_for_with?locals_for_with.viewed:typeof viewed!=="undefined"?viewed:undefined));;return buf.join("");
+buf.push("&ensp;—");
+if ( !id)
+{
+buf.push("<button id=\"save\"> ➕ Ajouter à la bibliothèque</button>");
+}
+else
+{
+buf.push("<button class=\"delete\">❌ Supprimer de la bibliothèque</button>");
+}
+buf.push("</div><div class=\"synopsis\">" + (null == (jade_interp = synopsis) ? "" : jade_interp) + "</div></div></div><hr/><div class=\"soundtrack\"><h3>Musique associée</h3><div class=\"album\"></div><div class=\"player\"></div></div><div class=\"close\"></div>");}.call(this,"countryOfOrigin" in locals_for_with?locals_for_with.countryOfOrigin:typeof countryOfOrigin!=="undefined"?countryOfOrigin:undefined,"director" in locals_for_with?locals_for_with.director:typeof director!=="undefined"?director:undefined,"duration" in locals_for_with?locals_for_with.duration:typeof duration!=="undefined"?duration:undefined,"genre" in locals_for_with?locals_for_with.genre:typeof genre!=="undefined"?genre:undefined,"id" in locals_for_with?locals_for_with.id:typeof id!=="undefined"?id:undefined,"label" in locals_for_with?locals_for_with.label:typeof label!=="undefined"?label:undefined,"posterUri" in locals_for_with?locals_for_with.posterUri:typeof posterUri!=="undefined"?posterUri:undefined,"publicationDate" in locals_for_with?locals_for_with.publicationDate:typeof publicationDate!=="undefined"?publicationDate:undefined,"synopsis" in locals_for_with?locals_for_with.synopsis:typeof synopsis!=="undefined"?synopsis:undefined,"viewed" in locals_for_with?locals_for_with.viewed:typeof viewed!=="undefined"?viewed:undefined));;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {
@@ -1975,7 +2003,7 @@ var buf = [];
 var jade_mixins = {};
 var jade_interp;
 
-buf.push("<b>Aucun film trouvé.</b>");;return buf.join("");
+buf.push("<p>b Aucun film trouvé.</p><p>Attention, cette version n'est capable de rechercher que des films de cinéma, mais les séries devraient arriver dans une prochaine version !</p>");;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {
@@ -2013,7 +2041,7 @@ var buf = [];
 var jade_mixins = {};
 var jade_interp;
 
-buf.push("<input type=\"search\" placeholder=\"Ajouter un film ...\" autocomplete=\"off\"/>");;return buf.join("");
+buf.push("<input type=\"search\" placeholder=\"Rechercher un film ...\" autocomplete=\"off\"/>");;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {

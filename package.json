@@ -1,6 +1,6 @@
 {
   "name": "lamusiquedemesfilms",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Re-découvrez la musique des films que vous avez regardés sur votre LiveBox Orange.",
   "cozy-type": "static",
   "cozy-displayName": "La Musique de mes films",
