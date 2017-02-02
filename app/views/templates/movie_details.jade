@@ -3,11 +3,6 @@
   .movieabout
     h2=label
 
-    if !id
-      button#save Ajouter à la bibliothèque
-    else
-      button.delete Supprimer de la bibliothèque
-
     .characteristics
       b
         if genre
@@ -30,9 +25,17 @@
           = director.label
 
       if viewed
-        | — Vu le&nbsp;
+        |&ensp;— Vu le&nbsp;
         - var last = viewed[viewed.length - 1].timestamp
         = moment(last).format('DD/MM/YYYY')
+
+      | &ensp;—
+      if !id
+        button#save  ➕ Ajouter à la bibliothèque
+      else
+        button.delete ❌ Supprimer de la bibliothèque
+
+
 
     .synopsis!= synopsis
 
@@ -41,6 +44,5 @@ hr
   h3 Musique associée
   .album
   .player
-    button#play Écouter la bande originale
 
 .close

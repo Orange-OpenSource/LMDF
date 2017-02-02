@@ -304,9 +304,25 @@ ul.movielibrary .movieitem img {
   overflow: hidden;  
 }
 
-
 .details .movieabout .characteristics {
   margin: 20px 0px;
+}
+
+.details .movieabout .characteristics button {
+  border: none;
+  background: none;
+  font-size: 15px;
+  text-decoration: underline;
+  cursor: pointer;
+  
+}
+
+.details .movieabout .characteristics button#save {
+  color: #FF6600;
+}
+
+.details .movieabout .characteristics button.delete {
+  color: #D6D6D6;
 }
 
 .details hr {
@@ -352,6 +368,14 @@ ul.movielibrary .movieitem img {
   
 }
 
+.soundtrack button {
+  border: none;
+  background: none;
+  color: white;
+  text-decoration: underline;
+  font-size: 15px;
+  cursor: pointer;
+}
 
 .album .tracks li {
   position: relative;

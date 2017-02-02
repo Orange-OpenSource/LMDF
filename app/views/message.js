@@ -35,7 +35,7 @@ module.exports = Mn.View.extend({
   onDisplay: function (message, id) {
     this.display({
       type: 'info',
-      lable: message.toString(),
+      label: message.toString(),
       message: message,
     }, id);
   },

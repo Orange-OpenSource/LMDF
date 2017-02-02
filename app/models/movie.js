@@ -27,7 +27,7 @@ module.exports = Movie = CozyModel.extend({
     this.set('viewed', viewed);
   },
 
-  fetchDetails: function() {
+  fetchDetails: function () {
     if (this.has('synopsis')) {
       return Promise.resolve(this);
     }
@@ -45,9 +45,10 @@ module.exports = Movie = CozyModel.extend({
     return Musicbrainz.getSoundtrack(attrs)
     // .then(Deezer.getSoundtracks)
     .then(() => {
-      console.log('after getSoundtracks');
-      console.log(attrs);
       this.set(attrs);
+      if (!this.isNew()) {
+        this.save();
+      }
       return attrs.soundtrack;
     });
   },
@@ -68,6 +69,9 @@ module.exports = Movie = CozyModel.extend({
     .then((changes) => {
       if (changes && changes.length > 0) {
         this.set('soundtrack', soundtrack);
+        if (!this.isNew()) {
+          this.save();
+        }
         // return this.save();
       }
     })

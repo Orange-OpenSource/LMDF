@@ -24,6 +24,10 @@ module.exports = Mn.View.extend({
     'click #play': 'playSoundtrack',
   },
 
+  modelEvents: {
+    change: 'render',
+  },
+
   triggers: {
     'click .close': 'details:close',
   },
@@ -32,11 +36,13 @@ module.exports = Mn.View.extend({
     Destroy: {},
   },
 
+
   onRender: function () {
     // TODO : some spinners !
-    console.log(this.model.attributes);
+    app.trigger('message:display', `Recherche de la bande originale de ${this.model.get('label')}`, 'search_ost');
     this.model.getSoundtrack()
     .then((soundtrack) => {
+      app.trigger('message:hide', 'search_ost');
       return this.showChildView('soundtrack', new AlbumView({ model: new Backbone.Model(soundtrack), }));
     });
   },
