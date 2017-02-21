@@ -9,11 +9,13 @@ module.exports = Mn.View.extend({
 
   ui: {
     search: 'input',
+    submit: '.submit',
   },
 
   events: {
     'typeahead:select @ui.search': 'onSubmit',
     'keyup @ui.search': 'processKey',
+    'click @ui.submit': 'onSubmit',
   },
 
   initialize: function () {

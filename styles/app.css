@@ -124,6 +124,8 @@ body {
   top: 42px;
   height: calc( 100% - 67);
   width: 100%;
+  /*! z-index: 0; */
+  display: none;
 }
 
 .drawer[aria-expanded=false] button:before {
@@ -151,12 +153,30 @@ body {
   font-size: 30px;
   line-height: 42px;
   position: absolute;
-  left:6px;
+  left:0px;
+  padding: 0 5px;
+  background: white;
   color: black;
-
+  z-index: 1;
+  
 }
 
+.drawer .search .submit {
+  position: absolute;
+  right: 0px;
+  padding: 0 5px 0 0;
+  top: 0px;
+  line-height: 42px;
+  font-size: 31px;
+  color: #D6D6D6;
+  cursor: pointer;
+}
+.drawer .search .submit:hover {
+  color: #595959;
+}
 
+  
+  
 .drawer .search input {
   height: 42px;
   /*! line-height; */ 42px;
