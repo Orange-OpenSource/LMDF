@@ -280,7 +280,7 @@ ul.movielibrary .movieitem img {
   padding: 10px 10px 0;
 }
 
-.searchresults .loading .empty {
+.searchresults.loading .empty {
   display: none;
 }
 
