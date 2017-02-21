@@ -41,6 +41,7 @@ module.exports = Mn.View.extend({
     this.listenTo(app, 'search', this.onSearch);
     this.collection = new SearchResultsCollection();
     this.listenTo(this.collection, 'done', this.onLoaded);
+    this.listenTo(this.collection, 'add', this.onAddMovie);
   },
 
   onSearch: function (query) {
@@ -53,6 +54,12 @@ module.exports = Mn.View.extend({
   onLoading: function() {
     this.$el.toggleClass('loading', true);
     this.ui.title.text(`Recherche des films dont le titre contient « ${this.model.get('q')} » sur Wikidata, en cours :`);
+  },
+
+  onAddMovie: function(movie) {
+    console.log('onaddmovie ::');
+    console.log(arguments);
+    movie.fetchPoster();
   },
 
   onLoaded: function () {

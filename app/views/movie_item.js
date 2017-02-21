@@ -11,6 +11,10 @@ module.exports = Mn.View.extend({
     'click': 'showDetails',
   },
 
+  modelEvents: {
+    change: 'render',
+  },
+
   showDetails: function () {
     app.trigger('details:show', this.model);
   },

@@ -27,6 +27,18 @@ module.exports = Movie = CozyModel.extend({
     this.set('viewed', viewed);
   },
 
+  fetchPoster: function() {
+    if (this.has('posterUri')) {
+      return Promise.resolve(this);
+    }
+
+    return Wikidata.getPoster(this.attributes)
+    .then((attrs) => {
+      this.trigger('change:posterUri', attrs.posterUri);
+      this.trigger('change', this);
+    });
+  },
+
   fetchDetails: function () {
     if (this.has('synopsis')) {
       return Promise.resolve(this);
@@ -36,6 +48,7 @@ module.exports = Movie = CozyModel.extend({
     .then((attrs) => {
       // this.set(attrs);
       this.trigger('change:synopsis', attrs.synopsis);
+      this.trigger('change', this);
       return this;
     });
   },
@@ -82,7 +95,7 @@ module.exports = Movie = CozyModel.extend({
 });
 
 Movie.fromWDSuggestionMovie = function (wdSuggestion) {
-  return Wikidata.getMovieById(wdSuggestion.id)
+  return Wikidata.getMovieData(wdSuggestion.id)
   .then(attrs => new Movie(attrs))
   ;
 };
