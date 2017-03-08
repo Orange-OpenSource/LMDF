@@ -59,7 +59,7 @@ module.exports = Mn.View.extend({
   onAddMovie: function(movie) {
     console.log('onaddmovie ::');
     console.log(arguments);
-    movie.fetchPoster();
+    movie.fetchPosterUri();
   },
 
   onLoaded: function () {

@@ -8,6 +8,7 @@ module.exports = Mn.View.extend({
   template: template,
 
   initialize: function () {
+    console.log('initialize player !!!')
     this.listenTo(app, 'play:album', this.playAlbum);
     this.listenTo(app, 'play:tracks', this.playTracks);
   },
@@ -20,7 +21,12 @@ module.exports = Mn.View.extend({
     }
   },
 
+  onAttach: function () {
+    this.setDeezerPlay('', 'tracks');
+  },
+
   playTracks: function (tracksId) {
+    console.log('play tracks !!')
     this.setDeezerPlay(tracksId.join(','), 'tracks');
   },
 
@@ -28,7 +34,7 @@ module.exports = Mn.View.extend({
     const params = {
       format: 'classic',
       autoplay: 'true',
-      playlist: true,
+      playlist: false,
       width: 600,
       height: 60,
       color: '007FEB',

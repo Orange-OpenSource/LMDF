@@ -1,5 +1,5 @@
 mixin displayTrack(track, idx)
-  li
+  li.track
     //- span.number= idx + 1
     //- | &nbsp;
     span.title= track.title
@@ -9,12 +9,19 @@ mixin displayTrack(track, idx)
     span.length= moment.utc(track.length).format('mm:ss')
     | &nbsp;
 
+    if track.deezerId
+      button.play(data-deezerid=track.deezerId) ▶&nbsp;
+        span.listendeezer écouter via Deezer
+
 .albuminfo
   h3.title= title
-    | &nbsp;par&nbsp;
-    span.artist= artist
-    | &emsp;
-    button#play ▶ Écouter la bande originale
+    | &ensp;
+    span.artist par&nbsp;
+      = artist
+    if hasDeezerIds
+      | &emsp;
+      button.play ▶&nbsp;
+        span.listendeezer écouter via Deezer
 
 ol.tracks
   each track, idx in tracks

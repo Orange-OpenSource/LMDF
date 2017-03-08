@@ -1,3 +1,4 @@
+- console.log(runningTasks)
 .moviedetails
   img.poster(src=posterUri)
   .movieabout
@@ -42,7 +43,20 @@
 hr
 .soundtrack
   h3 Musique associée
+    if runningTasks.fetch_deezerIds || runningTasks.fetch_soundtrack
+      .waitmessage
+        if runningTasks.fetch_deezerIds
+          span Recherche des pistes sur Deezer
+
+        if runningTasks.fetch_soundtrack
+          span Recherche de la bande originale sur Musicbrainz
+
+        img(src='img/ajax-loader-black.gif')
+
   .album
+    if !runningTasks.fetch_soundtrack
+      .emptymessage La bande originale n'a pas été trouvée sur Musicbrainz.
+
   .player
 
 .close

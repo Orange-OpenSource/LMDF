@@ -92,10 +92,13 @@ M.musicbrainz2DeezerTrack = function (track, album) {
 };
 
 
-M.getTracksId = function (album) {
+M.getTracksId = function (movie) {
+  const album = movie.soundtrack;
   const toFind = album.tracks.filter(track => !track.deezerId);
-  return Promise.all(toFind.map(track => M.musicbrainz2DeezerTrack(track, album)));
+  return Promise.all(toFind.map(track => M.musicbrainz2DeezerTrack(track, album)))
+  .then(() => movie);
 };
+
 
 M.getSoundtracks = function (movie) {
   return M.musicbrainz2DeezerAlbum(movie.soundtrack)

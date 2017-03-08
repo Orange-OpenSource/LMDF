@@ -379,22 +379,42 @@ ul.movielibrary .movieitem img {
   border-right: 10px solid transparent;
 }
 
+.details .waitmessage {
+  display: inline-block;
+  text-align: right;
+  color: #595959;
+  font-weight: normal;
+  float: right;
+}
+
+.details .waitmessage img {
+  padding-left: 10px;
+}
+
 .details .soundtrack {
   /*padding-bottom: 100px;*/
 }
 
 .soundtrack h3 {
   font-size: 15px;
-  
 }
 
-.soundtrack button {
+.soundtrack h3 .artist {
+  color: #595959;
+  font-weight: normal;
+}
+
+.album button.play {
   border: none;
   background: none;
   color: white;
-  text-decoration: underline;
   font-size: 15px;
   cursor: pointer;
+}
+
+.album button.play span {
+  color: #D6D6D6;
+  font-size: 80%;
 }
 
 .album .tracks li {
@@ -417,8 +437,8 @@ ul.movielibrary .movieitem img {
 .details .player {
   /*position: absolute;
   bottom: 20px;
-  */ /*! width: calc( 100% - 70px ); */ /*
-  height: 90px;*/
+  */ /*! width: calc( 100% - 70px ); */
+  height: 90px;
 }
 
 .details .player iframe {

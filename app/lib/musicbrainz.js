@@ -72,7 +72,12 @@ M._findReleaseGroup = function (movie) {
         }
         return false;
       });
-    }, 1000);
+    }, 1000).then(found => {
+      if (found === undefined) {
+        return Promise.reject("Can't find releaseGroup with corresponding imdbId");
+      }
+      return found;
+    });
   });
 };
 
