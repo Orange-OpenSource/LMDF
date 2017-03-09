@@ -1,2 +1,8 @@
 .movieitem
-  img(src=posterUri, title=label)
+  if posterUri
+    img(src=posterUri, title=label)
+
+  else
+    .placeholder
+      h3= label
+      img(src='img/cover_icon.png')

@@ -254,6 +254,7 @@ ul.movielibrary {
 ul.movielibrary > li {
   display: inline-block;
   padding: 10px;
+  vertical-align: middle;
 }
 
 ul.movielibrary .movieitem {
@@ -261,14 +262,40 @@ ul.movielibrary .movieitem {
   height: 200px;
   text-align: center;
   line-height: 100%;
+  /*! vertical-align:  middle; */
 }
 
-ul.movielibrary .movieitem img {
-  vertical-align: middle;
+ul.movielibrary .movieitem > img {
+  /*! vertical-align: middle; */
   height: auto;
   width: auto;
   max-width: 100%;
   max-height: 100%;
+}
+
+ul.movielibrary .movieitem .placeholder {
+  height: 100%;
+  width: 100%;
+  border: solid 1px #D6D6D6;
+  vertical-align: middle;
+  background: #D6D6D6;
+  position: relative;
+}
+
+ul.movielibrary .movieitem .placeholder img {
+  position: absolute;
+  width: 80px;
+  left: 50%;
+  margin-left: -40px;
+  bottom: 25px;
+}
+
+ul.movielibrary .movieitem .placeholder h3 {
+  /*! margin-top: 0px; */
+  font-size: 16px;
+  margin-left: 10px;
+  margin-right: 10px;
+  color: #595959;
 }
 
 .searchresults {

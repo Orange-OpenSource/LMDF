@@ -155,6 +155,12 @@ Movie.fromOrangeTitle = function (title) {
   };
 
   return fromFrenchTitle(prepareTitle(title))
+  .catch((err) => {
+    console.warn(`Can't find movie: ${title} (err, see below). Create empty movie.`);
+    console.error(err);
+
+    return new Movie({ label: prepareTitle(title) });
+  })
   .then((movie) => {
     movie.set('orangeTitle', title);
     return movie;
