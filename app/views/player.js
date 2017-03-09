@@ -8,7 +8,6 @@ module.exports = Mn.View.extend({
   template: template,
 
   initialize: function () {
-    console.log('initialize player !!!')
     this.listenTo(app, 'play:album', this.playAlbum);
     this.listenTo(app, 'play:tracks', this.playTracks);
   },
@@ -26,7 +25,6 @@ module.exports = Mn.View.extend({
   },
 
   playTracks: function (tracksId) {
-    console.log('play tracks !!')
     this.setDeezerPlay(tracksId.join(','), 'tracks');
   },
 

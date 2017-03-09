@@ -15,6 +15,10 @@ module.exports = Mn.View.extend({
     change: 'render',
   },
 
+  initialize: function () {
+    this.model.fetchPosterUri();
+  },
+
   showDetails: function () {
     app.trigger('details:show', this.model);
   },

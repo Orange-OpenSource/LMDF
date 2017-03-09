@@ -1,8 +1,8 @@
 .movieitem
-  if posterUri
-    img(src=posterUri, title=label)
+  .placeholder
+    h3= label
+    img(src='img/cover_icon.png')
 
-  else
-    .placeholder
-      h3= label
-      img(src='img/cover_icon.png')
+  if posterUri
+    .poster
+      img(src=posterUri, title=label, onerror="this.style.display='none';")

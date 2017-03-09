@@ -12,7 +12,7 @@ let Movie = null;
 module.exports = Movie = CozyModel.extend({
   docType: 'movie',
 
-  initialize: function() {
+  initialize: function () {
     this.runningTasks = {};
   },
 
@@ -31,15 +31,15 @@ module.exports = Movie = CozyModel.extend({
     this.set('viewed', viewed);
   },
 
-  setTaskRunning: function(task) {
+  setTaskRunning: function (task) {
     this.runningTasks[task] = true;
   },
 
-  setTaskDone: function(task) {
+  setTaskDone: function (task) {
     delete this.runningTasks[task];
   },
 
-  fetchPosterUri: function() {
+  fetchPosterUri: function () {
     return this._runFetch(Wikidata.getPoster, 'posterUri');
   },
 
@@ -49,26 +49,23 @@ module.exports = Movie = CozyModel.extend({
 
 
   _runFetch: function (method, field, options) {
-    console.log(field)
-    options = options || {}
+    options = options || {};
     const taskName = options.taskName || field;
-    const isFieldReady = options.isFieldReady || ((obj) => obj.has(field))
+    const isFieldReady = options.isFieldReady || (obj => obj.has(field));
     if (isFieldReady(this)) {
       return Promise.resolve(this);
     }
 
     this.setTaskRunning(`fetch_${taskName}`);
     const attrs = $.extend({}, this.attributes);
-
-    console.log(JSON.stringify(this.runningTasks));
-    return method(this.attributes)
-    .then((attrs) => {
-      this.set(attrs);
+    return method(attrs)
+    .then((res) => {
+      this.set(res);
       if (!this.isNew()) {
         this.save();
       }
       this.setTaskDone(`fetch_${taskName}`);
-      this.trigger(`change:${field}`, attrs[field]);
+      this.trigger(`change:${field}`, res[field]);
       this.trigger('change', this);
       return this;
     }).catch((err) => {
@@ -78,65 +75,29 @@ module.exports = Movie = CozyModel.extend({
     });
   },
 
-  fetchSoundtrack: function() {
+  fetchSoundtrack: function () {
     return this._runFetch(Musicbrainz.getSoundtrack, 'soundtrack', {
-      isFieldReady: (obj) => obj.has('soundtrack') && obj.get('soundtrack').tracks
+      isFieldReady: obj => obj.has('soundtrack') && obj.get('soundtrack').tracks
     });
   },
 
-  // _fetchMusic: function () {
-  //   const attrs = this.attributes;
-  //   return Musicbrainz.getSoundtrack(attrs)
-  //   // .then(Deezer.getSoundtracks)
-  //   .then(() => {
-  //     this.set(attrs);
-  //     if (!this.isNew()) {
-  //       this.save();
-  //     }
-  //     return attrs.soundtrack;
-  //   });
-  // },
-
-  // getSoundtrack: function () {
-  //   const soundtrack = this.get('soundtrack');
-  //   return Promise.resolve(
-  //     soundtrack.tracks ? soundtrack : this._fetchMusic());
-  // },
-
-  fetchDeezerIds: function() {
-    console.log("herreee")
+  fetchDeezerIds: function () {
     return this._runFetch(Deezer.getTracksId, 'soundtrack', {
       taskName: 'deezerIds',
-      isFieldReady: (obj) => obj.hasDeezerIds()
+      isFieldReady: obj => obj.hasDeezerIds(),
     });
   },
 
   getDeezerIds: function () {
-    // const soundtrack = this.get('soundtrack');
-    // if (!soundtrack) {
-    //   return Promise.resolve([]);
-    // }
-    // // TODO: handle only the first one now.
-    // return Deezer.getTracksId(soundtrack)
-    // .then((changes) => {
-    //   if (changes && changes.length > 0) {
-    //     this.set('soundtrack', soundtrack);
-    //     if (!this.isNew()) {
-    //       this.save();
-    //     }
-    //     // return this.save();
-    //   }
-    // })
-    // .then(() => {
-      return this.attributes.soundtrack.tracks.map(track => track.deezerId);
-    // });
+    return this.attributes.soundtrack.tracks.map(track => track.deezerId);
   },
 
   hasDeezerIds: function () {
     return this.has('soundtrack') && this.attributes.soundtrack.tracks
-      && this.attributes.soundtrack.tracks.some(track => track.deezerId)
+      && this.attributes.soundtrack.tracks.some(track => track.deezerId);
   },
 });
+
 
 Movie.fromWDSuggestionMovie = function (wdSuggestion) {
   return Wikidata.getMovieData(wdSuggestion.id)

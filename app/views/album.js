@@ -7,17 +7,17 @@ module.exports = Mn.View.extend({
   className: 'album',
 
   events: {
-    "click .track button.play": 'onPlayTrack',
-    "click .albuminfo button.play": 'onPlayAlbum',
+    'click .track button.play': 'onPlayTrack',
+    'click .albuminfo button.play': 'onPlayAlbum',
   },
 
-  onPlayAlbum: function(ev) {
+  onPlayAlbum: function () {
     if (this.model.has('tracks')) {
       app.trigger('play:tracks', this.model.get('tracks').map(track => track.deezerId));
     }
   },
 
-  onPlayTrack: function(ev) {
-    app.trigger('play:tracks', [ev.target.dataset['deezerid']]);
+  onPlayTrack: function (ev) {
+    app.trigger('play:tracks', [ev.target.dataset.deezerid]);
   },
 });

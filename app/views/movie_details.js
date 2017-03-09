@@ -36,28 +36,17 @@ module.exports = Mn.View.extend({
   },
 
   initialize: function () {
-    console.log(JSON.stringify(this.model.attributes));
     this.model.fetchSynopsis();
-    // console.log(JSON.stringify(this.model.attributes));
     this.model.fetchSoundtrack()
     .then(() => this.model.fetchDeezerIds());
-    // console.log(JSON.stringify(this.model.attributes));
-    console.log(JSON.stringify(this.model.runningTasks));
   },
 
-  serializeData: function() {
-    return $.extend(this.model.toJSON(), { runningTasks: this.model.runningTasks })
+  serializeData: function () {
+    return $.extend(this.model.toJSON(), { runningTasks: this.model.runningTasks });
   },
 
   onRender: function () {
-    console.log('render');
-    // TODO : some spinners !
-    // app.trigger('message:display', `Recherche de la bande originale de ${this.model.get('label')}`, 'search_ost');
-    // .then((soundtrack) => {
-      // app.trigger('message:hide', 'search_ost');
-
     if (this.model.has('soundtrack') && this.model.get('soundtrack').tracks) {
-      console.log('iciiccicici');
       const album = new Backbone.Model(this.model.get('soundtrack'));
       album.set('hasDeezerIds', this.model.hasDeezerIds());
 

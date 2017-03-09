@@ -43,6 +43,6 @@ Backbone.Collection.extend({
     .then((suggestions) => {
       return AsyncPromise.series(suggestions, this.fromWDSuggestionMovie, this);
     }).catch(err => console.error(err)) // Fail silently.
-    .then(() => this.trigger('done'))
+    .then(() => this.trigger('done'));
   },
 });

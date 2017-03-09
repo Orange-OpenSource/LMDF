@@ -129,8 +129,7 @@ M.prefetchMovieTitle = function (lastMod) {
   }
   `;
   return $.getJSON(wdk.sparqlQuery(sparql))
-  .then(wdk.simplifySparqlResults)
-  .then(console.log.bind(console));
+  .then(wdk.simplifySparqlResults);
 };
 
 module.exports = M;

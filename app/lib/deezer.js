@@ -88,7 +88,7 @@ M.musicbrainz2DeezerTrack = function (track, album) {
     } else {
       console.info(`Track: ${track.title} not found`);
     }
-  }).catch(res => console.log(res));
+  }).catch(res => console.warn(res));
 };
 
 

@@ -41,7 +41,6 @@ module.exports = Mn.View.extend({
     this.listenTo(app, 'search', this.onSearch);
     this.collection = new SearchResultsCollection();
     this.listenTo(this.collection, 'done', this.onLoaded);
-    this.listenTo(this.collection, 'add', this.onAddMovie);
   },
 
   onSearch: function (query) {
@@ -51,15 +50,10 @@ module.exports = Mn.View.extend({
     this.onLoading();
   },
 
-  onLoading: function() {
+  onLoading: function () {
     this.$el.toggleClass('loading', true);
-    this.ui.title.text(`Recherche des films dont le titre contient « ${this.model.get('q')} » sur Wikidata, en cours :`);
-  },
-
-  onAddMovie: function(movie) {
-    console.log('onaddmovie ::');
-    console.log(arguments);
-    movie.fetchPosterUri();
+    this.ui.title.text(
+      `Recherche des films dont le titre contient « ${this.model.get('q')} » sur Wikidata, en cours :`);
   },
 
   onLoaded: function () {
@@ -69,7 +63,7 @@ module.exports = Mn.View.extend({
 
 
   onRender: function () {
-    const searchResultsView = new SearchResultsView({ collection: this.collection});
+    const searchResultsView = new SearchResultsView({ collection: this.collection });
     this.showChildView('collection', searchResultsView);
     this.onSearch(this.model.attributes);
   },

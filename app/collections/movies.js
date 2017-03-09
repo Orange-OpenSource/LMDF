@@ -6,7 +6,7 @@ const Movie = require('../models/movie');
 module.exports = Backbone.Collection.extend({
   model: Movie,
   docType: Movie.prototype.docType.toLowerCase(),
-  modelId: attrs => attrs.wikidataId ? attrs.wikidataId : attrs.label ,
+  modelId: attrs => (attrs.wikidataId ? attrs.wikidataId : attrs.label),
   comparator: 'label',
 
   sync: function (method, collection, options) {

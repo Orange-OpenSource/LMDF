@@ -21,7 +21,6 @@ M.getPlayList = function (movie) {
 
   return $.getJSON(uri)
   .then((res) => {
-    console.log(res);
     const filtered = res['release-groups'].filter(item => item.score > 90);
     movie.soundtracks = filtered.map(rg => ({
       title: rg.title,
@@ -59,7 +58,6 @@ M._findReleaseGroup = function (movie) {
       return (a.count === b.count) ? b.score - a.score : b.count - a.count;
     });
   })
-  // TODO: handle no releaseGroups case.
   .then((releaseGroups) => { // Look in each releasegroup, the one with imdbid.
     return promiseFind(releaseGroups, (releaseGroup) => {
       return M._getReleaseGroupById(releaseGroup.id)
@@ -72,7 +70,7 @@ M._findReleaseGroup = function (movie) {
         }
         return false;
       });
-    }, 1000).then(found => {
+    }, 1000).then((found) => {
       if (found === undefined) {
         return Promise.reject("Can't find releaseGroup with corresponding imdbId");
       }
