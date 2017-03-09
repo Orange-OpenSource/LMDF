@@ -254,7 +254,7 @@ const Movie = require('../models/movie');
 module.exports = Backbone.Collection.extend({
   model: Movie,
   docType: Movie.prototype.docType.toLowerCase(),
-  modelId: attrs => attrs.wikidataId,
+  modelId: attrs => (attrs.wikidataId ? attrs.wikidataId : attrs.label),
   comparator: 'label',
 
   sync: function (method, collection, options) {
@@ -285,7 +285,7 @@ module.exports = Backbone.Collection.extend({
       movie.setViewed(videoStream);
       this.add(movie);
 
-      return movie.save();
+      return movie.save(); // TODO : doesn't return a promise !
     }).catch((err) => {
       // Fail silenlty.
       console.error(err);
@@ -297,8 +297,7 @@ module.exports = Backbone.Collection.extend({
   addFromVideoStreams: function () {
     const since = app.properties.get('lastVideoStream') || '';
     let last = since;
-    return cozysdk.run('videostream', 'moviesByDate',
-    { startkey: since, include_docs: true }) // TODO : remove limit !
+    return cozysdk.run('videostream', 'moviesByDate', { startkey: since, include_docs: true })
     .then((results) => {
       const lastResult = results[results.length - 1];
       if (lastResult && lastResult.key > since) {
@@ -379,7 +378,8 @@ Backbone.Collection.extend({
     return WikidataSuggestions.fetchMoviesSuggestions(keyword)
     .then((suggestions) => {
       return AsyncPromise.series(suggestions, this.fromWDSuggestionMovie, this);
-    }).catch(err => console.error(err)); // Fail silently.
+    }).catch(err => console.error(err)) // Fail silently.
+    .then(() => this.trigger('done'));
   },
 });
 
@@ -390,7 +390,7 @@ require.register("lib/appname_version.js", function(exports, require, module) {
 
 const name = 'lamusiquedemesfilms';
 // use brunch-version plugin to populate these.
-const version = '0.2.2';
+const version = '0.3.0';
 
 module.exports = `${name}-${version}`;
 
@@ -596,14 +596,17 @@ M.musicbrainz2DeezerTrack = function (track, album) {
     } else {
       console.info(`Track: ${track.title} not found`);
     }
-  }).catch(res => console.log(res));
+  }).catch(res => console.warn(res));
 };
 
 
-M.getTracksId = function (album) {
+M.getTracksId = function (movie) {
+  const album = movie.soundtrack;
   const toFind = album.tracks.filter(track => !track.deezerId);
-  return Promise.all(toFind.map(track => M.musicbrainz2DeezerTrack(track, album)));
+  return Promise.all(toFind.map(track => M.musicbrainz2DeezerTrack(track, album)))
+  .then(() => movie);
 };
+
 
 M.getSoundtracks = function (movie) {
   return M.musicbrainz2DeezerAlbum(movie.soundtrack)
@@ -638,7 +641,6 @@ M.getPlayList = function (movie) {
 
   return $.getJSON(uri)
   .then((res) => {
-    console.log(res);
     const filtered = res['release-groups'].filter(item => item.score > 90);
     movie.soundtracks = filtered.map(rg => ({
       title: rg.title,
@@ -676,7 +678,6 @@ M._findReleaseGroup = function (movie) {
       return (a.count === b.count) ? b.score - a.score : b.count - a.count;
     });
   })
-  // TODO: handle no releaseGroups case.
   .then((releaseGroups) => { // Look in each releasegroup, the one with imdbid.
     return promiseFind(releaseGroups, (releaseGroup) => {
       return M._getReleaseGroupById(releaseGroup.id)
@@ -689,7 +690,12 @@ M._findReleaseGroup = function (movie) {
         }
         return false;
       });
-    }, 1000);
+    }, 1000).then((found) => {
+      if (found === undefined) {
+        return Promise.reject("Can't find releaseGroup with corresponding imdbId");
+      }
+      return found;
+    });
   });
 };
 
@@ -918,8 +924,7 @@ M.prefetchMovieTitle = function (lastMod) {
   }
   `;
   return $.getJSON(wdk.sparqlQuery(sparql))
-  .then(wdk.simplifySparqlResults)
-  .then(console.log.bind(console));
+  .then(wdk.simplifySparqlResults);
 };
 
 module.exports = M;
@@ -1063,6 +1068,10 @@ let Movie = null;
 module.exports = Movie = CozyModel.extend({
   docType: 'movie',
 
+  initialize: function () {
+    this.runningTasks = {};
+  },
+
   setViewed: function (videoStream) {
     const viewed = this.get('viewed') || [];
 
@@ -1078,62 +1087,76 @@ module.exports = Movie = CozyModel.extend({
     this.set('viewed', viewed);
   },
 
-  fetchDetails: function () {
-    if (this.has('synopsis')) {
+  setTaskRunning: function (task) {
+    this.runningTasks[task] = true;
+  },
+
+  setTaskDone: function (task) {
+    delete this.runningTasks[task];
+  },
+
+  fetchPosterUri: function () {
+    return this._runFetch(Wikidata.getPoster, 'posterUri');
+  },
+
+  fetchSynopsis: function () {
+    return this._runFetch(Wikidata.getSynopsis, 'synopsis');
+  },
+
+
+  _runFetch: function (method, field, options) {
+    options = options || {};
+    const taskName = options.taskName || field;
+    const isFieldReady = options.isFieldReady || (obj => obj.has(field));
+    if (isFieldReady(this)) {
       return Promise.resolve(this);
     }
 
-    return Wikidata.getSynopsis(this.attributes)
-    .then((attrs) => {
-      // this.set(attrs);
-      this.trigger('change:synopsis', attrs.synopsis);
-      return this;
-    });
-  },
-
-  _fetchMusic: function () {
-    const attrs = this.attributes;
-    return Musicbrainz.getSoundtrack(attrs)
-    // .then(Deezer.getSoundtracks)
-    .then(() => {
-      this.set(attrs);
+    this.setTaskRunning(`fetch_${taskName}`);
+    const attrs = $.extend({}, this.attributes);
+    return method(attrs)
+    .then((res) => {
+      this.set(res);
       if (!this.isNew()) {
         this.save();
       }
-      return attrs.soundtrack;
+      this.setTaskDone(`fetch_${taskName}`);
+      this.trigger(`change:${field}`, res[field]);
+      this.trigger('change', this);
+      return this;
+    }).catch((err) => {
+      this.setTaskDone(`fetch_${taskName}`);
+      this.trigger('change', this);
+      return Promise.reject(err);
     });
   },
 
-  getSoundtrack: function () {
-    const soundtrack = this.get('soundtrack');
-    return Promise.resolve(
-      soundtrack.tracks ? soundtrack : this._fetchMusic());
+  fetchSoundtrack: function () {
+    return this._runFetch(Musicbrainz.getSoundtrack, 'soundtrack', {
+      isFieldReady: obj => obj.has('soundtrack') && obj.get('soundtrack').tracks
+    });
+  },
+
+  fetchDeezerIds: function () {
+    return this._runFetch(Deezer.getTracksId, 'soundtrack', {
+      taskName: 'deezerIds',
+      isFieldReady: obj => obj.hasDeezerIds(),
+    });
   },
 
   getDeezerIds: function () {
-    const soundtrack = this.get('soundtrack');
-    if (!soundtrack) {
-      return Promise.resolve([]);
-    }
-    // TODO: handle only the first one now.
-    return Deezer.getTracksId(soundtrack)
-    .then((changes) => {
-      if (changes && changes.length > 0) {
-        this.set('soundtrack', soundtrack);
-        if (!this.isNew()) {
-          this.save();
-        }
-        // return this.save();
-      }
-    })
-    .then(() => {
-      return soundtrack.tracks.map(track => track.deezerId);
-    });
+    return this.attributes.soundtrack.tracks.map(track => track.deezerId);
+  },
+
+  hasDeezerIds: function () {
+    return this.has('soundtrack') && this.attributes.soundtrack.tracks
+      && this.attributes.soundtrack.tracks.some(track => track.deezerId);
   },
 });
 
+
 Movie.fromWDSuggestionMovie = function (wdSuggestion) {
-  return Wikidata.getMovieById(wdSuggestion.id)
+  return Wikidata.getMovieData(wdSuggestion.id)
   .then(attrs => new Movie(attrs))
   ;
 };
@@ -1149,6 +1172,12 @@ Movie.fromOrangeTitle = function (title) {
   };
 
   return fromFrenchTitle(prepareTitle(title))
+  .catch((err) => {
+    console.warn(`Can't find movie: ${title} (err, see below). Create empty movie.`);
+    console.error(err);
+
+    return new Movie({ label: prepareTitle(title) });
+  })
   .then((movie) => {
     movie.set('orangeTitle', title);
     return movie;
@@ -1202,6 +1231,21 @@ const template = require('./templates/album');
 module.exports = Mn.View.extend({
   template: template,
   className: 'album',
+
+  events: {
+    'click .track button.play': 'onPlayTrack',
+    'click .albuminfo button.play': 'onPlayAlbum',
+  },
+
+  onPlayAlbum: function () {
+    if (this.model.has('tracks')) {
+      app.trigger('play:tracks', this.model.get('tracks').map(track => track.deezerId));
+    }
+  },
+
+  onPlayTrack: function (ev) {
+    app.trigger('play:tracks', [ev.target.dataset.deezerid]);
+  },
 });
 
 });
@@ -1462,7 +1506,6 @@ module.exports = Mn.View.extend({
 
   events: {
     'click #save': 'saveMovie',
-    'click #play': 'playSoundtrack',
   },
 
   modelEvents: {
@@ -1477,33 +1520,32 @@ module.exports = Mn.View.extend({
     Destroy: {},
   },
 
+  initialize: function () {
+    this.model.fetchSynopsis();
+    this.model.fetchSoundtrack()
+    .then(() => this.model.fetchDeezerIds());
+  },
+
+  serializeData: function () {
+    return $.extend(this.model.toJSON(), { runningTasks: this.model.runningTasks });
+  },
 
   onRender: function () {
-    // TODO : some spinners !
-    app.trigger('message:display', `Recherche de la bande originale de ${this.model.get('label')}`, 'search_ost');
-    this.model.getSoundtrack()
-    .then((soundtrack) => {
-      app.trigger('message:hide', 'search_ost');
-      return this.showChildView('soundtrack', new AlbumView({ model: new Backbone.Model(soundtrack), }));
-    });
+    if (this.model.has('soundtrack') && this.model.get('soundtrack').tracks) {
+      const album = new Backbone.Model(this.model.get('soundtrack'));
+      album.set('hasDeezerIds', this.model.hasDeezerIds());
+
+      this.showChildView('soundtrack', new AlbumView({ model: album }));
+    }
+
+    if (this.model.hasDeezerIds()) {
+      this.showChildView('player', new PlayerView());
+    }
   },
 
   saveMovie: function () {
     app.movies.add(this.model);
     this.model.save();
-  },
-
-  playSoundtrack: function () {
-    // TODO: initialize spinner !
-
-    // initialize player
-    this.showChildView('player', new PlayerView());
-    // Fetch deezer ids
-    this.model.getDeezerIds()
-    // launch music.
-    .then((deezerIds) => {
-      app.trigger('play:tracks', deezerIds);
-    });
   },
 });
 
@@ -1521,6 +1563,14 @@ module.exports = Mn.View.extend({
   events: {
     //eslint-disable-next-line
     'click': 'showDetails',
+  },
+
+  modelEvents: {
+    change: 'render',
+  },
+
+  initialize: function () {
+    this.model.fetchPosterUri();
   },
 
   showDetails: function () {
@@ -1560,29 +1610,6 @@ const SearchResultsView = Mn.CollectionView.extend({
   className: 'movielibrary',
   childView: MovieItemView,
 
-  initialize: function () {
-    this.collection = new SearchResultsCollection();
-    this.listenTo(app, 'search', this.onQueryMovie);
-  },
-
-  onQueryMovie: function (query) {
-    this.collection.reset();
-    this.$el.toggleClass('loading', true);
-    Promise.resolve().then(() => {
-      if (query.selected) {
-        return this.collection.fromWDSuggestionMovie(query.selected)
-        .then((movie) => {
-          if (!movie) { return console.log('no film for this suggestion !'); }
-          app.trigger('details:show', movie);
-        });
-      }
-    }).then(() => {
-      return this.collection.fromKeyword(query.q);
-    }).then(() => {
-      this.$el.toggleClass('loading', false);
-    });
-  },
-
   emptyView: Mn.View.extend({
     className: 'empty',
     template: emptyViewTemplate,
@@ -1595,7 +1622,7 @@ module.exports = Mn.View.extend({
   template: template,
 
   ui: {
-    query: '.query'
+    title: 'h2',
   },
 
   events: {
@@ -1611,15 +1638,33 @@ module.exports = Mn.View.extend({
 
   initialize: function () {
     this.listenTo(app, 'search', this.onSearch);
+    this.collection = new SearchResultsCollection();
+    this.listenTo(this.collection, 'done', this.onLoaded);
   },
 
   onSearch: function (query) {
-    this.ui.query.html(query.q);
+    this.model.attributes = query;
+    this.collection.reset();
+    this.collection.fromKeyword(query.q); // async
+    this.onLoading();
   },
+
+  onLoading: function () {
+    this.$el.toggleClass('loading', true);
+    this.ui.title.text(
+      `Recherche des films dont le titre contient « ${this.model.get('q')} » sur Wikidata, en cours :`);
+  },
+
+  onLoaded: function () {
+    this.$el.toggleClass('loading', false);
+    this.ui.title.text(`Films dont le titre contient « ${this.model.get('q')} », trouvés sur Wikidata :`);
+  },
+
+
   onRender: function () {
-    const searchResultsView = new SearchResultsView();
-    searchResultsView.onQueryMovie(this.model.attributes);
+    const searchResultsView = new SearchResultsView({ collection: this.collection });
     this.showChildView('collection', searchResultsView);
+    this.onSearch(this.model.attributes);
   },
 
   onClose: function () {
@@ -1652,6 +1697,10 @@ module.exports = Mn.View.extend({
     }
   },
 
+  onAttach: function () {
+    this.setDeezerPlay('', 'tracks');
+  },
+
   playTracks: function (tracksId) {
     this.setDeezerPlay(tracksId.join(','), 'tracks');
   },
@@ -1660,7 +1709,7 @@ module.exports = Mn.View.extend({
     const params = {
       format: 'classic',
       autoplay: 'true',
-      playlist: true,
+      playlist: false,
       width: 600,
       height: 60,
       color: '007FEB',
@@ -1689,11 +1738,13 @@ module.exports = Mn.View.extend({
 
   ui: {
     search: 'input',
+    submit: '.submit',
   },
 
   events: {
     'typeahead:select @ui.search': 'onSubmit',
     'keyup @ui.search': 'processKey',
+    'click @ui.submit': 'onSubmit',
   },
 
   initialize: function () {
@@ -1756,12 +1807,22 @@ var __templateData = function template(locals) {
 var buf = [];
 var jade_mixins = {};
 var jade_interp;
-;var locals_for_with = (locals || {});(function (artist, title, tracks, undefined) {
+;var locals_for_with = (locals || {});(function (artist, hasDeezerIds, title, tracks, undefined) {
 jade_mixins["displayTrack"] = jade_interp = function(track, idx){
 var block = (this && this.block), attributes = (this && this.attributes) || {};
-buf.push("<li><span class=\"title\">" + (jade.escape(null == (jade_interp = track.title) ? "" : jade_interp)) + "</span>&emsp;par&nbsp;<span class=\"artist\">" + (jade.escape(null == (jade_interp = track.artist) ? "" : jade_interp)) + "</span>&nbsp;<span class=\"length\">" + (jade.escape(null == (jade_interp = moment.utc(track.length).format('mm:ss')) ? "" : jade_interp)) + "</span>&nbsp;</li>");
+buf.push("<li class=\"track\"><span class=\"title\">" + (jade.escape(null == (jade_interp = track.title) ? "" : jade_interp)) + "</span>&emsp;par&nbsp;<span class=\"artist\">" + (jade.escape(null == (jade_interp = track.artist) ? "" : jade_interp)) + "</span>&nbsp;<span class=\"length\">" + (jade.escape(null == (jade_interp = moment.utc(track.length).format('mm:ss')) ? "" : jade_interp)) + "</span>&nbsp;");
+if ( track.deezerId)
+{
+buf.push("<button" + (jade.attr("data-deezerid", track.deezerId, true, false)) + " class=\"play\">▶&nbsp;<span class=\"listendeezer\">écouter via Deezer</span></button>");
+}
+buf.push("</li>");
 };
-buf.push("<div class=\"albuminfo\"><h3 class=\"title\">" + (jade.escape(null == (jade_interp = title) ? "" : jade_interp)) + "&nbsp;par&nbsp;<span class=\"artist\">" + (jade.escape(null == (jade_interp = artist) ? "" : jade_interp)) + "</span>&emsp;<button id=\"play\">▶ Écouter la bande originale</button></h3></div><ol class=\"tracks\">");
+buf.push("<div class=\"albuminfo\"><h3 class=\"title\">" + (jade.escape(null == (jade_interp = title) ? "" : jade_interp)) + "&ensp;<span class=\"artist\">par&nbsp;" + (jade.escape(null == (jade_interp = artist) ? "" : jade_interp)) + "</span>");
+if ( hasDeezerIds)
+{
+buf.push("&emsp;<button class=\"play\">▶&nbsp;<span class=\"listendeezer\">écouter via Deezer</span></button>");
+}
+buf.push("</h3></div><ol class=\"tracks\">");
 // iterate tracks
 ;(function(){
   var $$obj = tracks;
@@ -1784,7 +1845,7 @@ jade_mixins["displayTrack"](track, idx);
   }
 }).call(this);
 
-buf.push("</ol>");}.call(this,"artist" in locals_for_with?locals_for_with.artist:typeof artist!=="undefined"?artist:undefined,"title" in locals_for_with?locals_for_with.title:typeof title!=="undefined"?title:undefined,"tracks" in locals_for_with?locals_for_with.tracks:typeof tracks!=="undefined"?tracks:undefined,"undefined" in locals_for_with?locals_for_with.undefined:typeof undefined!=="undefined"?undefined:undefined));;return buf.join("");
+buf.push("</ol>");}.call(this,"artist" in locals_for_with?locals_for_with.artist:typeof artist!=="undefined"?artist:undefined,"hasDeezerIds" in locals_for_with?locals_for_with.hasDeezerIds:typeof hasDeezerIds!=="undefined"?hasDeezerIds:undefined,"title" in locals_for_with?locals_for_with.title:typeof title!=="undefined"?title:undefined,"tracks" in locals_for_with?locals_for_with.tracks:typeof tracks!=="undefined"?tracks:undefined,"undefined" in locals_for_with?locals_for_with.undefined:typeof undefined!=="undefined"?undefined:undefined));;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {
@@ -1889,7 +1950,7 @@ var __templateData = function template(locals) {
 var buf = [];
 var jade_mixins = {};
 var jade_interp;
-;var locals_for_with = (locals || {});(function (countryOfOrigin, director, duration, genre, id, label, posterUri, publicationDate, synopsis, viewed) {
+;var locals_for_with = (locals || {});(function (countryOfOrigin, director, duration, genre, id, label, posterUri, publicationDate, runningTasks, synopsis, viewed) {
 buf.push("<div class=\"moviedetails\"><img" + (jade.attr("src", posterUri, true, false)) + " class=\"poster\"/><div class=\"movieabout\"><h2>" + (jade.escape(null == (jade_interp = label) ? "" : jade_interp)) + "</h2><div class=\"characteristics\"><b>");
 if ( genre)
 {
@@ -1927,7 +1988,26 @@ else
 {
 buf.push("<button class=\"delete\">❌ Supprimer de la bibliothèque</button>");
 }
-buf.push("</div><div class=\"synopsis\">" + (null == (jade_interp = synopsis) ? "" : jade_interp) + "</div></div></div><hr/><div class=\"soundtrack\"><h3>Musique associée</h3><div class=\"album\"></div><div class=\"player\"></div></div><div class=\"close\"></div>");}.call(this,"countryOfOrigin" in locals_for_with?locals_for_with.countryOfOrigin:typeof countryOfOrigin!=="undefined"?countryOfOrigin:undefined,"director" in locals_for_with?locals_for_with.director:typeof director!=="undefined"?director:undefined,"duration" in locals_for_with?locals_for_with.duration:typeof duration!=="undefined"?duration:undefined,"genre" in locals_for_with?locals_for_with.genre:typeof genre!=="undefined"?genre:undefined,"id" in locals_for_with?locals_for_with.id:typeof id!=="undefined"?id:undefined,"label" in locals_for_with?locals_for_with.label:typeof label!=="undefined"?label:undefined,"posterUri" in locals_for_with?locals_for_with.posterUri:typeof posterUri!=="undefined"?posterUri:undefined,"publicationDate" in locals_for_with?locals_for_with.publicationDate:typeof publicationDate!=="undefined"?publicationDate:undefined,"synopsis" in locals_for_with?locals_for_with.synopsis:typeof synopsis!=="undefined"?synopsis:undefined,"viewed" in locals_for_with?locals_for_with.viewed:typeof viewed!=="undefined"?viewed:undefined));;return buf.join("");
+buf.push("</div><div class=\"synopsis\">" + (null == (jade_interp = synopsis) ? "" : jade_interp) + "</div></div></div><hr/><div class=\"soundtrack\"><h3>Musique associée");
+if ( runningTasks.fetch_deezerIds || runningTasks.fetch_soundtrack)
+{
+buf.push("<div class=\"waitmessage\">");
+if ( runningTasks.fetch_deezerIds)
+{
+buf.push("<span>Recherche des pistes sur Deezer</span>");
+}
+if ( runningTasks.fetch_soundtrack)
+{
+buf.push("<span>Recherche de la bande originale sur Musicbrainz</span>");
+}
+buf.push("<img src=\"img/ajax-loader-black.gif\"/></div>");
+}
+buf.push("</h3><div class=\"album\">");
+if ( !runningTasks.fetch_soundtrack)
+{
+buf.push("<div class=\"emptymessage\">La bande originale n'a pas été trouvée sur Musicbrainz.</div>");
+}
+buf.push("</div><div class=\"player\"></div></div><div class=\"close\"></div>");}.call(this,"countryOfOrigin" in locals_for_with?locals_for_with.countryOfOrigin:typeof countryOfOrigin!=="undefined"?countryOfOrigin:undefined,"director" in locals_for_with?locals_for_with.director:typeof director!=="undefined"?director:undefined,"duration" in locals_for_with?locals_for_with.duration:typeof duration!=="undefined"?duration:undefined,"genre" in locals_for_with?locals_for_with.genre:typeof genre!=="undefined"?genre:undefined,"id" in locals_for_with?locals_for_with.id:typeof id!=="undefined"?id:undefined,"label" in locals_for_with?locals_for_with.label:typeof label!=="undefined"?label:undefined,"posterUri" in locals_for_with?locals_for_with.posterUri:typeof posterUri!=="undefined"?posterUri:undefined,"publicationDate" in locals_for_with?locals_for_with.publicationDate:typeof publicationDate!=="undefined"?publicationDate:undefined,"runningTasks" in locals_for_with?locals_for_with.runningTasks:typeof runningTasks!=="undefined"?runningTasks:undefined,"synopsis" in locals_for_with?locals_for_with.synopsis:typeof synopsis!=="undefined"?synopsis:undefined,"viewed" in locals_for_with?locals_for_with.viewed:typeof viewed!=="undefined"?viewed:undefined));;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {
@@ -1946,7 +2026,12 @@ var buf = [];
 var jade_mixins = {};
 var jade_interp;
 ;var locals_for_with = (locals || {});(function (label, posterUri) {
-buf.push("<div class=\"movieitem\"><img" + (jade.attr("src", posterUri, true, false)) + (jade.attr("title", label, true, false)) + "/></div>");}.call(this,"label" in locals_for_with?locals_for_with.label:typeof label!=="undefined"?label:undefined,"posterUri" in locals_for_with?locals_for_with.posterUri:typeof posterUri!=="undefined"?posterUri:undefined));;return buf.join("");
+buf.push("<div class=\"movieitem\"><div class=\"placeholder\"><h3>" + (jade.escape(null == (jade_interp = label) ? "" : jade_interp)) + "</h3><img src=\"img/cover_icon.png\"/></div>");
+if ( posterUri)
+{
+buf.push("<div class=\"poster\"><img" + (jade.attr("src", posterUri, true, false)) + (jade.attr("title", label, true, false)) + " onerror=\"this.style.display='none';\"/></div>");
+}
+buf.push("</div>");}.call(this,"label" in locals_for_with?locals_for_with.label:typeof label!=="undefined"?label:undefined,"posterUri" in locals_for_with?locals_for_with.posterUri:typeof posterUri!=="undefined"?posterUri:undefined));;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {
@@ -2003,7 +2088,7 @@ var buf = [];
 var jade_mixins = {};
 var jade_interp;
 
-buf.push("<p>b Aucun film trouvé.</p><p>Attention, cette version n'est capable de rechercher que des films de cinéma, mais les séries devraient arriver dans une prochaine version !</p>");;return buf.join("");
+buf.push("<p><b>Aucun film trouvé.</b></p><p>Attention, cette version n'est capable de rechercher que des films de cinéma, mais les séries devraient arriver dans une prochaine version !</p>");;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {
@@ -2022,7 +2107,7 @@ var buf = [];
 var jade_mixins = {};
 var jade_interp;
 
-buf.push("<iframe id=\"deezerFrame\" scrolling=\"no\" frameborder=\"0\" allowTransparency=\"true\" width=\"600\" height=\"500\"></iframe>");;return buf.join("");
+buf.push("<iframe id=\"deezerFrame\" scrolling=\"no\" frameborder=\"0\" allowTransparency=\"true\" width=\"600\" height=\"90\"></iframe>");;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {
@@ -2041,7 +2126,7 @@ var buf = [];
 var jade_mixins = {};
 var jade_interp;
 
-buf.push("<input type=\"search\" placeholder=\"Rechercher un film ...\" autocomplete=\"off\"/>");;return buf.join("");
+buf.push("<input type=\"search\" placeholder=\"Rechercher un film ...\" autocomplete=\"off\"/><div class=\"submit\">↵</div>");;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {
