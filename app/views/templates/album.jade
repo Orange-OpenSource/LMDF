@@ -10,7 +10,9 @@ mixin displayTrack(track, idx)
     | &nbsp;
 
     if track.deezerId
-      button.play(data-deezerid=track.deezerId) ▶&nbsp;
+      button.play(data-deezerid=track.deezerId)
+        i.fa.fa-play
+        | &nbsp;
         span.listendeezer écouter via Deezer
 
 .albuminfo
@@ -20,7 +22,9 @@ mixin displayTrack(track, idx)
       = artist
     if hasDeezerIds
       | &emsp;
-      button.play ▶&nbsp;
+      button.play
+        i.fa.fa-play
+        | &nbsp;
         span.listendeezer écouter via Deezer
 
 ol.tracks

@@ -6,11 +6,12 @@
   position: absolute;
   right: 20px;
   top: 20px;
+  font-family: FontAwesome;
   cursor: pointer;
 }
 
 .close:before {
-  content: '❌';
+  content: '\f00d';
 }
 
 .loading {
@@ -112,12 +113,14 @@ body {
   box-sizing: border-box;
   color: white;
   background: black;
+  font-family: FontAwesome;
   border: none;
   border-top: solid 1px #666666;
   width: calc(100% - 14px);
-  margin: 7px;
-  font-size: 16px;
+  margin: 0 7px;
+  font-size: 25px;
   text-align: right;
+  line-height: 35px;
 }
 .drawer .tools {
   position: absolute;
@@ -129,10 +132,10 @@ body {
 }
 
 .drawer[aria-expanded=false] button:before {
-  content: "▶"; 
+  content: "\f0da"; 
 }
 .drawer[aria-expanded=true] button:before {
-  content: "◀";
+  content: "\f0d9";
 }
 
 .drawer .search {
@@ -149,8 +152,10 @@ body {
 }
 
 .drawer .search:before {
-  content: '➕';
-  font-size: 30px;
+  font-family: FontAwesome;
+  /*content: '➕';*/
+  content: "\f067";
+  font-size: 25px;
   line-height: 42px;
   position: absolute;
   left:0px;
@@ -167,7 +172,7 @@ body {
   padding: 0 5px 0 0;
   top: 0px;
   line-height: 42px;
-  font-size: 31px;
+  font-size: 20px;
   color: #D6D6D6;
   cursor: pointer;
 }

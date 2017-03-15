@@ -31,9 +31,13 @@
 
       | &ensp;—
       if !id
-        button#save  ➕ Ajouter à la bibliothèque
+        button#save
+          i.fa.fa-plus
+          | &nbsp;Ajouter à la bibliothèque
       else
-        button.delete ❌ Supprimer de la bibliothèque
+        button.delete
+          i.fa.fa-times
+          | &nbsp;Supprimer de la bibliothèque
 
 
 
@@ -52,10 +56,9 @@ hr
 
         img(src='img/ajax-loader-black.gif')
 
+  .player
   .album
     if !runningTasks.fetch_soundtrack
       .emptymessage La bande originale n'a pas été trouvée sur Musicbrainz.
-
-  .player
 
 .close
