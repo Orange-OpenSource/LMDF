@@ -482,7 +482,7 @@ ul.movielibrary .movieitem .placeholder h3 {
   /*position: absolute;
   bottom: 20px;
   */ /*! width: calc( 100% - 70px ); */
-  height: 90px;
+  /*! height: 90px; */
 }
 
 .details .player iframe {
