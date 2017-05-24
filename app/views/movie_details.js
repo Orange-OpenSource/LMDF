@@ -1,6 +1,6 @@
 'use-strict';
 
-const PlayerView = require('./player');
+const PlayerView = require('./player_deezer_popup');
 const AlbumView = require('./album');
 const template = require('./templates/movie_details');
 

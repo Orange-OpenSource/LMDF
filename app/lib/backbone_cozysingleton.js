@@ -1,16 +1,20 @@
 'use-strict';
 
-const CozyModel = require('../lib/backbone_cozymodel');
+const CozyModel = require('./backbone_cozymodel');
 
 module.exports = CozyModel.extend({
+
   sync: function (method, model, options) {
     if (method === 'read' && model.isNew()) {
-      return cozysdk.defineView(this.docType.toLowerCase(), 'all', 'function(doc) { emit(doc._id);}')
-      .then(() => {
-        return cozysdk.queryView(this.docType.toLowerCase(), 'all', { limit: 1, include_docs: true });
+      return cozy.client.data.defineIndex(this.docType.toLowerCase(), ['_id'])
+      .then((index) => {
+        return cozy.client.data.query(index, { selector: { _id: { $gt: null } }, limit: 1 });
       })
-      .then(res => ((res && res.length !== 0) ? res[0].doc : {}))
-      .then(options.success, options.error);
+      .then(res => ((res && res.length !== 0) ? res[0] : {}))
+      .then(options.success, (err) => {
+        console.error(err);
+        return options.error(err);
+      });
     }
 
     return CozyModel.prototype.sync.call(this, method, model, options);

@@ -3,8 +3,7 @@
 const CozySingleton = require('../lib/backbone_cozysingleton');
 
 const Properties = CozySingleton.extend({
-  docType: 'LaMusiqueDeMesFilmsProperties'.toLowerCase(),
-  // TODO: handle since parameter.
+  docType: 'fr.orange.lamusiquedemesfilms.properties'
 });
 
 module.exports = new Properties();

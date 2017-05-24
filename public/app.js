@@ -154,13 +154,13 @@ require.register("application.js", function(exports, require, module) {
 // Main application that create a Mn.Application singleton and
 // exposes it.
 const AsyncPromise = require('./lib/async_promise');
-const MoviesCollection = require('./collections/movies');
 const Router = require('router');
 const AppLayout = require('views/app_layout');
+
 const Properties = require('models/properties');
+const MoviesCollection = require('./collections/movies');
 
 const bPromise = AsyncPromise.backbone2Promise;
-
 
 require('views/behaviors');
 
@@ -168,11 +168,19 @@ const Application = Mn.Application.extend({
 
   prepare: function () {
     this._splashMessages();
+
+    const appElem = $('[role=application]')[0];
+
+    this.cozyDomain = appElem.dataset.cozyDomain;
+    cozy.client.init({
+      cozyURL: `//${this.cozyDomain}`,
+      token: appElem.dataset.cozyToken,
+    });
+    cozy.bar.init({ appName: 'La musique de mes films' });
+
     this.movies = new MoviesCollection();
     this.properties = Properties;
-
     return this.properties.fetch()
-    .then(() => this._defineViews())
     .then(() => bPromise(this.movies, this.movies.fetch));
   },
 
@@ -184,18 +192,6 @@ const Application = Mn.Application.extend({
   _splashMessages: function () {
     this.listenTo(this, 'message:display message:error',
       message => $('#splashmessage').html(message));
-  },
-
-  _defineViews: function () {
-    this.trigger('message:display', 'Préparation de la liste de film', 'defineviews');
-    return Promise.all([
-      this.movies.defineMovieAllView(),
-      this.movies.defineVideoStreamMoviesByDateView()])
-    .then(() => this.trigger('message:hide', 'defineviews'))
-    .catch((err) => {
-      console.err(err);
-      this.trigger('message:error', 'Erreur à la définition des vues.');
-    });
   },
 
   onBeforeStart: function () {
@@ -232,7 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
     console.error(err);
     application.trigger('message:error', msg);
   })
-  .then(() => application.prepareInBackground())
+  // .then(() => application.prepareInBackground())
   .then(() => application.start())
   .catch((err) => {
     const msg = "Erreur au lancement de l'application";
@@ -248,30 +244,18 @@ document.addEventListener('DOMContentLoaded', () => {
 require.register("collections/movies.js", function(exports, require, module) {
 'use strict';
 
+const CozyCollection = require('../lib/backbone_cozycollection');
+
 const AsyncPromise = require('../lib/async_promise');
 const Movie = require('../models/movie');
 
-module.exports = Backbone.Collection.extend({
+
+module.exports = CozyCollection.extend({
   model: Movie,
-  docType: Movie.prototype.docType.toLowerCase(),
   modelId: attrs => (attrs.wikidataId ? attrs.wikidataId : attrs.label),
   comparator: 'label',
 
-  sync: function (method, collection, options) {
-    if (method !== 'read') {
-      console.error('Only read is available on this collection.');
-      if (options.error) {
-        options.error('Only read is available on this collection.');
-      }
-      return;
-    }
-    cozysdk.run(this.docType, 'all', { include_docs: true }, (err, results) => {
-      if (err) { return options.error(err); }
-
-      return options.success(results.map(res => res.doc));
-    });
-  },
-
+//  docType: Movie.prototype.docType.toLowerCase(),
 
   addVideoStreamToLibrary: function (videoStream) {
     return Promise.resolve().then(() => {
@@ -297,7 +281,15 @@ module.exports = Backbone.Collection.extend({
   addFromVideoStreams: function () {
     const since = app.properties.get('lastVideoStream') || '';
     let last = since;
-    return cozysdk.run('videostream', 'moviesByDate', { startkey: since, include_docs: true })
+    return cozy.client.data.query(this.getIndexVideoStreamByDate(), {
+      // TODO : check it works ^^.
+      selector: {
+        action: 'Visualisation',
+        'details.offerName': { $nin: ['AVSP TV LIVE', 'OTV'] },
+        'content.subTitle': { $in: [undefined, null, ''] },
+        timestamp: { $gt: since }
+      }
+    })
     .then((results) => {
       const lastResult = results[results.length - 1];
       if (lastResult && lastResult.key > since) {
@@ -313,22 +305,24 @@ module.exports = Backbone.Collection.extend({
     });
   },
 
+  getIndexVideoStreamByDate: function () {
+    this.indexVideoStreamByDate = this.indexVideoStreamByDate || cozy.client.data.defineIndex(
+      'org.fing.mesinfos.videostream', ['timestamp', 'action', 'details', 'content']);
 
-  defineMovieAllView: function () {
-    return cozysdk.defineView(this.docType, 'all', 'function(doc) { emit(doc._id); }');
+    return this.indexVideoStreamByDate;
   },
 
-
-  defineVideoStreamMoviesByDateView: function () {
-    const mapFun = function (doc) {
-      if (doc.action === 'Visualisation'
-        && doc.details.offerName !== 'AVSP TV LIVE' && doc.details.offerName !== 'OTV'
-        && !(doc.content.subTitle && doc.content.subTitle !== '')) {
-        emit(doc.timestamp);
-      }
-    };
-    return cozysdk.defineView('videostream', 'moviesByDate', mapFun.toString());
-  },
+  //TODO
+  // defineVideoStreamMoviesByDateView: function () {
+  //   const mapFun = function (doc) {
+  //     if (doc.action === 'Visualisation'
+  //       && doc.details.offerName !== 'AVSP TV LIVE' && doc.details.offerName !== 'OTV'
+  //       && !(doc.content.subTitle && doc.content.subTitle !== '')) {
+  //       emit(doc.timestamp);
+  //     }
+  //   };
+  //   return cozysdk.defineView('videostream', 'moviesByDate', mapFun.toString());
+  // },
 });
 
 });
@@ -390,7 +384,7 @@ require.register("lib/appname_version.js", function(exports, require, module) {
 
 const name = 'lamusiquedemesfilms';
 // use brunch-version plugin to populate these.
-const version = '0.3.1';
+const version = '3.0.1';
 
 module.exports = `${name}-${version}`;
 
@@ -448,6 +442,33 @@ module.exports.backbone2Promise = function (obj, method, options) {
 
 });
 
+require.register("lib/backbone_cozycollection.js", function(exports, require, module) {
+module.exports = Backbone.Collection.extend({
+
+  getFetchIndex: () => ['_id'],
+
+  getFetchQuery: () => ({ selector: { _id: { $gt: null } } }),
+
+  sync: function (method, collection, options) {
+    if (method !== 'read') {
+      console.error('Only read is available on this collection.');
+      if (options.error) {
+        options.error('Only read is available on this collection.');
+      }
+      return;
+    }
+
+    //eslint-disable-next-line
+    const docType = new this.model().docType.toLowerCase();
+
+    return cozy.client.data.defineIndex(docType, this.getFetchIndex())
+    .then(index => cozy.client.data.query(index, this.getFetchQuery()))
+    .then(options.success, options.error);
+  },
+});
+
+});
+
 require.register("lib/backbone_cozymodel.js", function(exports, require, module) {
 'use-strict';
 
@@ -465,20 +486,33 @@ module.exports = Backbone.Model.extend({
   },
 
   sync: function (method, model, options) {
-    const callback = (err, res) => {
-      return err ? options.error(err) : options.success(res);
-    };
+    return this.syncPromise(method, model, options)
+    .then(options.success, (err) => {
+      console.log(err);
+      options.error(err);
+    });
+  },
 
+  syncPromise: function (method, model) {
+    console.log(model);
     if (method === 'create') {
-      return cozysdk.create(this.docType, model.attributes, callback);
-    } else if (method === 'update' || method === 'patch') {
-      return cozysdk.updateAttributes(this.docType, model.attributes._id, model.attributes, callback);
+      return cozy.client.data.create(this.docType, model.attributes);
+    } else if (method === 'update') {
+      // TODO !!
+      return cozy.client.data.update(this.docType, model.attributes, model.attributes);
+    } else if (method === 'patch') {
+      // TODO !!
+      return cozy.client.data.updateAttributes(this.docType, model.attributes_id, model.attributes);
     } else if (method === 'delete') {
-      return cozysdk.destroy(this.docType, model.attributes._id, callback);
+      return cozy.client.data.delete(this.docType, model.attributes);
     } else if (method === 'read') {
-      return cozysdk.find(this.docType, model.attributes._id, callback);
+      return cozy.client.find(this.docType, model.attributes._id);
     }
   },
+
+  getDocType: function () {
+    return Object.getPrototypeOf(this).docType;
+  }
 });
 
 });
@@ -486,17 +520,21 @@ module.exports = Backbone.Model.extend({
 require.register("lib/backbone_cozysingleton.js", function(exports, require, module) {
 'use-strict';
 
-const CozyModel = require('../lib/backbone_cozymodel');
+const CozyModel = require('./backbone_cozymodel');
 
 module.exports = CozyModel.extend({
+
   sync: function (method, model, options) {
     if (method === 'read' && model.isNew()) {
-      return cozysdk.defineView(this.docType.toLowerCase(), 'all', 'function(doc) { emit(doc._id);}')
-      .then(() => {
-        return cozysdk.queryView(this.docType.toLowerCase(), 'all', { limit: 1, include_docs: true });
+      return cozy.client.data.defineIndex(this.docType.toLowerCase(), ['_id'])
+      .then((index) => {
+        return cozy.client.data.query(index, { selector: { _id: { $gt: null } }, limit: 1 });
       })
-      .then(res => ((res && res.length !== 0) ? res[0].doc : {}))
-      .then(options.success, options.error);
+      .then(res => ((res && res.length !== 0) ? res[0] : {}))
+      .then(options.success, (err) => {
+        console.error(err);
+        return options.error(err);
+      });
     }
 
     return CozyModel.prototype.sync.call(this, method, model, options);
@@ -795,6 +833,11 @@ module.exports.getFirst = function (obj) {
 require.register("lib/wikidata.js", function(exports, require, module) {
 'use-strict';
 
+const WalkTreeUtils = require('./walktree_utils');
+
+const getFirst = WalkTreeUtils.getFirst;
+const get = WalkTreeUtils.get;
+
 const M = {};
 
 M.getMovieData = function (wikidataId) {
@@ -828,9 +871,15 @@ M.getMovieData = function (wikidataId) {
     OPTIONAL { wd:${wikidataId} wdt:P436 ?musicBrainzRGId. }
     OPTIONAL { wd:${wikidataId} wdt:P345 ?imdbId. }
     OPTIONAL {
-      ?wikiLink schema:about wd:${wikidataId}.
-      ?wikiLink schema:inLanguage "fr".
+      ?wikiLinkFr schema:about wd:${wikidataId}.
+      ?wikiLinkFr schema:inLanguage "fr".
       FILTER (SUBSTR(str(?wikiLink), 1, 25) = "https://fr.wikipedia.org/")
+    }
+
+    OPTIONAL {
+      ?wikiLink schema:about wd:${wikidataId}.
+      ?wikiLink schema:inLanguage "en".
+      FILTER (SUBSTR(str(?wikiLink), 1, 25) = "https://en.wikipedia.org/")
     }
 
     SERVICE wikibase:label { bd:serviceParam wikibase:language "fr" . }
@@ -865,14 +914,43 @@ M.getMovieData = function (wikidataId) {
 
 
 M.getPoster = function (movie) {
-  return $.getJSON(`//www.omdbapi.com/?plot=short&r=json&i=${movie.imdbId}`)
-  .then((res) => {
-    movie.posterUri = res.Poster;
+  if (!movie.wikiLink) {
+    console.error("Cant' get poster: no wiki link in movie obj.");
+    return movie; // continue on errors.
+  }
+
+  const params = {
+    origin: '*',
+    action: 'parse',
+    format: 'json',
+    prop: 'images',
+  };
+  const uri = movie.wikiLink.replace('/wiki/', `/w/api.php?${$.param(params)}&page=`);
+  return $.getJSON(uri)
+  .then((data) => {
+    const images = get(data, 'parse', 'images');
+    let name;
+    // eslint-disable-next-line
+    for (name of images) {
+      if (name.toLowerCase().indexOf('poster') !== -1) {
+        return name;
+      }
+    }
+    return Promise.reject('No image');
+  })
+  .then((fileName) => {
+    const params = {
+      origin: '*',
+      action: 'query',
+      format: 'json',
+      prop: 'imageinfo',
+      iiprop: 'url',
+      titles: `Image:${fileName}`,
+    };
+    return $.getJSON(`https://en.wikipedia.org/w/api.php?${$.param(params)}`);
+  }).then((data) => {
+    movie.posterUri = get(getFirst(get(data, 'query', 'pages')), 'imageinfo', 0, 'url');
     return movie;
-  }).catch((err) => {
-    console.error('Error while geting poster from OMDB: ');
-    console.error(err);
-    return movie; // Continue on errors.
   });
 };
 
@@ -930,6 +1008,18 @@ M.prefetchMovieTitle = function (lastMod) {
 module.exports = M;
 
 // // // // // // // // // // // // // // // // // // // // // // // // // // //
+
+// M.getPoster = function (movie) {
+//   return $.getJSON(`//www.omdbapi.com/?plot=short&r=json&i=${movie.imdbId}`)
+//   .then((res) => {
+//     movie.posterUri = res.Poster;
+//     return movie;
+//   }).catch((err) => {
+//     console.error('Error while geting poster from OMDB: ');
+//     console.error(err);
+//     return movie; // Continue on errors.
+//   });
+// };
 
 // Walking through object with rest API:
 // const WalkTreeUtils = require('./walktree_utils');
@@ -1066,7 +1156,7 @@ const Musicbrainz = require('../lib/musicbrainz');
 let Movie = null;
 
 module.exports = Movie = CozyModel.extend({
-  docType: 'movie',
+  docType: 'fr.orange.movie',
 
   initialize: function () {
     this.runningTasks = {};
@@ -1204,8 +1294,7 @@ function fromFrenchTitle(title) {
 const CozySingleton = require('../lib/backbone_cozysingleton');
 
 const Properties = CozySingleton.extend({
-  docType: 'LaMusiqueDeMesFilmsProperties'.toLowerCase(),
-  // TODO: handle since parameter.
+  docType: 'fr.orange.lamusiquedemesfilms.properties'
 });
 
 module.exports = new Properties();
@@ -1244,7 +1333,7 @@ module.exports = Mn.View.extend({
   },
 
   onPlayTrack: function (ev) {
-    app.trigger('play:tracks', [ev.target.dataset.deezerid]);
+    app.trigger('play:tracks', [ev.currentTarget.dataset.deezerid]);
   },
 });
 
@@ -1485,7 +1574,7 @@ module.exports = Mn.View.extend({
 require.register("views/movie_details.js", function(exports, require, module) {
 'use-strict';
 
-const PlayerView = require('./player');
+const PlayerView = require('./player_deezer_popup');
 const AlbumView = require('./album');
 const template = require('./templates/movie_details');
 
@@ -1690,7 +1779,7 @@ module.exports = Mn.View.extend({
 
 });
 
-require.register("views/player.js", function(exports, require, module) {
+require.register("views/player_deezer_iframe.js", function(exports, require, module) {
 'use-strict';
 
 const template = require('views/templates/player');
@@ -1737,6 +1826,51 @@ module.exports = Mn.View.extend({
     };
 
     $('#deezerFrame').attr('src', `//www.deezer.com/plugins/player?${$.param(params)}`);
+  },
+});
+
+});
+
+require.register("views/player_deezer_popup.js", function(exports, require, module) {
+'use-strict';
+
+module.exports = Mn.View.extend({
+  tagName: 'div',
+  className: 'player',
+  template: () => '',
+
+  initialize: function () {
+    this.listenTo(app, 'play:album', this.playAlbum);
+    this.listenTo(app, 'play:tracks', this.playTracks);
+  },
+
+  playAlbum: function (album) {
+    if (album.deezerAlbumId) {
+      this.setDeezerPlay(album.deezerAlbumId, 'album');
+    } else {
+      return app.trigger('error', "Pas d'ID deezer");
+    }
+  },
+
+  playTracks: function (tracksId) {
+    this.setDeezerPlay(tracksId.join(','), 'tracks');
+  },
+
+  setDeezerPlay: function (id, type) {
+    const params = {
+      format: 'classic',
+      autoplay: 'true',
+      playlist: true,
+      width: 700,
+      height: 350,
+      color: '007FEB',
+      layout: 'dark',
+      size: 'medium',
+      app_id: 1,
+      type: type,
+      id: id,
+    };
+    open(`//www.deezer.com/plugins/player?${$.param(params)}`, 'Deezer Player', 'width=700,height=350');
   },
 });
 

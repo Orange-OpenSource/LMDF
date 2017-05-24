@@ -10,7 +10,7 @@ const Musicbrainz = require('../lib/musicbrainz');
 let Movie = null;
 
 module.exports = Movie = CozyModel.extend({
-  docType: 'movie',
+  docType: 'fr.orange.movie',
 
   initialize: function () {
     this.runningTasks = {};

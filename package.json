@@ -1,11 +1,7 @@
 {
   "name": "lamusiquedemesfilms",
-  "version": "0.3.1",
+  "version": "3.0.1",
   "description": "Re-découvrez la musique des films que vous avez regardés sur votre LiveBox Orange.",
-  "cozy-type": "static",
-  "cozy-displayName": "La Musique de mes films",
-  "icon-path": "img/app_icon.png",
-  "cozy-color": "#FF6600",
   "scripts": {
     "watch": "brunch watch",
     "build": "eslint -c .eslintrc.json app/ && brunch build --production",
@@ -13,7 +9,6 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "auto-reload-brunch": "^2.0.0",
     "brunch": "^2.0.0",
     "clean-css-brunch": "^2.0.0",
     "css-brunch": "^2.0.0",
@@ -25,16 +20,5 @@
     "jade-brunch": "2.8.0",
     "javascript-brunch": "^2.0.0",
     "version-brunch": "^1.0.1"
-  },
-  "cozy-permissions": {
-    "videostream": {
-        "description": "Identifier les films dans la liste des vidéos VOD et Replay que vous avez visionné."
-    },
-    "movie": {
-        "description": "Créer et gérer votre bibliothèque de films."
-    },
-    "lamusiquedemesfilmsproperties": {
-        "description": "Conserver vos préférences et réglages pour cette application."
-    }
   }
 }

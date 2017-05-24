@@ -18,6 +18,6 @@ module.exports = Mn.View.extend({
   },
 
   onPlayTrack: function (ev) {
-    app.trigger('play:tracks', [ev.target.dataset.deezerid]);
+    app.trigger('play:tracks', [ev.currentTarget.dataset.deezerid]);
   },
 });

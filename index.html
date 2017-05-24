@@ -3,22 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script src="./public/vendor.js"></script>
-  <script src="./public/app.js"></script>
-  <link href="./vendor/styles/font-awesome.min.css" rel="stylesheet" type="text/css"/>
-  <link href="./styles/app.css" rel="stylesheet" type="text/css"/>
+  <link rel="icon" type="image/png" href="/img/app_icon.png" sizes="50x50">
+  {{.CozyClientJS}}
+  {{.CozyBar}}
+  <script src="/public/vendor.js"></script>
+  <script src="/public/app.js"></script>
+  <link href="/styles/app.css" rel="stylesheet" type="text/css"/>
   <title>La musique de mes films</title>
 </head>
 <body>
-  <div role="application" >
-      <div class="splash">
-        <img src='img/splash.png' />
-        <h1>La musique de mes films</h1>
-        <div class='message' >
-            <ul><li id='splashmessage'></li></ul>
-        </div>
+  <div role="application" data-cozy-token="{{.Token}}" data-cozy-domain="{{.Domain}}" class="container-fluid" data-cozy-app-name="{{.AppName}}" data-cozy-icon-path="{{.IconPath}}" >
+    <div class="splash">
+      <img src='/img/splash.png' />
+      <h1>La musique de mes films</h1>
+      <div class='message' >
+          <ul><li id='splashmessage'></li></ul>
       </div>
+    </div>
   </div>
-  <script>require('application');</script>
+  <script type="text/javascript" src="index.js"></script>
 </body>
 </html>

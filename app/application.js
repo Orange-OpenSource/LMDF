@@ -3,13 +3,13 @@
 // Main application that create a Mn.Application singleton and
 // exposes it.
 const AsyncPromise = require('./lib/async_promise');
-const MoviesCollection = require('./collections/movies');
 const Router = require('router');
 const AppLayout = require('views/app_layout');
+
 const Properties = require('models/properties');
+const MoviesCollection = require('./collections/movies');
 
 const bPromise = AsyncPromise.backbone2Promise;
-
 
 require('views/behaviors');
 
@@ -17,11 +17,19 @@ const Application = Mn.Application.extend({
 
   prepare: function () {
     this._splashMessages();
+
+    const appElem = $('[role=application]')[0];
+
+    this.cozyDomain = appElem.dataset.cozyDomain;
+    cozy.client.init({
+      cozyURL: `//${this.cozyDomain}`,
+      token: appElem.dataset.cozyToken,
+    });
+    cozy.bar.init({ appName: 'La musique de mes films' });
+
     this.movies = new MoviesCollection();
     this.properties = Properties;
-
     return this.properties.fetch()
-    .then(() => this._defineViews())
     .then(() => bPromise(this.movies, this.movies.fetch));
   },
 
@@ -33,18 +41,6 @@ const Application = Mn.Application.extend({
   _splashMessages: function () {
     this.listenTo(this, 'message:display message:error',
       message => $('#splashmessage').html(message));
-  },
-
-  _defineViews: function () {
-    this.trigger('message:display', 'Préparation de la liste de film', 'defineviews');
-    return Promise.all([
-      this.movies.defineMovieAllView(),
-      this.movies.defineVideoStreamMoviesByDateView()])
-    .then(() => this.trigger('message:hide', 'defineviews'))
-    .catch((err) => {
-      console.err(err);
-      this.trigger('message:error', 'Erreur à la définition des vues.');
-    });
   },
 
   onBeforeStart: function () {
@@ -81,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
     console.error(err);
     application.trigger('message:error', msg);
   })
-  .then(() => application.prepareInBackground())
+  // .then(() => application.prepareInBackground())
   .then(() => application.start())
   .catch((err) => {
     const msg = "Erreur au lancement de l'application";

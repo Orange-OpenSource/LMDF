@@ -1,5 +1,10 @@
 'use-strict';
 
+const WalkTreeUtils = require('./walktree_utils');
+
+const getFirst = WalkTreeUtils.getFirst;
+const get = WalkTreeUtils.get;
+
 const M = {};
 
 M.getMovieData = function (wikidataId) {
@@ -33,9 +38,15 @@ M.getMovieData = function (wikidataId) {
     OPTIONAL { wd:${wikidataId} wdt:P436 ?musicBrainzRGId. }
     OPTIONAL { wd:${wikidataId} wdt:P345 ?imdbId. }
     OPTIONAL {
-      ?wikiLink schema:about wd:${wikidataId}.
-      ?wikiLink schema:inLanguage "fr".
+      ?wikiLinkFr schema:about wd:${wikidataId}.
+      ?wikiLinkFr schema:inLanguage "fr".
       FILTER (SUBSTR(str(?wikiLink), 1, 25) = "https://fr.wikipedia.org/")
+    }
+
+    OPTIONAL {
+      ?wikiLink schema:about wd:${wikidataId}.
+      ?wikiLink schema:inLanguage "en".
+      FILTER (SUBSTR(str(?wikiLink), 1, 25) = "https://en.wikipedia.org/")
     }
 
     SERVICE wikibase:label { bd:serviceParam wikibase:language "fr" . }
@@ -70,14 +81,43 @@ M.getMovieData = function (wikidataId) {
 
 
 M.getPoster = function (movie) {
-  return $.getJSON(`//www.omdbapi.com/?plot=short&r=json&i=${movie.imdbId}`)
-  .then((res) => {
-    movie.posterUri = res.Poster;
+  if (!movie.wikiLink) {
+    console.error("Cant' get poster: no wiki link in movie obj.");
+    return movie; // continue on errors.
+  }
+
+  const params = {
+    origin: '*',
+    action: 'parse',
+    format: 'json',
+    prop: 'images',
+  };
+  const uri = movie.wikiLink.replace('/wiki/', `/w/api.php?${$.param(params)}&page=`);
+  return $.getJSON(uri)
+  .then((data) => {
+    const images = get(data, 'parse', 'images');
+    let name;
+    // eslint-disable-next-line
+    for (name of images) {
+      if (name.toLowerCase().indexOf('poster') !== -1) {
+        return name;
+      }
+    }
+    return Promise.reject('No image');
+  })
+  .then((fileName) => {
+    const params = {
+      origin: '*',
+      action: 'query',
+      format: 'json',
+      prop: 'imageinfo',
+      iiprop: 'url',
+      titles: `Image:${fileName}`,
+    };
+    return $.getJSON(`https://en.wikipedia.org/w/api.php?${$.param(params)}`);
+  }).then((data) => {
+    movie.posterUri = get(getFirst(get(data, 'query', 'pages')), 'imageinfo', 0, 'url');
     return movie;
-  }).catch((err) => {
-    console.error('Error while geting poster from OMDB: ');
-    console.error(err);
-    return movie; // Continue on errors.
   });
 };
 
@@ -135,6 +175,18 @@ M.prefetchMovieTitle = function (lastMod) {
 module.exports = M;
 
 // // // // // // // // // // // // // // // // // // // // // // // // // // //
+
+// M.getPoster = function (movie) {
+//   return $.getJSON(`//www.omdbapi.com/?plot=short&r=json&i=${movie.imdbId}`)
+//   .then((res) => {
+//     movie.posterUri = res.Poster;
+//     return movie;
+//   }).catch((err) => {
+//     console.error('Error while geting poster from OMDB: ');
+//     console.error(err);
+//     return movie; // Continue on errors.
+//   });
+// };
 
 // Walking through object with rest API:
 // const WalkTreeUtils = require('./walktree_utils');

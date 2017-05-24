@@ -1,29 +1,17 @@
 'use strict';
 
+const CozyCollection = require('../lib/backbone_cozycollection');
+
 const AsyncPromise = require('../lib/async_promise');
 const Movie = require('../models/movie');
 
-module.exports = Backbone.Collection.extend({
+
+module.exports = CozyCollection.extend({
   model: Movie,
-  docType: Movie.prototype.docType.toLowerCase(),
   modelId: attrs => (attrs.wikidataId ? attrs.wikidataId : attrs.label),
   comparator: 'label',
 
-  sync: function (method, collection, options) {
-    if (method !== 'read') {
-      console.error('Only read is available on this collection.');
-      if (options.error) {
-        options.error('Only read is available on this collection.');
-      }
-      return;
-    }
-    cozysdk.run(this.docType, 'all', { include_docs: true }, (err, results) => {
-      if (err) { return options.error(err); }
-
-      return options.success(results.map(res => res.doc));
-    });
-  },
-
+//  docType: Movie.prototype.docType.toLowerCase(),
 
   addVideoStreamToLibrary: function (videoStream) {
     return Promise.resolve().then(() => {
@@ -49,7 +37,15 @@ module.exports = Backbone.Collection.extend({
   addFromVideoStreams: function () {
     const since = app.properties.get('lastVideoStream') || '';
     let last = since;
-    return cozysdk.run('videostream', 'moviesByDate', { startkey: since, include_docs: true })
+    return cozy.client.data.query(this.getIndexVideoStreamByDate(), {
+      // TODO : check it works ^^.
+      selector: {
+        action: 'Visualisation',
+        'details.offerName': { $nin: ['AVSP TV LIVE', 'OTV'] },
+        'content.subTitle': { $in: [undefined, null, ''] },
+        timestamp: { $gt: since }
+      }
+    })
     .then((results) => {
       const lastResult = results[results.length - 1];
       if (lastResult && lastResult.key > since) {
@@ -65,20 +61,22 @@ module.exports = Backbone.Collection.extend({
     });
   },
 
+  getIndexVideoStreamByDate: function () {
+    this.indexVideoStreamByDate = this.indexVideoStreamByDate || cozy.client.data.defineIndex(
+      'org.fing.mesinfos.videostream', ['timestamp', 'action', 'details', 'content']);
 
-  defineMovieAllView: function () {
-    return cozysdk.defineView(this.docType, 'all', 'function(doc) { emit(doc._id); }');
+    return this.indexVideoStreamByDate;
   },
 
-
-  defineVideoStreamMoviesByDateView: function () {
-    const mapFun = function (doc) {
-      if (doc.action === 'Visualisation'
-        && doc.details.offerName !== 'AVSP TV LIVE' && doc.details.offerName !== 'OTV'
-        && !(doc.content.subTitle && doc.content.subTitle !== '')) {
-        emit(doc.timestamp);
-      }
-    };
-    return cozysdk.defineView('videostream', 'moviesByDate', mapFun.toString());
-  },
+  //TODO
+  // defineVideoStreamMoviesByDateView: function () {
+  //   const mapFun = function (doc) {
+  //     if (doc.action === 'Visualisation'
+  //       && doc.details.offerName !== 'AVSP TV LIVE' && doc.details.offerName !== 'OTV'
+  //       && !(doc.content.subTitle && doc.content.subTitle !== '')) {
+  //       emit(doc.timestamp);
+  //     }
+  //   };
+  //   return cozysdk.defineView('videostream', 'moviesByDate', mapFun.toString());
+  // },
 });

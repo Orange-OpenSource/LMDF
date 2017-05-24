@@ -1,5 +1,8 @@
+
+@import url("./vendors/styles/font-awesome.min.css");
+
 * {
-  box-sizing: border-box;  
+  box-sizing: border-box;
 }
 
 .close {
@@ -34,7 +37,7 @@ body {
 
 .splash img {
   position: absolute;
-  height: 100%; 
+  height: 100%;
   right: 0;
   bottom: 0;
 }
@@ -76,14 +79,14 @@ body {
 }
 
 .message li {
-  padding: 5px;  
+  padding: 5px;
   color: white;
-  background: rgb(75, 180, 230);  
+  background: rgb(75, 180, 230);
   text-align: center;
 }
 
 .message li.error {
-  background: rgb(145, 100, 205);  
+  background: rgb(145, 100, 205);
   color: black;
   /*color: rgb(255,102,0);*/
   font-weight: bold;
@@ -132,7 +135,7 @@ body {
 }
 
 .drawer[aria-expanded=false] button:before {
-  content: "\f0da"; 
+  content: "\f0da";
 }
 .drawer[aria-expanded=true] button:before {
   content: "\f0d9";
@@ -144,7 +147,7 @@ body {
   width: 100%;
   overflow-x: hidden;
   /*! overflow-y:  visible; */
-  
+
   /*! min-height: 42px; */
   background: white !important;
   padding-left: 34px;
@@ -163,7 +166,7 @@ body {
   background: white;
   color: black;
   z-index: 1;
-  
+
 }
 
 .drawer .search .submit {
@@ -180,8 +183,8 @@ body {
   color: #595959;
 }
 
-  
-  
+
+
 .drawer .search input {
   height: 42px;
   /*! line-height; */ 42px;
@@ -192,7 +195,7 @@ body {
 
 .drawer .search .tt-menu {
   position: unset !important;
-  
+
 }
 
 .drawer .search pre {
@@ -316,7 +319,7 @@ ul.movielibrary .movieitem .placeholder h3 {
 }
 
 .searchresults {
-  position: relative;  
+  position: relative;
 }
 
 .searchresults h2 {
@@ -344,7 +347,7 @@ ul.movielibrary .movieitem .placeholder h3 {
 
 .scrollcontainer {
   overflow: auto;
-  
+
 }
 
 .details > div {
@@ -365,7 +368,7 @@ ul.movielibrary .movieitem .placeholder h3 {
 .details .movieabout {
   height: 260px;
   padding-left:30px;
-  overflow: hidden;  
+  overflow: hidden;
 }
 
 .details .movieabout .characteristics {
@@ -378,7 +381,7 @@ ul.movielibrary .movieitem .placeholder h3 {
   font-size: 15px;
   text-decoration: underline;
   cursor: pointer;
-  
+
 }
 
 .details .movieabout .characteristics button#save {
@@ -397,7 +400,7 @@ ul.movielibrary .movieitem .placeholder h3 {
   border-top: 1px solid white;
 }
 
-.details hr:before { 
+.details hr:before {
   content:"";
   position: absolute;
   left: 50%;
@@ -410,7 +413,7 @@ ul.movielibrary .movieitem .placeholder h3 {
   border-right: 10px solid transparent;
 }
 
-.details hr:after { 
+.details hr:after {
   content:"";
   position: absolute;
   left:50%;
@@ -523,33 +526,33 @@ ul.movielibrary .movieitem .placeholder h3 {
   .drawer[aria-expanded=true] {
     flex-basis: 80%;
   }
-  
+
   main {
     margin-left:0px;
     height: calc(100% - 44px);
   }
-  
+
   .details {
     position: absolute;
     top: 0px;
     left:0px;
     font-size: 13px;
   }
-  
+
   .details > div {
     width: 100vw;
     height: 100wh;
   }
-  
+
   .details .poster {
     float: none;
     margin-bottom: 20px;
   }
-  
+
   .details .movieabout {
     padding: 0;
   }
-  
+
   .details .movieabout h2 {
     font-size: 16px;
   }

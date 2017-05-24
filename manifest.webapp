@@ -1,0 +1,45 @@
+{
+  "version": "3.0.1",
+  "name": "La Musique de mes films",
+  "slug": "app",
+  "icon": "/img/app_icon.png",
+  "description": "Re-découvrez la musique des films que vous avez regardés sur votre LiveBox Orange.",
+  "source": "",
+  "developer": {
+    "name": "Orange",
+    "url": ""
+  },
+  "default_locale": "fr",
+  "locales": {
+    "fr": {
+      "description": "Re-découvrez la musique des films que vous avez regardés sur votre LiveBox Orange."
+    }
+  },
+  "routes": {
+    "/": {
+      "folder": "/",
+      "index": "index.html",
+      "public": false
+    }
+  },
+  "licence": "TODO",
+  "permissions": {
+    "properties": {
+      "description": "Conserver vos préférences et réglages pour cette application.",
+      "type": "fr.orange.lamusiquedemesfilms.properties"
+    },
+    "videostream": {
+      "description": "Identifier les films dans la liste des vidéos VOD et Replay que vous avez visionné.",
+      "type": "org.fing.mesinfos.videostream"
+    },
+    "movie": {
+      "description": "Créer et gérer votre bibliothèque de films.",
+      "type": "fr.orange.movie"
+    },
+    "apps": {
+      "description": "Required by the cozy-bar to display the icons of the apps",
+      "type": "io.cozy.apps",
+      "verbs": ["GET"]
+    }
+  }
+}
