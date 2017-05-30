@@ -384,7 +384,7 @@ require.register("lib/appname_version.js", function(exports, require, module) {
 
 const name = 'lamusiquedemesfilms';
 // use brunch-version plugin to populate these.
-const version = '3.0.1';
+const version = '3.0.2';
 
 module.exports = `${name}-${version}`;
 
@@ -668,9 +668,12 @@ const get = WalkTreeUtils.get;
 
 const M = {};
 
+const DOMAIN = '//musicbrainz-mirror.eu:5000';
+// //musicbrainz.org
+
 // Musicbrainz
 M.getPlayList = function (movie) {
-  let uri = '//musicbrainz.org/ws/2/release-group/?fmt=json&query=';
+  let uri = `${DOMAIN}/ws/2/release-group/?fmt=json&query=`;
   uri += `release:${encodeURIComponent(movie.originalTitle)}%20AND%20type:soundtrack`;
 
   // if (movie.composer && movie.composer.label) {
@@ -690,14 +693,14 @@ M.getPlayList = function (movie) {
 };
 
 M._getReleaseGroupById = function (rgId) {
-  return $.getJSON(`//musicbrainz.org/ws/2/release-group/${rgId}/?fmt=json&inc=url-rels+releases&status=official`);
+  return $.getJSON(`${DOMAIN}/ws/2/release-group/${rgId}/?fmt=json&inc=url-rels+releases&status=official`);
 };
 
 M._findReleaseGroup = function (movie) {
   // Find the release group with the same imdbId.
   const title = movie.soundtrack.label || movie.originalTitle;
 
-  let uri = '//musicbrainz.org/ws/2/release-group/?fmt=json&query=';
+  let uri = `${DOMAIN}/ws/2/release-group/?fmt=json&query=`;
   uri += `release:${encodeURIComponent(title)}%20AND%20type:soundtrack`;
 
   // Doesnt work : always empty result...
@@ -728,7 +731,7 @@ M._findReleaseGroup = function (movie) {
         }
         return false;
       });
-    }, 1000).then((found) => {
+    }, 100).then((found) => {
       if (found === undefined) {
         return Promise.reject("Can't find releaseGroup with corresponding imdbId");
       }
@@ -770,7 +773,7 @@ M.getBestRecording = function (movie) {
     return releases[0];
   })
   .then((release) => { // get recordings for the specified group.
-    return $.getJSON(`//musicbrainz.org/ws/2/release/${release.id}/?fmt=json&inc=recordings+artist-credits+labels`)
+    return $.getJSON(`${DOMAIN}/ws/2/release/${release.id}/?fmt=json&inc=recordings+artist-credits+labels`)
     .then((res) => {
       const soundtrack = movie.soundtrack;
       let tracks = get(res, 'media', 0, 'tracks');
@@ -797,7 +800,7 @@ M.getRecordings = function (movie) {
 
 
 M.getRecording = function (releaseGroup) {
-  return $.getJSON(`//musicbrainz.org/ws/2/recording?fmt=json&query=rgid:${releaseGroup.musicbrainzReleaseGroupId}`)
+  return $.getJSON(`${DOMAIN}/ws/2/recording?fmt=json&query=rgid:${releaseGroup.musicbrainzReleaseGroupId}`)
   .then((res) => {
     if (res.recordings) {
       releaseGroup.tracks = res.recordings;
@@ -841,7 +844,7 @@ const get = WalkTreeUtils.get;
 const M = {};
 
 M.getMovieData = function (wikidataId) {
-  const sparql = `SELECT ?label ?wikiLink ?originalTitle ?composer ?composerLabel
+  const sparql = `SELECT ?label ?wikiLink ?wikiLinkFr ?originalTitle ?composer ?composerLabel
       ?genre ?genreLabel ?publicationDate ?duration ?director ?directorLabel
       ?musicBrainzRGId ?imdbId ?countryOfOrigin
       ?countryOfOriginLabel ?countryOfOriginLanguageCode
@@ -873,7 +876,7 @@ M.getMovieData = function (wikidataId) {
     OPTIONAL {
       ?wikiLinkFr schema:about wd:${wikidataId}.
       ?wikiLinkFr schema:inLanguage "fr".
-      FILTER (SUBSTR(str(?wikiLink), 1, 25) = "https://fr.wikipedia.org/")
+      FILTER (SUBSTR(str(?wikiLinkFr), 1, 25) = "https://fr.wikipedia.org/")
     }
 
     OPTIONAL {
@@ -956,7 +959,7 @@ M.getPoster = function (movie) {
 
 
 M.getSynopsis = function (movie) {
-  if (!movie.wikiLink) {
+  if (!movie.wikiLinkFr) {
     console.error("Cant' get synopsys: no wiki link in movie obj.");
     return movie; // continue on errors.
   }
@@ -971,7 +974,7 @@ M.getSynopsis = function (movie) {
     disableeditsection: 1,
     disabletoc: 1,
   };
-  const uri = movie.wikiLink.replace('/wiki/', `/w/api.php?${$.param(params)}&page=`);
+  const uri = movie.wikiLinkFr.replace('/wiki/', `/w/api.php?${$.param(params)}&page=`);
   return $.getJSON(uri).then((data) => {
     // TODO: not good enough.
     const html = data.parse.text['*'];
@@ -2100,7 +2103,7 @@ var __templateData = function template(locals) {
 var buf = [];
 var jade_mixins = {};
 var jade_interp;
-;var locals_for_with = (locals || {});(function (countryOfOrigin, director, duration, genre, id, label, posterUri, publicationDate, runningTasks, synopsis, viewed) {
+;var locals_for_with = (locals || {});(function (countryOfOrigin, director, duration, genre, id, label, posterUri, publicationDate, runningTasks, synopsis, viewed, wikiLinkFr) {
 buf.push("<div class=\"moviedetails\"><img" + (jade.attr("src", posterUri, true, false)) + " class=\"poster\"/><div class=\"movieabout\"><h2>" + (jade.escape(null == (jade_interp = label) ? "" : jade_interp)) + "</h2><div class=\"characteristics\"><b>");
 if ( genre)
 {
@@ -2138,7 +2141,7 @@ else
 {
 buf.push("<button class=\"delete\"><i class=\"fa fa-times\"></i>&nbsp;Supprimer de la bibliothèque</button>");
 }
-buf.push("</div><div class=\"synopsis\">" + (null == (jade_interp = synopsis) ? "" : jade_interp) + "</div></div></div><hr/><div class=\"soundtrack\"><h3>Musique associée");
+buf.push("</div><a" + (jade.attr("href", wikiLinkFr, true, false)) + " target=\"_blank\" class=\"synopsis\">" + (null == (jade_interp = synopsis) ? "" : jade_interp) + "</a></div></div><hr/><div class=\"soundtrack\"><h3>Musique associée");
 if ( runningTasks.fetch_deezerIds || runningTasks.fetch_soundtrack)
 {
 buf.push("<div class=\"waitmessage\">");
@@ -2157,7 +2160,7 @@ if ( !runningTasks.fetch_soundtrack)
 {
 buf.push("<div class=\"emptymessage\">La bande originale n'a pas été trouvée sur Musicbrainz.</div>");
 }
-buf.push("</div></div><div class=\"close\"></div>");}.call(this,"countryOfOrigin" in locals_for_with?locals_for_with.countryOfOrigin:typeof countryOfOrigin!=="undefined"?countryOfOrigin:undefined,"director" in locals_for_with?locals_for_with.director:typeof director!=="undefined"?director:undefined,"duration" in locals_for_with?locals_for_with.duration:typeof duration!=="undefined"?duration:undefined,"genre" in locals_for_with?locals_for_with.genre:typeof genre!=="undefined"?genre:undefined,"id" in locals_for_with?locals_for_with.id:typeof id!=="undefined"?id:undefined,"label" in locals_for_with?locals_for_with.label:typeof label!=="undefined"?label:undefined,"posterUri" in locals_for_with?locals_for_with.posterUri:typeof posterUri!=="undefined"?posterUri:undefined,"publicationDate" in locals_for_with?locals_for_with.publicationDate:typeof publicationDate!=="undefined"?publicationDate:undefined,"runningTasks" in locals_for_with?locals_for_with.runningTasks:typeof runningTasks!=="undefined"?runningTasks:undefined,"synopsis" in locals_for_with?locals_for_with.synopsis:typeof synopsis!=="undefined"?synopsis:undefined,"viewed" in locals_for_with?locals_for_with.viewed:typeof viewed!=="undefined"?viewed:undefined));;return buf.join("");
+buf.push("</div></div><div class=\"close\"></div>");}.call(this,"countryOfOrigin" in locals_for_with?locals_for_with.countryOfOrigin:typeof countryOfOrigin!=="undefined"?countryOfOrigin:undefined,"director" in locals_for_with?locals_for_with.director:typeof director!=="undefined"?director:undefined,"duration" in locals_for_with?locals_for_with.duration:typeof duration!=="undefined"?duration:undefined,"genre" in locals_for_with?locals_for_with.genre:typeof genre!=="undefined"?genre:undefined,"id" in locals_for_with?locals_for_with.id:typeof id!=="undefined"?id:undefined,"label" in locals_for_with?locals_for_with.label:typeof label!=="undefined"?label:undefined,"posterUri" in locals_for_with?locals_for_with.posterUri:typeof posterUri!=="undefined"?posterUri:undefined,"publicationDate" in locals_for_with?locals_for_with.publicationDate:typeof publicationDate!=="undefined"?publicationDate:undefined,"runningTasks" in locals_for_with?locals_for_with.runningTasks:typeof runningTasks!=="undefined"?runningTasks:undefined,"synopsis" in locals_for_with?locals_for_with.synopsis:typeof synopsis!=="undefined"?synopsis:undefined,"viewed" in locals_for_with?locals_for_with.viewed:typeof viewed!=="undefined"?viewed:undefined,"wikiLinkFr" in locals_for_with?locals_for_with.wikiLinkFr:typeof wikiLinkFr!=="undefined"?wikiLinkFr:undefined));;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {

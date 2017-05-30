@@ -10,9 +10,12 @@ const get = WalkTreeUtils.get;
 
 const M = {};
 
+const DOMAIN = '//musicbrainz-mirror.eu:5000';
+// //musicbrainz.org
+
 // Musicbrainz
 M.getPlayList = function (movie) {
-  let uri = '//musicbrainz.org/ws/2/release-group/?fmt=json&query=';
+  let uri = `${DOMAIN}/ws/2/release-group/?fmt=json&query=`;
   uri += `release:${encodeURIComponent(movie.originalTitle)}%20AND%20type:soundtrack`;
 
   // if (movie.composer && movie.composer.label) {
@@ -32,14 +35,14 @@ M.getPlayList = function (movie) {
 };
 
 M._getReleaseGroupById = function (rgId) {
-  return $.getJSON(`//musicbrainz.org/ws/2/release-group/${rgId}/?fmt=json&inc=url-rels+releases&status=official`);
+  return $.getJSON(`${DOMAIN}/ws/2/release-group/${rgId}/?fmt=json&inc=url-rels+releases&status=official`);
 };
 
 M._findReleaseGroup = function (movie) {
   // Find the release group with the same imdbId.
   const title = movie.soundtrack.label || movie.originalTitle;
 
-  let uri = '//musicbrainz.org/ws/2/release-group/?fmt=json&query=';
+  let uri = `${DOMAIN}/ws/2/release-group/?fmt=json&query=`;
   uri += `release:${encodeURIComponent(title)}%20AND%20type:soundtrack`;
 
   // Doesnt work : always empty result...
@@ -70,7 +73,7 @@ M._findReleaseGroup = function (movie) {
         }
         return false;
       });
-    }, 1000).then((found) => {
+    }, 100).then((found) => {
       if (found === undefined) {
         return Promise.reject("Can't find releaseGroup with corresponding imdbId");
       }
@@ -112,7 +115,7 @@ M.getBestRecording = function (movie) {
     return releases[0];
   })
   .then((release) => { // get recordings for the specified group.
-    return $.getJSON(`//musicbrainz.org/ws/2/release/${release.id}/?fmt=json&inc=recordings+artist-credits+labels`)
+    return $.getJSON(`${DOMAIN}/ws/2/release/${release.id}/?fmt=json&inc=recordings+artist-credits+labels`)
     .then((res) => {
       const soundtrack = movie.soundtrack;
       let tracks = get(res, 'media', 0, 'tracks');
@@ -139,7 +142,7 @@ M.getRecordings = function (movie) {
 
 
 M.getRecording = function (releaseGroup) {
-  return $.getJSON(`//musicbrainz.org/ws/2/recording?fmt=json&query=rgid:${releaseGroup.musicbrainzReleaseGroupId}`)
+  return $.getJSON(`${DOMAIN}/ws/2/recording?fmt=json&query=rgid:${releaseGroup.musicbrainzReleaseGroupId}`)
   .then((res) => {
     if (res.recordings) {
       releaseGroup.tracks = res.recordings;

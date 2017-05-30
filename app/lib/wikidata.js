@@ -8,7 +8,7 @@ const get = WalkTreeUtils.get;
 const M = {};
 
 M.getMovieData = function (wikidataId) {
-  const sparql = `SELECT ?label ?wikiLink ?originalTitle ?composer ?composerLabel
+  const sparql = `SELECT ?label ?wikiLink ?wikiLinkFr ?originalTitle ?composer ?composerLabel
       ?genre ?genreLabel ?publicationDate ?duration ?director ?directorLabel
       ?musicBrainzRGId ?imdbId ?countryOfOrigin
       ?countryOfOriginLabel ?countryOfOriginLanguageCode
@@ -40,7 +40,7 @@ M.getMovieData = function (wikidataId) {
     OPTIONAL {
       ?wikiLinkFr schema:about wd:${wikidataId}.
       ?wikiLinkFr schema:inLanguage "fr".
-      FILTER (SUBSTR(str(?wikiLink), 1, 25) = "https://fr.wikipedia.org/")
+      FILTER (SUBSTR(str(?wikiLinkFr), 1, 25) = "https://fr.wikipedia.org/")
     }
 
     OPTIONAL {
@@ -123,7 +123,7 @@ M.getPoster = function (movie) {
 
 
 M.getSynopsis = function (movie) {
-  if (!movie.wikiLink) {
+  if (!movie.wikiLinkFr) {
     console.error("Cant' get synopsys: no wiki link in movie obj.");
     return movie; // continue on errors.
   }
@@ -138,7 +138,7 @@ M.getSynopsis = function (movie) {
     disableeditsection: 1,
     disabletoc: 1,
   };
-  const uri = movie.wikiLink.replace('/wiki/', `/w/api.php?${$.param(params)}&page=`);
+  const uri = movie.wikiLinkFr.replace('/wiki/', `/w/api.php?${$.param(params)}&page=`);
   return $.getJSON(uri).then((data) => {
     // TODO: not good enough.
     const html = data.parse.text['*'];
