@@ -10,8 +10,11 @@ const get = WalkTreeUtils.get;
 
 const M = {};
 
-const DOMAIN = '//musicbrainz-mirror.eu:5000';
-// //musicbrainz.org
+const DOMAIN = '//cluster015.ovh.net/~fingyqpv/proxy.php?http://musicbrainz-mirror.eu:5000';
+// const DOMAIN = '//musicbrainz-mirror.eu:5000'; // NO valid SSL !
+// const DOMAIN = '//musicbrainz.org';
+
+const THROTTLING_PERIOD = 100;
 
 // Musicbrainz
 M.getPlayList = function (movie) {
@@ -73,7 +76,7 @@ M._findReleaseGroup = function (movie) {
         }
         return false;
       });
-    }, 100).then((found) => {
+    }, THROTTLING_PERIOD).then((found) => {
       if (found === undefined) {
         return Promise.reject("Can't find releaseGroup with corresponding imdbId");
       }
