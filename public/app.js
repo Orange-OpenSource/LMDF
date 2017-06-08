@@ -386,7 +386,7 @@ require.register("lib/appname_version.js", function(exports, require, module) {
 
 const name = 'lamusiquedemesfilms';
 // use brunch-version plugin to populate these.
-const version = '3.0.2';
+const version = '3.0.3';
 
 module.exports = `${name}-${version}`;
 
@@ -670,7 +670,8 @@ const get = WalkTreeUtils.get;
 
 const M = {};
 
-const DOMAIN = '//cluster015.ovh.net/~fingyqpv/proxy.php?http://musicbrainz-mirror.eu:5000';
+const DOMAIN = '//start1m.ovh.net/~hoodbrai/proxy.php?http://musicbrainz-mirror.eu:5000';
+// const DOMAIN = '//cluster015.ovh.net/~fingyqpv/proxy.php?http://musicbrainz-mirror.eu:5000';
 // const DOMAIN = '//musicbrainz-mirror.eu:5000'; // NO valid SSL !
 // const DOMAIN = '//musicbrainz.org';
 
@@ -2320,5 +2321,3 @@ if (typeof define === 'function' && define.amd) {
   
 });})();require('___globals___');
 
-
-//# sourceMappingURL=app.js.map
