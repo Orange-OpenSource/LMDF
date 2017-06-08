@@ -83,7 +83,7 @@ M.getMovieData = function (wikidataId) {
 M.getPoster = function (movie) {
   if (!movie.wikiLink) {
     console.error("Cant' get poster: no wiki link in movie obj.");
-    return movie; // continue on errors.
+    return Promise.resolve(movie); // continue on errors.
   }
 
   const params = {

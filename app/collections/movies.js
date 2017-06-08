@@ -37,22 +37,19 @@ module.exports = CozyCollection.extend({
   addFromVideoStreams: function () {
     const since = app.properties.get('lastVideoStream') || '';
     let last = since;
-    return cozy.client.data.query(this.getIndexVideoStreamByDate(), {
-      // TODO : check it works ^^.
-      selector: {
-        action: 'Visualisation',
-        'details.offerName': { $nin: ['AVSP TV LIVE', 'OTV'] },
-        'content.subTitle': { $in: [undefined, null, ''] },
-        timestamp: { $gt: since }
-      }
-    })
+
+    return this.getIndexVideoStreamByDate()
+    .then(index => cozy.client.data.query(index,
+        { selector: { timestamp: { $gt: since } } }))
     .then((results) => {
       const lastResult = results[results.length - 1];
-      if (lastResult && lastResult.key > since) {
-        last = lastResult.key;
+      if (lastResult && lastResult.timestamp > since) {
+        last = lastResult.timestamp;
       }
 
-      const videoStreams = results.map(res => res.doc);
+      const videoStreams = results.filter(vs => (vs.action === 'Visualisation'
+        && vs.details && vs.details.offerName !== 'AVSP TV LIVE' && vs.details.offerName !== 'OTV'
+        && vs.content && !vs.content.subTitle));
       return AsyncPromise.series(videoStreams, this.addVideoStreamToLibrary, this);
     })
     .then(() => {
@@ -63,7 +60,10 @@ module.exports = CozyCollection.extend({
 
   getIndexVideoStreamByDate: function () {
     this.indexVideoStreamByDate = this.indexVideoStreamByDate || cozy.client.data.defineIndex(
-      'org.fing.mesinfos.videostream', ['timestamp', 'action', 'details', 'content']);
+      'org.fing.mesinfos.videostream',
+      // ['timestamp', 'action', 'details', 'content']
+      ['timestamp']
+      );
 
     return this.indexVideoStreamByDate;
   },

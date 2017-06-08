@@ -34,8 +34,10 @@ const Application = Mn.Application.extend({
   },
 
   prepareInBackground: function () {
-    return this.movies.addFromVideoStreams()
+    this.movies.addFromVideoStreams()
     .catch(err => this.trigger('message:error', err));
+
+    return Promise.resolve();
   },
 
   _splashMessages: function () {
@@ -77,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
     console.error(err);
     application.trigger('message:error', msg);
   })
-  // .then(() => application.prepareInBackground())
+  .then(() => application.prepareInBackground())
   .then(() => application.start())
   .catch((err) => {
     const msg = "Erreur au lancement de l'application";

@@ -34,8 +34,8 @@ body {
 
 .splash {
   width: 100vw;
-  height: 100vh;
   background: #8073B1;
+  position: relative;
 }
 
 .splash img {
