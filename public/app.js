@@ -1706,14 +1706,14 @@ require.register("views/movie_library.js", function(exports, require, module) {
 'use strict';
 
 const MovieItemView = require('./movie_item');
-const emptyViewTemplate = require('./templates/movie_library_empty');
+const EmptyView = require('./movie_library_empty');
 const template = require('./templates/my_movies');
 
 const MovieLibraryView = Mn.CollectionView.extend({
   tagName: 'ul',
   className: 'movielibrary',
   childView: MovieItemView,
-  emptyView: Mn.View.extend({ template: emptyViewTemplate, }),
+  emptyView: EmptyView,
 });
 
 module.exports = Mn.View.extend({
@@ -1729,6 +1729,34 @@ module.exports = Mn.View.extend({
 
   onRender: function () {
     this.showChildView('collection', new MovieLibraryView({ collection: this.collection }));
+  },
+});
+
+});
+
+require.register("views/movie_library_empty.js", function(exports, require, module) {
+'use-strict';
+
+const template = require('./templates/movie_library_empty');
+
+
+module.exports = Mn.View.extend({
+  template: template,
+
+  events: {
+    'click button.konnector': 'fireIntent',
+  },
+
+  fireIntent: function () {
+    cozy.client.intents.create('CREATE', 'io.cozy.accounts', { slug: 'orangelivebox' })
+    .start(document.getElementById('popin'))
+    // .then(account => console.log(account))
+    .catch((err) => {
+      const msg = "Erreur lors de l'activation du connecteur Orange Livebox";
+      console.error(msg);
+      console.error(err);
+      app.trigger('message:error', msg);
+    });
   },
 });
 
@@ -2047,7 +2075,7 @@ var buf = [];
 var jade_mixins = {};
 var jade_interp;
 
-buf.push("<aside class=\"drawer\"></aside><div class=\"container\"><nav class=\"topbar\"><button class=\"toggle toggle-drawer\">&nbsp;</button><h1>La musique de mes films</h1></nav><main><section class=\"searchresults\"></section><section class=\"library\"></section></main></div><article class=\"details\"></article><div class=\"message\"></div>");;return buf.join("");
+buf.push("<aside class=\"drawer\"></aside><div class=\"container\"><nav class=\"topbar\"><button class=\"toggle toggle-drawer\">&nbsp;</button><h1>La musique de mes films</h1></nav><main><section class=\"searchresults\"></section><section class=\"library\"></section></main></div><article class=\"details\"></article><div class=\"message\"></div><div id=\"popin\"></div>");;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {
@@ -2233,7 +2261,7 @@ var buf = [];
 var jade_mixins = {};
 var jade_interp;
 
-buf.push("<p>Il n'y a aucun film dans votre vidéothèque Cozy !</p><p>Pour en ajouter, vous pouvez<ul><li>Si vous êtes client Livebox Orange, récupérer votre historique de VOD et Replay via en activant le&nbsp;<a href=\"/#apps/konnectors/konnector/orange_vod\" target=\"_blank\">connecteur Orange VOD.</a></li><li>Tout simplement, rechercher et ajouter un film avec la barre de recherche à gauche.</li></ul></p>");;return buf.join("");
+buf.push("<p>Il n'y a aucun film dans votre vidéothèque Cozy !</p><p>Pour en ajouter, vous pouvez<ul><li>Si vous êtes client Livebox Orange, récupérer votre historique de VOD et Replay via en activant le&nbsp;<button class=\"konnector\">connecteur Orange Livebox.</button></li><li>Tout simplement, rechercher et ajouter un film avec la barre de recherche à gauche.</li></ul></p>");;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {
