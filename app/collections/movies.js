@@ -38,9 +38,10 @@ module.exports = CozyCollection.extend({
     const since = app.properties.get('lastVideoStream') || '';
     let last = since;
 
-    return this.getIndexVideoStreamByDate()
-    .then(index => cozy.client.data.query(index,
-        { selector: { timestamp: { $gt: since } } }))
+    return AsyncPromise.queryPaginated(skip => this.getIndexVideoStreamByDate()
+      .then(index => cozy.client.data.query(index,
+        { selector: { timestamp: { $gt: since } }, skip, wholeResponse: true }))
+    )
     .then((results) => {
       const lastResult = results[results.length - 1];
       if (lastResult && lastResult.timestamp > since) {
@@ -57,6 +58,7 @@ module.exports = CozyCollection.extend({
       return app.properties.save();
     });
   },
+
 
   getIndexVideoStreamByDate: function () {
     this.indexVideoStreamByDate = this.indexVideoStreamByDate || cozy.client.data.defineIndex(

@@ -185,8 +185,11 @@ const Application = Mn.Application.extend({
   },
 
   prepareInBackground: function () {
+    this.trigger('message:display',
+      'Ajout des films visionnés via VoD et Replay sur Livebox ...', 'addFromVideoStreams');
     this.movies.addFromVideoStreams()
-    .catch(err => this.trigger('message:error', err));
+    .catch(err => this.trigger('message:error', err))
+    .then(() => this.trigger('message:hide', 'addFromVideoStreams'));
 
     return Promise.resolve();
   },
@@ -230,8 +233,8 @@ document.addEventListener('DOMContentLoaded', () => {
     console.error(err);
     application.trigger('message:error', msg);
   })
-  .then(() => application.prepareInBackground())
   .then(() => application.start())
+  .then(() => application.prepareInBackground())
   .catch((err) => {
     const msg = "Erreur au lancement de l'application";
     console.error(msg);
@@ -284,9 +287,10 @@ module.exports = CozyCollection.extend({
     const since = app.properties.get('lastVideoStream') || '';
     let last = since;
 
-    return this.getIndexVideoStreamByDate()
-    .then(index => cozy.client.data.query(index,
-        { selector: { timestamp: { $gt: since } } }))
+    return AsyncPromise.queryPaginated(skip => this.getIndexVideoStreamByDate()
+      .then(index => cozy.client.data.query(index,
+        { selector: { timestamp: { $gt: since } }, skip, wholeResponse: true }))
+    )
     .then((results) => {
       const lastResult = results[results.length - 1];
       if (lastResult && lastResult.timestamp > since) {
@@ -303,6 +307,7 @@ module.exports = CozyCollection.extend({
       return app.properties.save();
     });
   },
+
 
   getIndexVideoStreamByDate: function () {
     this.indexVideoStreamByDate = this.indexVideoStreamByDate || cozy.client.data.defineIndex(
@@ -386,7 +391,7 @@ require.register("lib/appname_version.js", function(exports, require, module) {
 
 const name = 'lamusiquedemesfilms';
 // use brunch-version plugin to populate these.
-const version = '3.0.3';
+const version = '3.0.4';
 
 module.exports = `${name}-${version}`;
 
@@ -440,6 +445,25 @@ module.exports.backbone2Promise = function (obj, method, options) {
     options = $.extend(options, { success: resolve, error: reject });
     method.call(obj, options);
   });
+};
+
+
+module.exports.queryPaginated = function (query) {
+  let docs = [];
+  const recursive = (skip) => {
+    return query(skip)
+    .then((results) => {
+      docs = docs.concat(results.docs);
+      if (!results.next) {
+        return docs;
+      }
+
+      skip += results.limit;
+      return recursive(skip);
+    });
+  };
+
+  return recursive(0);
 };
 
 });
@@ -670,7 +694,7 @@ const get = WalkTreeUtils.get;
 
 const M = {};
 
-const DOMAIN = '//start1m.ovh.net/~hoodbrai/proxy.php?http://musicbrainz-mirror.eu:5000';
+const DOMAIN = '//ssl14.ovh.net/~hoodbrai/proxy.php?http://musicbrainz-mirror.eu:5000';
 // const DOMAIN = '//cluster015.ovh.net/~fingyqpv/proxy.php?http://musicbrainz-mirror.eu:5000';
 // const DOMAIN = '//musicbrainz-mirror.eu:5000'; // NO valid SSL !
 // const DOMAIN = '//musicbrainz.org';

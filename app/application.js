@@ -34,8 +34,11 @@ const Application = Mn.Application.extend({
   },
 
   prepareInBackground: function () {
+    this.trigger('message:display',
+      'Ajout des films visionnés via VoD et Replay sur Livebox ...', 'addFromVideoStreams');
     this.movies.addFromVideoStreams()
-    .catch(err => this.trigger('message:error', err));
+    .catch(err => this.trigger('message:error', err))
+    .then(() => this.trigger('message:hide', 'addFromVideoStreams'));
 
     return Promise.resolve();
   },
@@ -79,8 +82,8 @@ document.addEventListener('DOMContentLoaded', () => {
     console.error(err);
     application.trigger('message:error', msg);
   })
-  .then(() => application.prepareInBackground())
   .then(() => application.start())
+  .then(() => application.prepareInBackground())
   .catch((err) => {
     const msg = "Erreur au lancement de l'application";
     console.error(msg);

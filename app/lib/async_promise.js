@@ -46,3 +46,22 @@ module.exports.backbone2Promise = function (obj, method, options) {
     method.call(obj, options);
   });
 };
+
+
+module.exports.queryPaginated = function (query) {
+  let docs = [];
+  const recursive = (skip) => {
+    return query(skip)
+    .then((results) => {
+      docs = docs.concat(results.docs);
+      if (!results.next) {
+        return docs;
+      }
+
+      skip += results.limit;
+      return recursive(skip);
+    });
+  };
+
+  return recursive(0);
+};

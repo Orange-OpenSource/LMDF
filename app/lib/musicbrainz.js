@@ -10,7 +10,7 @@ const get = WalkTreeUtils.get;
 
 const M = {};
 
-const DOMAIN = '//start1m.ovh.net/~hoodbrai/proxy.php?http://musicbrainz-mirror.eu:5000';
+const DOMAIN = '//ssl14.ovh.net/~hoodbrai/proxy.php?http://musicbrainz-mirror.eu:5000';
 // const DOMAIN = '//cluster015.ovh.net/~fingyqpv/proxy.php?http://musicbrainz-mirror.eu:5000';
 // const DOMAIN = '//musicbrainz-mirror.eu:5000'; // NO valid SSL !
 // const DOMAIN = '//musicbrainz.org';
