@@ -10,7 +10,22 @@ const get = WalkTreeUtils.get;
 
 const M = {};
 
-const DOMAIN = '//ssl14.ovh.net/~hoodbrai/proxy.php?http://musicbrainz-mirror.eu:5000';
+// https://ssl14.ovh.net/~hoodbrai/proxy.php?http://musicbrainz-mirror.eu:5000/ws/2/
+
+// --> mirror.musicbrainz.release-group.search
+// https://ssl14.ovh.net/~hoodbrai/proxy.php?http://musicbrainz-mirror.eu:5000/ws/2/release-group/?fmt=json&query={{q}}
+
+// --> mirror.musicbrainz.release-group
+// https://ssl14.ovh.net/~hoodbrai/proxy.php?http://musicbrainz-mirror.eu:5000/ws/2/release-group/{{rgid}}/?fmt=json&{{params}}
+
+// --> mirror.musicbrainz.release
+// https://ssl14.ovh.net/~hoodbrai/proxy.php?http://musicbrainz-mirror.eu:5000/ws/2/release/{{rid}}/?fmt=json&{{params}}
+
+// --> mirror.musicbrainz.recording.search
+// https://ssl14.ovh.net/~hoodbrai/proxy.php?http://musicbrainz-mirror.eu:5000/ws/2/recording?fmt=json&query={{q}}
+
+
+// const DOMAIN = '//ssl14.ovh.net/~hoodbrai/proxy.php?http://musicbrainz-mirror.eu:5000';
 // const DOMAIN = '//cluster015.ovh.net/~fingyqpv/proxy.php?http://musicbrainz-mirror.eu:5000';
 // const DOMAIN = '//musicbrainz-mirror.eu:5000'; // NO valid SSL !
 // const DOMAIN = '//musicbrainz.org';
@@ -19,14 +34,16 @@ const THROTTLING_PERIOD = 100;
 
 // Musicbrainz
 M.getPlayList = function (movie) {
-  let uri = `${DOMAIN}/ws/2/release-group/?fmt=json&query=`;
-  uri += `release:${encodeURIComponent(movie.originalTitle)}%20AND%20type:soundtrack`;
+  const query = `release:${encodeURIComponent(movie.originalTitle)}%20AND%20type:soundtrack`;
+  // let uri = `${DOMAIN}/ws/2/release-group/?fmt=json&query=`;
+  // uri += query;
 
   // if (movie.composer && movie.composer.label) {
   //     uri += `%20AND%20artistname:${movie.composer.label}`;
   // }
 
-  return $.getJSON(uri)
+  // return $.getJSON(uri)
+  return cozy.client.fetchJSON('GET', `/remote/mirror.musicbrainz.release-group.search?q=${query}`)
   .then((res) => {
     const filtered = res['release-groups'].filter(item => item.score > 90);
     movie.soundtracks = filtered.map(rg => ({
@@ -39,22 +56,25 @@ M.getPlayList = function (movie) {
 };
 
 M._getReleaseGroupById = function (rgId) {
-  return $.getJSON(`${DOMAIN}/ws/2/release-group/${rgId}/?fmt=json&inc=url-rels+releases&status=official`);
+  return cozy.client.fetchJSON('GET', `/remote/mirror.musicbrainz.release-group?rgid=${rgId}&params=${encodeURIComponent('inc=url-rels+releases&status=official')}`);
+  // return $.getJSON(`${DOMAIN}/ws/2/release-group/${rgId}/?fmt=json&inc=url-rels+releases&status=official`);
 };
 
 M._findReleaseGroup = function (movie) {
   // Find the release group with the same imdbId.
   const title = movie.soundtrack.label || movie.originalTitle;
 
-  let uri = `${DOMAIN}/ws/2/release-group/?fmt=json&query=`;
-  uri += `release:${encodeURIComponent(title)}%20AND%20type:soundtrack`;
+  const query = `release:${encodeURIComponent(title)}%20AND%20type:soundtrack`;
+  // let uri = `${DOMAIN}/ws/2/release-group/?fmt=json&query=`;
+  // uri += query;
 
   // Doesnt work : always empty result...
   // if (movie.composer && movie.composer.label) {
   //     uri += `%20AND%20artistname:${movie.composer.label}`;
   // }
 
-  return $.getJSON(uri)
+  // return $.getJSON(uri)
+  return cozy.client.fetchJSON('GET', `/remote/mirror.musicbrainz.release-group.search?q=${query}`)
   .then((res) => { // highlight best release-groups candidates.
     return res['release-groups'].sort((a, b) => {
       if (a.score > 90 || b.score > 90) {
@@ -119,7 +139,8 @@ M.getBestRecording = function (movie) {
     return releases[0];
   })
   .then((release) => { // get recordings for the specified group.
-    return $.getJSON(`${DOMAIN}/ws/2/release/${release.id}/?fmt=json&inc=recordings+artist-credits+labels`)
+    // return $.getJSON(`${DOMAIN}/ws/2/release/${release.id}/?fmt=json&inc=recordings+artist-credits+labels`)
+    return cozy.client.fetchJSON('GET', `/remote/mirror.musicbrainz.release?rid=${release.id}&params=${encodeURIComponent('inc=recordings+artist-credits+labels')}`)
     .then((res) => {
       const soundtrack = movie.soundtrack;
       let tracks = get(res, 'media', 0, 'tracks');
@@ -146,7 +167,8 @@ M.getRecordings = function (movie) {
 
 
 M.getRecording = function (releaseGroup) {
-  return $.getJSON(`${DOMAIN}/ws/2/recording?fmt=json&query=rgid:${releaseGroup.musicbrainzReleaseGroupId}`)
+  // return $.getJSON(`${DOMAIN}/ws/2/recording?fmt=json&query=rgid:${releaseGroup.musicbrainzReleaseGroupId}`)
+  return cozy.client.fetchJSON('GET', `/remote/mirror.musicbrainz.recording.search?q=rgid:${releaseGroup.musicbrainzReleaseGroupId}`)
   .then((res) => {
     if (res.recordings) {
       releaseGroup.tracks = res.recordings;

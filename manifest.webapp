@@ -40,6 +40,10 @@
       "description": "Required by the cozy-bar to display the icons of the apps",
       "type": "io.cozy.apps",
       "verbs": ["GET"]
+    },
+    "searchmovies": {
+      "description": "Search movie titles from Wikidata",
+      "type": "org.wikidata.search"
     }
   }
 }

@@ -578,6 +578,7 @@ const get = WalkTreeUtils.get;
 
 const M = {};
 
+/* deprecated */
 M.musicbrainzToDeezer = function (album) {
   let uri = `//api.deezer.com/search/album?output=jsonp&callback=?&q=album:"${encodeURIComponent(album.title)}"`;
   if (album.artist) {
@@ -593,7 +594,7 @@ M.musicbrainzToDeezer = function (album) {
   });
 };
 
-
+/* deprecated */
 M.getAlbumId = function (movie) {
   let uri = '//api.deezer.com/search/album?output=jsonp&callback=?';
   uri += `&q=album:"${encodeURIComponent(movie.originalTitle)}"`;
@@ -616,7 +617,7 @@ M.getAlbumId = function (movie) {
   });
 };
 
-
+/* depreacteed */
 M.getTraklist = function (soundtrack) {
   return $.getJSON(`//api.deezer.com/album/${soundtrack.deezerAlbumId}/tracks/?output=jsonp&callback=?`)
   .then((res) => {
@@ -624,7 +625,7 @@ M.getTraklist = function (soundtrack) {
   });
 };
 
-
+/* deprecated */
 M.musicbrainz2DeezerAlbum = function (soundtrack) {
   let uri = '//api.deezer.com/search/album?output=jsonp&callback=?';
   uri += `&q=album:"${encodeURIComponent(soundtrack.title)}"`;
@@ -651,7 +652,8 @@ M.musicbrainz2DeezerTrack = function (track, album) {
     dur_max: Math.round(track.length / 1000 * 1.1),
   };
   params = _.pairs(params).map(kv => `${kv[0]}:"${kv[1]}"`).join(' ');
-  return $.getJSON(`//api.deezer.com/search/track/?output=jsonp&callback=?&strict=on&q=${params}`)
+  return cozy.client.fetchJSON('GET', `/remote/com.deezer.api.track?q=${params}`)
+  // $.getJSON(`//api.deezer.com/search/track/?output=jsonp&callback=?&strict=on&q=${params}`)
   .then((res) => {
     const deezerTrack = res.data[0];
     if (deezerTrack) {
@@ -671,7 +673,7 @@ M.getTracksId = function (movie) {
   .then(() => movie);
 };
 
-
+/* deprecated */
 M.getSoundtracks = function (movie) {
   return M.musicbrainz2DeezerAlbum(movie.soundtrack)
   .then(() => movie);
@@ -682,175 +684,10 @@ module.exports = M;
 });
 
 require.register("lib/musicbrainz.js", function(exports, require, module) {
-'use_strict';
-
-const AsyncPromise = require('./async_promise');
-const WalkTreeUtils = require('./walktree_utils');
-
-const promiseSeries = AsyncPromise.series;
-const promiseFind = AsyncPromise.find;
-const get = WalkTreeUtils.get;
-
-
-const M = {};
-
-const DOMAIN = '//ssl14.ovh.net/~hoodbrai/proxy.php?http://musicbrainz-mirror.eu:5000';
-// const DOMAIN = '//cluster015.ovh.net/~fingyqpv/proxy.php?http://musicbrainz-mirror.eu:5000';
-// const DOMAIN = '//musicbrainz-mirror.eu:5000'; // NO valid SSL !
-// const DOMAIN = '//musicbrainz.org';
-
-const THROTTLING_PERIOD = 100;
-
-// Musicbrainz
-M.getPlayList = function (movie) {
-  let uri = `${DOMAIN}/ws/2/release-group/?fmt=json&query=`;
-  uri += `release:${encodeURIComponent(movie.originalTitle)}%20AND%20type:soundtrack`;
-
-  // if (movie.composer && movie.composer.label) {
-  //     uri += `%20AND%20artistname:${movie.composer.label}`;
-  // }
-
-  return $.getJSON(uri)
-  .then((res) => {
-    const filtered = res['release-groups'].filter(item => item.score > 90);
-    movie.soundtracks = filtered.map(rg => ({
-      title: rg.title,
-      musicbrainzReleaseGroupId: rg.id,
-      artist: get(rg, 'artist-credits', 0, 'artist', 'name'),
-    }));
-    return movie;
-  });
-};
-
-M._getReleaseGroupById = function (rgId) {
-  return $.getJSON(`${DOMAIN}/ws/2/release-group/${rgId}/?fmt=json&inc=url-rels+releases&status=official`);
-};
-
-M._findReleaseGroup = function (movie) {
-  // Find the release group with the same imdbId.
-  const title = movie.soundtrack.label || movie.originalTitle;
-
-  let uri = `${DOMAIN}/ws/2/release-group/?fmt=json&query=`;
-  uri += `release:${encodeURIComponent(title)}%20AND%20type:soundtrack`;
-
-  // Doesnt work : always empty result...
-  // if (movie.composer && movie.composer.label) {
-  //     uri += `%20AND%20artistname:${movie.composer.label}`;
-  // }
-
-  return $.getJSON(uri)
-  .then((res) => { // highlight best release-groups candidates.
-    return res['release-groups'].sort((a, b) => {
-      if (a.score > 90 || b.score > 90) {
-        return (a.score === b.score) ? b.count - a.count : b.score - a.score;
-      }
-
-      // sort with more releases first, then the best title match first,
-      return (a.count === b.count) ? b.score - a.score : b.count - a.count;
-    });
-  })
-  .then((releaseGroups) => { // Look in each releasegroup, the one with imdbid.
-    return promiseFind(releaseGroups, (releaseGroup) => {
-      return M._getReleaseGroupById(releaseGroup.id)
-      .then((releaseGroup) => {
-        const withSameIMDBId = releaseGroup.relations.some(
-          relation => relation.url.resource === `http://www.imdb.com/title/${movie.imdbId}/`);
-
-        if (withSameIMDBId) {
-          return releaseGroup;
-        }
-        return false;
-      });
-    }, THROTTLING_PERIOD).then((found) => {
-      if (found === undefined) {
-        return Promise.reject("Can't find releaseGroup with corresponding imdbId");
-      }
-      return found;
-    });
-  });
-};
-
-M.getBestRecording = function (movie) {
-  return Promise.resolve()
-  .then(() => {
-    if (movie.soundtrack.musicbrainzReleaseGroupId) {
-      return M._getReleaseGroupById(movie.soundtrack.musicbrainzReleaseGroupId);
-    }
-    return M._findReleaseGroup(movie);
-  })
-  .then((releaseGroup) => {
-    movie.soundtrack = $.extend(movie.soundtrack, {
-      musicbrainzReleaseGroupId: releaseGroup.id,
-      artist: get(releaseGroup, 'artist-credits', 0, 'artist', 'name'),
-    });
-    return releaseGroup;
-  })
-  .then((releaseGroup) => { // choose oldest release, and or right lang.
-    const releases = releaseGroup.releases.sort((a, b) => {
-      const extractYear = (rg) => {
-        const date = rg.date || rg['first-release-date'];
-        return date ? date.slice(0, 4) : new Date().getFullYear().toString();
-      };
-      const yearA = extractYear(a);
-      const yearB = extractYear(b);
-
-      if (yearA === yearB) {
-        return (a.country === 'FR') ? -1 : 1;
-      }
-
-      return (yearA < yearB) ? -1 : 1;
-    });
-    return releases[0];
-  })
-  .then((release) => { // get recordings for the specified group.
-    return $.getJSON(`${DOMAIN}/ws/2/release/${release.id}/?fmt=json&inc=recordings+artist-credits+labels`)
-    .then((res) => {
-      const soundtrack = movie.soundtrack;
-      let tracks = get(res, 'media', 0, 'tracks');
-      tracks = tracks.map(track => ({
-        artist: get(track, 'artist-credit', 0, 'artist', 'name'),
-        number: track.number,
-        musicbrainzId: track.id,
-        length: track.length,
-        title: track.title,
-      }));
-      soundtrack.tracks = tracks;
-      soundtrack.title = res.title;
-      soundtrack.musicLabel = get(res, 'label-info', 0, 'label', 'name');
-    });
-  })
-  .then(() => movie);
-};
-
-
-M.getRecordings = function (movie) {
-  return promiseSeries(movie.soundtracks, M.getRecording)
-  .then(() => movie);
-};
-
-
-M.getRecording = function (releaseGroup) {
-  return $.getJSON(`${DOMAIN}/ws/2/recording?fmt=json&query=rgid:${releaseGroup.musicbrainzReleaseGroupId}`)
-  .then((res) => {
-    if (res.recordings) {
-      releaseGroup.tracks = res.recordings;
-    }
-    return releaseGroup;
-  }).catch(() => releaseGroup);
-};
-
-
-M.getSoundtrack = function (movie) {
-  return M.getBestRecording(movie);
-  // return Promise.resolve(
-  //   movie.soundtrack.musicbrainzReleaseGroupId ? movie : M.getBestRecording(movie));
-};
-
-module.exports = M;
 
 });
 
-require.register("lib/walktree_utils.js", function(exports, require, module) {
+;require.register("lib/walktree_utils.js", function(exports, require, module) {
 'use_strict';
 
 module.exports.get = function (obj, ...prop) {
@@ -921,7 +758,8 @@ M.getMovieData = function (wikidataId) {
   }
   LIMIT 1`;
 
-  return $.getJSON(wdk.sparqlQuery(sparql))
+  // return $.getJSON(wdk.sparqlQuery(sparql))
+  return cozy.client.fetchJSON('GET', `/remote/org.wikidata.sparql?q=${sparql}`)
   .then(wdk.simplifySparqlResults)
   .then((movies) => {
     if (!movies || movies.length === 0) { throw new Error('this ID is not a movie'); }
@@ -947,7 +785,7 @@ M.getMovieData = function (wikidataId) {
 
 
 M.getPoster = function (movie) {
-  if (!movie.wikiLink) {
+  if (typeof(movie.wikiLink) !== 'string') {
     console.error("Cant' get poster: no wiki link in movie obj.");
     return Promise.resolve(movie); // continue on errors.
   }
@@ -957,9 +795,11 @@ M.getPoster = function (movie) {
     action: 'parse',
     format: 'json',
     prop: 'images',
+    page: movie.wikiLink.replace(/.*\/wiki\//, ''),
   };
-  const uri = movie.wikiLink.replace('/wiki/', `/w/api.php?${$.param(params)}&page=`);
-  return $.getJSON(uri)
+  // const uri = movie.wikiLink.replace('/wiki/', `/w/api.php?${$.param(params)}&page=`);
+  // return $.getJSON(uri)
+  return cozy.client.fetchJSON('GET', `/remote/org.wikipedia.en.api?params=${$.param(params)}`)
   .then((data) => {
     const images = get(data, 'parse', 'images');
     let name;
@@ -989,7 +829,7 @@ M.getPoster = function (movie) {
 
 
 M.getSynopsis = function (movie) {
-  if (!movie.wikiLinkFr) {
+  if (typeof(movie.wikiLinkFr) !== 'string') {
     console.error("Cant' get synopsys: no wiki link in movie obj.");
     return movie; // continue on errors.
   }
@@ -1003,9 +843,13 @@ M.getSynopsis = function (movie) {
     disablelimitreport: 1,
     disableeditsection: 1,
     disabletoc: 1,
+    page: movie.wikiLinkFr.replace(/.*\/wiki\//, ''),
   };
-  const uri = movie.wikiLinkFr.replace('/wiki/', `/w/api.php?${$.param(params)}&page=`);
-  return $.getJSON(uri).then((data) => {
+  // const uri = movie.wikiLinkFr.replace('/wiki/', `/w/api.php?${$.param(params)}&page=`);
+
+  // return $.getJSON(uri)
+  return cozy.client.fetchJSON('GET', `/remote/org.wikipedia.fr.api?params=${$.param(params)}`)
+  .then((data) => {
     // TODO: not good enough.
     const html = data.parse.text['*'];
     movie.synopsis = $(html).text();
@@ -1021,7 +865,7 @@ M.getMovieById = function (wikidataId) {
   .then(M.getSynopsis);
 };
 
-
+// obsolete
 M.prefetchMovieTitle = function (lastMod) {
   const sparql = `SELECT ?item ?itemLabel ?imdbId WHERE {
   ?item wdt:P31/wdt:P279* wd:Q11424;
@@ -1039,6 +883,17 @@ M.prefetchMovieTitle = function (lastMod) {
 };
 
 module.exports = M;
+
+// Remote doctypes
+// --> org.wikipedia.fr.api
+// GET https://fr.wikipedia.org/w/api.php?{{params}}
+//
+// --> org.wikipedia.en.api
+// GET https://en.wikipedia.org/w/api.php?{{params}}
+//
+// --> org.wikidata.sparql
+// GET https://query.wikidata.org/sparql?format=json&query={{q}}
+//
 
 // // // // // // // // // // // // // // // // // // // // // // // // // // //
 
@@ -1148,17 +1003,19 @@ module.exports.fetchMoviesSuggestions = function (title) {
 function getFilmSuggestionObjectAPI(filmTitle, limit) {
   limit = limit || 50;
   const params = {
-    action: 'wbsearchentities',
     search: filmTitle,
     language: 'fr',
     type: 'item',
     limit: limit,
-    format: 'json',
-    origin: '*',
+
+    // action: 'wbsearchentities',
+    // format: 'json',
+    // origin: '*',
   };
-  return $.getJSON(
-    `//www.wikidata.org/w/api.php?${$.param(params)}`)
+  // return $.getJSON(`//www.wikidata.org/w/api.php?${$.param(params)}`)
+  cozy.client.fetchJSON('GET', `/remote/org.wikidata.wbsearchentities?params=${$.param(params)}`)
   .then((res) => {
+    console.log(res);
     const items = res.search.filter(item => item.description &&
        (item.description.indexOf('film') !== -1
        || item.description.indexOf('movie') !== -1));
@@ -2373,3 +2230,5 @@ if (typeof define === 'function' && define.amd) {
   
 });})();require('___globals___');
 
+
+//# sourceMappingURL=app.js.map

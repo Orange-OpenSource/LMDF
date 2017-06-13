@@ -6,6 +6,7 @@ const get = WalkTreeUtils.get;
 
 const M = {};
 
+/* deprecated */
 M.musicbrainzToDeezer = function (album) {
   let uri = `//api.deezer.com/search/album?output=jsonp&callback=?&q=album:"${encodeURIComponent(album.title)}"`;
   if (album.artist) {
@@ -21,7 +22,7 @@ M.musicbrainzToDeezer = function (album) {
   });
 };
 
-
+/* deprecated */
 M.getAlbumId = function (movie) {
   let uri = '//api.deezer.com/search/album?output=jsonp&callback=?';
   uri += `&q=album:"${encodeURIComponent(movie.originalTitle)}"`;
@@ -44,7 +45,7 @@ M.getAlbumId = function (movie) {
   });
 };
 
-
+/* depreacteed */
 M.getTraklist = function (soundtrack) {
   return $.getJSON(`//api.deezer.com/album/${soundtrack.deezerAlbumId}/tracks/?output=jsonp&callback=?`)
   .then((res) => {
@@ -52,7 +53,7 @@ M.getTraklist = function (soundtrack) {
   });
 };
 
-
+/* deprecated */
 M.musicbrainz2DeezerAlbum = function (soundtrack) {
   let uri = '//api.deezer.com/search/album?output=jsonp&callback=?';
   uri += `&q=album:"${encodeURIComponent(soundtrack.title)}"`;
@@ -79,7 +80,8 @@ M.musicbrainz2DeezerTrack = function (track, album) {
     dur_max: Math.round(track.length / 1000 * 1.1),
   };
   params = _.pairs(params).map(kv => `${kv[0]}:"${kv[1]}"`).join(' ');
-  return $.getJSON(`//api.deezer.com/search/track/?output=jsonp&callback=?&strict=on&q=${params}`)
+  return cozy.client.fetchJSON('GET', `/remote/com.deezer.api.track?q=${params}`)
+  // $.getJSON(`//api.deezer.com/search/track/?output=jsonp&callback=?&strict=on&q=${params}`)
   .then((res) => {
     const deezerTrack = res.data[0];
     if (deezerTrack) {
@@ -99,7 +101,7 @@ M.getTracksId = function (movie) {
   .then(() => movie);
 };
 
-
+/* deprecated */
 M.getSoundtracks = function (movie) {
   return M.musicbrainz2DeezerAlbum(movie.soundtrack)
   .then(() => movie);

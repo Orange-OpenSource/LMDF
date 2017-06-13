@@ -55,7 +55,8 @@ M.getMovieData = function (wikidataId) {
   }
   LIMIT 1`;
 
-  return $.getJSON(wdk.sparqlQuery(sparql))
+  // return $.getJSON(wdk.sparqlQuery(sparql))
+  return cozy.client.fetchJSON('GET', `/remote/org.wikidata.sparql?q=${sparql}`)
   .then(wdk.simplifySparqlResults)
   .then((movies) => {
     if (!movies || movies.length === 0) { throw new Error('this ID is not a movie'); }
@@ -81,7 +82,7 @@ M.getMovieData = function (wikidataId) {
 
 
 M.getPoster = function (movie) {
-  if (!movie.wikiLink) {
+  if (typeof(movie.wikiLink) !== 'string') {
     console.error("Cant' get poster: no wiki link in movie obj.");
     return Promise.resolve(movie); // continue on errors.
   }
@@ -91,9 +92,11 @@ M.getPoster = function (movie) {
     action: 'parse',
     format: 'json',
     prop: 'images',
+    page: movie.wikiLink.replace(/.*\/wiki\//, ''),
   };
-  const uri = movie.wikiLink.replace('/wiki/', `/w/api.php?${$.param(params)}&page=`);
-  return $.getJSON(uri)
+  // const uri = movie.wikiLink.replace('/wiki/', `/w/api.php?${$.param(params)}&page=`);
+  // return $.getJSON(uri)
+  return cozy.client.fetchJSON('GET', `/remote/org.wikipedia.en.api?params=${$.param(params)}`)
   .then((data) => {
     const images = get(data, 'parse', 'images');
     let name;
@@ -123,7 +126,7 @@ M.getPoster = function (movie) {
 
 
 M.getSynopsis = function (movie) {
-  if (!movie.wikiLinkFr) {
+  if (typeof(movie.wikiLinkFr) !== 'string') {
     console.error("Cant' get synopsys: no wiki link in movie obj.");
     return movie; // continue on errors.
   }
@@ -137,9 +140,13 @@ M.getSynopsis = function (movie) {
     disablelimitreport: 1,
     disableeditsection: 1,
     disabletoc: 1,
+    page: movie.wikiLinkFr.replace(/.*\/wiki\//, ''),
   };
-  const uri = movie.wikiLinkFr.replace('/wiki/', `/w/api.php?${$.param(params)}&page=`);
-  return $.getJSON(uri).then((data) => {
+  // const uri = movie.wikiLinkFr.replace('/wiki/', `/w/api.php?${$.param(params)}&page=`);
+
+  // return $.getJSON(uri)
+  return cozy.client.fetchJSON('GET', `/remote/org.wikipedia.fr.api?params=${$.param(params)}`)
+  .then((data) => {
     // TODO: not good enough.
     const html = data.parse.text['*'];
     movie.synopsis = $(html).text();
@@ -155,7 +162,7 @@ M.getMovieById = function (wikidataId) {
   .then(M.getSynopsis);
 };
 
-
+// obsolete
 M.prefetchMovieTitle = function (lastMod) {
   const sparql = `SELECT ?item ?itemLabel ?imdbId WHERE {
   ?item wdt:P31/wdt:P279* wd:Q11424;
@@ -173,6 +180,17 @@ M.prefetchMovieTitle = function (lastMod) {
 };
 
 module.exports = M;
+
+// Remote doctypes
+// --> org.wikipedia.fr.api
+// GET https://fr.wikipedia.org/w/api.php?{{params}}
+//
+// --> org.wikipedia.en.api
+// GET https://en.wikipedia.org/w/api.php?{{params}}
+//
+// --> org.wikidata.sparql
+// GET https://query.wikidata.org/sparql?format=json&query={{q}}
+//
 
 // // // // // // // // // // // // // // // // // // // // // // // // // // //
 

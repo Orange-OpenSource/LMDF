@@ -52,7 +52,7 @@ body {
   margin-right: 5%;
 }
 
-
+/* Popin */
 @media(min-width: 768px) {
   #popin iframe {
     border: 5000px solid rgba(0,0,0, 0.7);
@@ -78,7 +78,7 @@ body {
     z-index: 10000;
   }
 }
-
+/* END Popin */
 
 [role="application"] {
   width: 100vw;

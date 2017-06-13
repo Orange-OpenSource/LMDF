@@ -10799,3 +10799,5 @@ exports.encode = exports.stringify = require('./encode');
 
 },{"./decode":19,"./encode":20}]},{},[8])(8)
 });
+
+//# sourceMappingURL=vendor.js.map
