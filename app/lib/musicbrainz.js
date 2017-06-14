@@ -10,12 +10,15 @@ const get = WalkTreeUtils.get;
 
 const M = {};
 
-const THROTTLING_PERIOD = 100;
+const THROTTLING_PERIOD = 500;
 
 // Musicbrainz
 M.getPlayList = function (movie) {
-  const query = `release:${encodeURIComponent(movie.originalTitle)}%20AND%20type:soundtrack`;
-  return cozy.client.fetchJSON('GET', `/remote/mirror.musicbrainz.release-group.search?q=${query}`)
+  // const query = `release:${encodeURIComponent(movie.originalTitle)}%20AND%20type:soundtrack`;
+  let query = `release:${encodeURIComponent(movie.originalTitle)}%20AND%20type:soundtrack`;
+  query = encodeURIComponent(query);
+  return cozy.client.fetchJSON('GET', `/remote/org.musicbrainz.release-group.search?q=${query}`)
+  .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res))
   .then((res) => {
     const filtered = res['release-groups'].filter(item => item.score > 90);
     movie.soundtracks = filtered.map(rg => ({
@@ -30,21 +33,23 @@ M.getPlayList = function (movie) {
 M._getReleaseGroupById = function (rgId) {
   let params = 'inc=url-rels+releases&status=official';
   params = encodeURIComponent(params);
-  return cozy.client.fetchJSON('GET', `/remote/mirror.musicbrainz.release-group?rgid=${rgId}&params=${params}`);
+  return cozy.client.fetchJSON('GET', `/remote/org.musicbrainz.release-group?rgid=${rgId}&params=${params}`)
+  .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res));
 };
 
 M._findReleaseGroup = function (movie) {
   // Find the release group with the same imdbId.
   const title = movie.soundtrack.label || movie.originalTitle;
 
-  const query = `release:${encodeURIComponent(title)}%20AND%20type:soundtrack`;
-
+  let query = `release:${encodeURIComponent(title)}%20AND%20type:soundtrack`;
+  query = encodeURIComponent(query);
   // Doesnt work : always empty result...
   // if (movie.composer && movie.composer.label) {
   //     uri += `%20AND%20artistname:${movie.composer.label}`;
   // }
 
-  return cozy.client.fetchJSON('GET', `/remote/mirror.musicbrainz.release-group.search?q=${query}`)
+  return cozy.client.fetchJSON('GET', `/remote/org.musicbrainz.release-group.search?q=${query}`)
+  .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res))
   .then((res) => { // highlight best release-groups candidates.
     return res['release-groups'].sort((a, b) => {
       if (a.score > 90 || b.score > 90) {
@@ -111,7 +116,8 @@ M.getBestRecording = function (movie) {
   .then((release) => { // get recordings for the specified group.
     let params = 'inc=recordings+artist-credits+labels';
     params = encodeURIComponent(params);
-    return cozy.client.fetchJSON('GET', `/remote/mirror.musicbrainz.release?rid=${release.id}&params=${params}`)
+    return cozy.client.fetchJSON('GET', `/remote/org.musicbrainz.release?rid=${release.id}&params=${params}`)
+    .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res))
     .then((res) => {
       const soundtrack = movie.soundtrack;
       let tracks = get(res, 'media', 0, 'tracks');
@@ -139,7 +145,8 @@ M.getRecordings = function (movie) {
 
 M.getRecording = function (releaseGroup) {
   return cozy.client.fetchJSON('GET',
-    `/remote/mirror.musicbrainz.recording.search?q=rgid:${releaseGroup.musicbrainzReleaseGroupId}`)
+    `/remote/org.musicbrainz.recording.search?q=rgid:${releaseGroup.musicbrainzReleaseGroupId}`)
+  .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res))
   .then((res) => {
     if (res.recordings) {
       releaseGroup.tracks = res.recordings;

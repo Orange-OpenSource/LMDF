@@ -391,7 +391,7 @@ require.register("lib/appname_version.js", function(exports, require, module) {
 
 const name = 'lamusiquedemesfilms';
 // use brunch-version plugin to populate these.
-const version = '3.0.4';
+const version = '3.0.5';
 
 module.exports = `${name}-${version}`;
 
@@ -652,9 +652,9 @@ M.musicbrainz2DeezerTrack = function (track, album) {
     dur_max: Math.round(track.length / 1000 * 1.1),
   };
   params = _.pairs(params).map(kv => `${kv[0]}:"${kv[1]}"`).join(' ');
-  return cozy.client.fetchJSON('GET', `/remote/com.deezer.api.track?q=${encodeURIComponent(encodeURIComponent(params))}`)
-  // $.getJSON(`//api.deezer.com/search/track/?output=jsonp&callback=?&strict=on&q=${params}`)
-  .then(res => (typeof(res) === 'string') ? JSON.parse(res) : res)
+  params = encodeURIComponent(encodeURIComponent(params));
+  return cozy.client.fetchJSON('GET', `/remote/com.deezer.api.track?q=${params}`)
+  .then(res => ((typeof res === 'string') ? JSON.parse(res) : res))
   .then((res) => {
     const deezerTrack = res.data[0];
     if (deezerTrack) {
@@ -685,13 +685,13 @@ module.exports = M;
 });
 
 require.register("lib/img_fetcher.js", function(exports, require, module) {
-'use-strict'
+'use-strict';
 
 const imgs = {};
 
 module.exports = (uri, doctype, path) => {
   if (!(uri in imgs)) {
-    imgs[uri] = new Promise((resolve, reject) => {
+    imgs[uri] = new Promise((resolve) => {
       Promise.all([
         cozy.client.authorize(),
         cozy.client.fullpath(`/remote/${doctype}?path=${encodeURIComponent(path)}`),
@@ -711,7 +711,7 @@ module.exports = (uri, doctype, path) => {
 };
 
 
-/*eslint-disable no-alert, no-console */
+/* eslint-disable */
 function base64ArrayBuffer(arrayBuffer) {
   var base64    = ''
   var encodings = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
@@ -763,6 +763,8 @@ function base64ArrayBuffer(arrayBuffer) {
 
   return base64
 }
+/* eslint-enable */
+
 });
 
 ;require.register("lib/musicbrainz.js", function(exports, require, module) {
@@ -778,40 +780,15 @@ const get = WalkTreeUtils.get;
 
 const M = {};
 
-// https://ssl14.ovh.net/~hoodbrai/proxy.php?http://musicbrainz-mirror.eu:5000/ws/2/
-
-// --> mirror.musicbrainz.release-group.search
-// https://ssl14.ovh.net/~hoodbrai/proxy.php?http://musicbrainz-mirror.eu:5000/ws/2/release-group/?fmt=json&query={{q}}
-
-// --> mirror.musicbrainz.release-group
-// https://ssl14.ovh.net/~hoodbrai/proxy.php?http://musicbrainz-mirror.eu:5000/ws/2/release-group/{{rgid}}/?fmt=json&{{params}}
-
-// --> mirror.musicbrainz.release
-// https://ssl14.ovh.net/~hoodbrai/proxy.php?http://musicbrainz-mirror.eu:5000/ws/2/release/{{rid}}/?fmt=json&{{params}}
-
-// --> mirror.musicbrainz.recording.search
-// https://ssl14.ovh.net/~hoodbrai/proxy.php?http://musicbrainz-mirror.eu:5000/ws/2/recording?fmt=json&query={{q}}
-
-
-// const DOMAIN = '//ssl14.ovh.net/~hoodbrai/proxy.php?http://musicbrainz-mirror.eu:5000';
-// const DOMAIN = '//cluster015.ovh.net/~fingyqpv/proxy.php?http://musicbrainz-mirror.eu:5000';
-// const DOMAIN = '//musicbrainz-mirror.eu:5000'; // NO valid SSL !
-// const DOMAIN = '//musicbrainz.org';
-
-const THROTTLING_PERIOD = 100;
+const THROTTLING_PERIOD = 500;
 
 // Musicbrainz
 M.getPlayList = function (movie) {
-  const query = `release:${encodeURIComponent(movie.originalTitle)}%20AND%20type:soundtrack`;
-  // let uri = `${DOMAIN}/ws/2/release-group/?fmt=json&query=`;
-  // uri += query;
-
-  // if (movie.composer && movie.composer.label) {
-  //     uri += `%20AND%20artistname:${movie.composer.label}`;
-  // }
-
-  // return $.getJSON(uri)
-  return cozy.client.fetchJSON('GET', `/remote/mirror.musicbrainz.release-group.search?q=${query}`)
+  // const query = `release:${encodeURIComponent(movie.originalTitle)}%20AND%20type:soundtrack`;
+  let query = `release:${encodeURIComponent(movie.originalTitle)}%20AND%20type:soundtrack`;
+  query = encodeURIComponent(query);
+  return cozy.client.fetchJSON('GET', `/remote/org.musicbrainz.release-group.search?q=${query}`)
+  .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res))
   .then((res) => {
     const filtered = res['release-groups'].filter(item => item.score > 90);
     movie.soundtracks = filtered.map(rg => ({
@@ -824,25 +801,25 @@ M.getPlayList = function (movie) {
 };
 
 M._getReleaseGroupById = function (rgId) {
-  return cozy.client.fetchJSON('GET', `/remote/mirror.musicbrainz.release-group?rgid=${rgId}&params=${encodeURIComponent('inc=url-rels+releases&status=official')}`);
-  // return $.getJSON(`${DOMAIN}/ws/2/release-group/${rgId}/?fmt=json&inc=url-rels+releases&status=official`);
+  let params = 'inc=url-rels+releases&status=official';
+  params = encodeURIComponent(params);
+  return cozy.client.fetchJSON('GET', `/remote/org.musicbrainz.release-group?rgid=${rgId}&params=${params}`)
+  .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res));
 };
 
 M._findReleaseGroup = function (movie) {
   // Find the release group with the same imdbId.
   const title = movie.soundtrack.label || movie.originalTitle;
 
-  const query = `release:${encodeURIComponent(title)}%20AND%20type:soundtrack`;
-  // let uri = `${DOMAIN}/ws/2/release-group/?fmt=json&query=`;
-  // uri += query;
-
+  let query = `release:${encodeURIComponent(title)}%20AND%20type:soundtrack`;
+  query = encodeURIComponent(query);
   // Doesnt work : always empty result...
   // if (movie.composer && movie.composer.label) {
   //     uri += `%20AND%20artistname:${movie.composer.label}`;
   // }
 
-  // return $.getJSON(uri)
-  return cozy.client.fetchJSON('GET', `/remote/mirror.musicbrainz.release-group.search?q=${query}`)
+  return cozy.client.fetchJSON('GET', `/remote/org.musicbrainz.release-group.search?q=${query}`)
+  .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res))
   .then((res) => { // highlight best release-groups candidates.
     return res['release-groups'].sort((a, b) => {
       if (a.score > 90 || b.score > 90) {
@@ -907,8 +884,10 @@ M.getBestRecording = function (movie) {
     return releases[0];
   })
   .then((release) => { // get recordings for the specified group.
-    // return $.getJSON(`${DOMAIN}/ws/2/release/${release.id}/?fmt=json&inc=recordings+artist-credits+labels`)
-    return cozy.client.fetchJSON('GET', `/remote/mirror.musicbrainz.release?rid=${release.id}&params=${encodeURIComponent('inc=recordings+artist-credits+labels')}`)
+    let params = 'inc=recordings+artist-credits+labels';
+    params = encodeURIComponent(params);
+    return cozy.client.fetchJSON('GET', `/remote/org.musicbrainz.release?rid=${release.id}&params=${params}`)
+    .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res))
     .then((res) => {
       const soundtrack = movie.soundtrack;
       let tracks = get(res, 'media', 0, 'tracks');
@@ -935,8 +914,9 @@ M.getRecordings = function (movie) {
 
 
 M.getRecording = function (releaseGroup) {
-  // return $.getJSON(`${DOMAIN}/ws/2/recording?fmt=json&query=rgid:${releaseGroup.musicbrainzReleaseGroupId}`)
-  return cozy.client.fetchJSON('GET', `/remote/mirror.musicbrainz.recording.search?q=rgid:${releaseGroup.musicbrainzReleaseGroupId}`)
+  return cozy.client.fetchJSON('GET',
+    `/remote/org.musicbrainz.recording.search?q=rgid:${releaseGroup.musicbrainzReleaseGroupId}`)
+  .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res))
   .then((res) => {
     if (res.recordings) {
       releaseGroup.tracks = res.recordings;
@@ -980,7 +960,7 @@ const get = WalkTreeUtils.get;
 const M = {};
 
 M.getMovieData = function (wikidataId) {
-  const sparql = `SELECT ?label ?wikiLink ?wikiLinkFr ?originalTitle ?composer ?composerLabel
+  let sparql = `SELECT ?label ?wikiLink ?wikiLinkFr ?originalTitle ?composer ?composerLabel
       ?genre ?genreLabel ?publicationDate ?duration ?director ?directorLabel
       ?musicBrainzRGId ?imdbId ?countryOfOrigin
       ?countryOfOriginLabel ?countryOfOriginLanguageCode
@@ -1027,8 +1007,10 @@ M.getMovieData = function (wikidataId) {
   }
   LIMIT 1`;
 
-  return $.getJSON(wdk.sparqlQuery(sparql))
-  // return cozy.client.fetchJSON('GET', `/remote/org.wikidata.sparql?q=${encodeURIComponent(encodeURIComponent(sparql))}`)
+
+  // return $.getJSON(wdk.sparqlQuery(sparql))
+  sparql = encodeURIComponent(encodeURIComponent(sparql));
+  return cozy.client.fetchJSON('GET', `/remote/org.wikidata.sparql?q=${sparql}`)
   .then(wdk.simplifySparqlResults)
   .then((movies) => {
     if (!movies || movies.length === 0) { throw new Error('this ID is not a movie'); }
@@ -1054,23 +1036,19 @@ M.getMovieData = function (wikidataId) {
 
 
 M.getPoster = function (movie) {
-  if (typeof(movie.wikiLink) !== 'string') {
+  if (typeof (movie.wikiLink) !== 'string') {
     console.error("Cant' get poster: no wiki link in movie obj.");
     return Promise.resolve(movie); // continue on errors.
   }
 
   const params = {
-    // origin: '*',
-
     action: 'parse',
     format: 'json',
     prop: 'images',
     page: decodeURIComponent(movie.wikiLink.replace(/.*\/wiki\//, '')),
   };
-  // const uri = movie.wikiLink.replace('/wiki/', `/w/api.php?${$.param(params)}&page=`);
-  // return $.getJSON(uri)
   return cozy.client.fetchJSON('GET', `/remote/org.wikipedia.en.api?params=${encodeURIComponent($.param(params))}`)
-  .then(res => (typeof(res) === 'string') ? JSON.parse(res) : res)
+  .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res))
   .then((data) => {
     const images = get(data, 'parse', 'images');
     let name;
@@ -1084,17 +1062,15 @@ M.getPoster = function (movie) {
   })
   .then((fileName) => {
     const params = {
-      // origin: '*',
       action: 'query',
       format: 'json',
       prop: 'imageinfo',
       iiprop: 'url',
       titles: `Image:${fileName}`,
     };
-    // return $.getJSON(`https://en.wikipedia.org/w/api.php?${$.param(params)}`);
     return cozy.client.fetchJSON('GET', `/remote/org.wikipedia.en.api?params=${encodeURIComponent($.param(params))}`);
   })
-  .then(res => (typeof(res) === 'string') ? JSON.parse(res) : res)
+  .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res))
   .then((data) => {
     movie.posterUri = get(getFirst(get(data, 'query', 'pages')), 'imageinfo', 0, 'url');
     return movie;
@@ -1103,13 +1079,12 @@ M.getPoster = function (movie) {
 
 
 M.getSynopsis = function (movie) {
-  if (typeof(movie.wikiLinkFr) !== 'string') {
+  if (typeof (movie.wikiLinkFr) !== 'string') {
     console.error("Cant' get synopsys: no wiki link in movie obj.");
     return movie; // continue on errors.
   }
 
   const params = {
-    // origin: '*',
     action: 'parse',
     format: 'json',
     prop: 'text',
@@ -1119,10 +1094,8 @@ M.getSynopsis = function (movie) {
     disabletoc: 1,
     page: decodeURIComponent(movie.wikiLinkFr.replace(/.*\/wiki\//, '')),
   };
-  // const uri = movie.wikiLinkFr.replace('/wiki/', `/w/api.php?${$.param(params)}&page=`);
-  // return $.getJSON(uri)
   return cozy.client.fetchJSON('GET', `/remote/org.wikipedia.fr.api?params=${encodeURIComponent($.param(params))}`)
-  .then(res => (typeof(res) === 'string') ? JSON.parse(res) : res)
+  .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res))
   .then((data) => {
     // TODO: not good enough.
     const html = data.parse.text['*'];
@@ -1276,16 +1249,18 @@ module.exports.fetchMoviesSuggestions = function (title) {
 
 function getFilmSuggestionObjectAPI(filmTitle, limit) {
   limit = limit || 50;
-  const params = {
+  let params = {
     search: filmTitle,
     language: 'fr',
     type: 'item',
     limit: limit,
   };
-  return cozy.client.fetchJSON('GET', `/remote/org.wikidata.wbsearchentities?params=${encodeURIComponent($.param(params))}`)
-  .then(res => (typeof(res) === 'string') ? JSON.parse(res) : res)
+
+  params = $.param(params);
+  params = encodeURIComponent(params);
+  return cozy.client.fetchJSON('GET', `/remote/org.wikidata.wbsearchentities?params=${params}`)
+  .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res))
   .then((res) => {
-    console.log(res);
     const items = res.search.filter(item => item.description &&
        (item.description.indexOf('film') !== -1
        || item.description.indexOf('movie') !== -1));
@@ -1754,7 +1729,7 @@ const template = require('./templates/movie_details');
 module.exports = Mn.View.extend({
   template: template,
 
-  ui:  {
+  ui: {
     img: 'img.poster',
   },
   regions: {
@@ -2534,5 +2509,3 @@ if (typeof define === 'function' && define.amd) {
   
 });})();require('___globals___');
 
-
-//# sourceMappingURL=app.js.map

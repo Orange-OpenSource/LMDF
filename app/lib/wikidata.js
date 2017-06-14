@@ -8,7 +8,7 @@ const get = WalkTreeUtils.get;
 const M = {};
 
 M.getMovieData = function (wikidataId) {
-  const sparql = `SELECT ?label ?wikiLink ?wikiLinkFr ?originalTitle ?composer ?composerLabel
+  let sparql = `SELECT ?label ?wikiLink ?wikiLinkFr ?originalTitle ?composer ?composerLabel
       ?genre ?genreLabel ?publicationDate ?duration ?director ?directorLabel
       ?musicBrainzRGId ?imdbId ?countryOfOrigin
       ?countryOfOriginLabel ?countryOfOriginLanguageCode
@@ -56,9 +56,9 @@ M.getMovieData = function (wikidataId) {
   LIMIT 1`;
 
 
-  return $.getJSON(wdk.sparqlQuery(sparql))
-  // sparql = encodeURIComponent(encodeURIComponent(sparql))
-  // return cozy.client.fetchJSON('GET', `/remote/org.wikidata.sparql?q=${sparql}`)
+  // return $.getJSON(wdk.sparqlQuery(sparql))
+  sparql = encodeURIComponent(encodeURIComponent(sparql));
+  return cozy.client.fetchJSON('GET', `/remote/org.wikidata.sparql?q=${sparql}`)
   .then(wdk.simplifySparqlResults)
   .then((movies) => {
     if (!movies || movies.length === 0) { throw new Error('this ID is not a movie'); }

@@ -1,5 +1,5 @@
 {
-  "version": "3.0.4",
+  "version": "3.0.5",
   "name": "La Musique de mes films",
   "slug": "app",
   "icon": "/img/app_icon.png",
@@ -59,19 +59,19 @@
     },
     "musicbrainzrelease": {
       "description": "Fetch informations from musicbrainz about some music disk release.",
-      "type": "mirror.musicbrainz.release"
+      "type": "org.musicbrainz.release"
     },
     "musicbrainzrecording.search": {
       "description": "Search information from musicbrainz about some music recordings.",
-      "type": "mirror.musicbrainz.recording.search"
+      "type": "org.musicbrainz.recording.search"
     },
     "musicbrainzreleasegroup": {
       "description": "Fetch informations from musicbrainz about some music disk  groups of release.",
-      "type": "mirror.musicbrainz.release-group"
+      "type": "org.musicbrainz.release-group"
     },
     "musicbrainzreleasegroup.search": {
       "description": "Search information from musicbrainz about some music groups of release.",
-      "type": "mirror.musicbrainz.release-group.search"
+      "type": "org.musicbrainz.release-group.search"
     },
     "deezerapi": {
       "description": "Search track in deezer catalog.",
