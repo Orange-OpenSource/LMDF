@@ -8,6 +8,9 @@ const template = require('./templates/movie_details');
 module.exports = Mn.View.extend({
   template: template,
 
+  ui: {
+    img: 'img.poster',
+  },
   regions: {
     player: {
       el: '.player',
@@ -46,6 +49,11 @@ module.exports = Mn.View.extend({
   },
 
   onRender: function () {
+    this.model.getPoster()
+    .then((dataUri) => {
+      this.ui.img.attr('src', dataUri);
+    });
+
     if (this.model.has('soundtrack') && this.model.get('soundtrack').tracks) {
       const album = new Backbone.Model(this.model.get('soundtrack'));
       album.set('hasDeezerIds', this.model.hasDeezerIds());

@@ -41,9 +41,45 @@
       "type": "io.cozy.apps",
       "verbs": ["GET"]
     },
-    "searchmovies": {
+    "wikidatasearchmovies": {
       "description": "Search movie titles from Wikidata",
-      "type": "org.wikidata.search"
+      "type": "org.wikidata.wbsearchentities"
+    },
+    "wikidatasparql": {
+      "description": "Search movie informations on Wikidata.",
+      "type": "org.wikidata.sparql"
+    },
+    "wikipediaen": {
+      "description": "Search movie poster through wikipedia en api.",
+      "type": "org.wikipedia.en.api"
+    },
+    "wikipediafr": {
+      "description": "Search movie synopsys through wikipedia fr api.",
+      "type": "org.wikipedia.fr.api"
+    },
+    "musicbrainzrelease": {
+      "description": "Fetch informations from musicbrainz about some music disk release.",
+      "type": "mirror.musicbrainz.release"
+    },
+    "musicbrainzrecording.search": {
+      "description": "Search information from musicbrainz about some music recordings.",
+      "type": "mirror.musicbrainz.recording.search"
+    },
+    "musicbrainzreleasegroup": {
+      "description": "Fetch informations from musicbrainz about some music disk  groups of release.",
+      "type": "mirror.musicbrainz.release-group"
+    },
+    "musicbrainzreleasegroup.search": {
+      "description": "Search information from musicbrainz about some music groups of release.",
+      "type": "mirror.musicbrainz.release-group.search"
+    },
+    "deezerapi": {
+      "description": "Search track in deezer catalog.",
+      "type": "com.deezer.api.track"
+    },
+    "wikimediauploads": {
+      "description": "Fetch movie posters from wikimedia.",
+      "type": "org.wikimedia.uploads"
     }
   }
 }

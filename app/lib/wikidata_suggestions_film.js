@@ -17,20 +17,18 @@ module.exports.fetchMoviesSuggestions = function (title) {
 
 function getFilmSuggestionObjectAPI(filmTitle, limit) {
   limit = limit || 50;
-  const params = {
+  let params = {
     search: filmTitle,
     language: 'fr',
     type: 'item',
     limit: limit,
-
-    // action: 'wbsearchentities',
-    // format: 'json',
-    // origin: '*',
   };
-  // return $.getJSON(`//www.wikidata.org/w/api.php?${$.param(params)}`)
-  cozy.client.fetchJSON('GET', `/remote/org.wikidata.wbsearchentities?params=${$.param(params)}`)
+
+  params = $.param(params);
+  params = encodeURIComponent(params);
+  return cozy.client.fetchJSON('GET', `/remote/org.wikidata.wbsearchentities?params=${params}`)
+  .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res))
   .then((res) => {
-    console.log(res);
     const items = res.search.filter(item => item.description &&
        (item.description.indexOf('film') !== -1
        || item.description.indexOf('movie') !== -1));

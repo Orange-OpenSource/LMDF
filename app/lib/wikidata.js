@@ -55,8 +55,10 @@ M.getMovieData = function (wikidataId) {
   }
   LIMIT 1`;
 
-  // return $.getJSON(wdk.sparqlQuery(sparql))
-  return cozy.client.fetchJSON('GET', `/remote/org.wikidata.sparql?q=${sparql}`)
+
+  return $.getJSON(wdk.sparqlQuery(sparql))
+  // sparql = encodeURIComponent(encodeURIComponent(sparql))
+  // return cozy.client.fetchJSON('GET', `/remote/org.wikidata.sparql?q=${sparql}`)
   .then(wdk.simplifySparqlResults)
   .then((movies) => {
     if (!movies || movies.length === 0) { throw new Error('this ID is not a movie'); }
@@ -82,21 +84,19 @@ M.getMovieData = function (wikidataId) {
 
 
 M.getPoster = function (movie) {
-  if (typeof(movie.wikiLink) !== 'string') {
+  if (typeof (movie.wikiLink) !== 'string') {
     console.error("Cant' get poster: no wiki link in movie obj.");
     return Promise.resolve(movie); // continue on errors.
   }
 
   const params = {
-    origin: '*',
     action: 'parse',
     format: 'json',
     prop: 'images',
-    page: movie.wikiLink.replace(/.*\/wiki\//, ''),
+    page: decodeURIComponent(movie.wikiLink.replace(/.*\/wiki\//, '')),
   };
-  // const uri = movie.wikiLink.replace('/wiki/', `/w/api.php?${$.param(params)}&page=`);
-  // return $.getJSON(uri)
-  return cozy.client.fetchJSON('GET', `/remote/org.wikipedia.en.api?params=${$.param(params)}`)
+  return cozy.client.fetchJSON('GET', `/remote/org.wikipedia.en.api?params=${encodeURIComponent($.param(params))}`)
+  .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res))
   .then((data) => {
     const images = get(data, 'parse', 'images');
     let name;
@@ -110,15 +110,16 @@ M.getPoster = function (movie) {
   })
   .then((fileName) => {
     const params = {
-      origin: '*',
       action: 'query',
       format: 'json',
       prop: 'imageinfo',
       iiprop: 'url',
       titles: `Image:${fileName}`,
     };
-    return $.getJSON(`https://en.wikipedia.org/w/api.php?${$.param(params)}`);
-  }).then((data) => {
+    return cozy.client.fetchJSON('GET', `/remote/org.wikipedia.en.api?params=${encodeURIComponent($.param(params))}`);
+  })
+  .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res))
+  .then((data) => {
     movie.posterUri = get(getFirst(get(data, 'query', 'pages')), 'imageinfo', 0, 'url');
     return movie;
   });
@@ -126,13 +127,12 @@ M.getPoster = function (movie) {
 
 
 M.getSynopsis = function (movie) {
-  if (typeof(movie.wikiLinkFr) !== 'string') {
+  if (typeof (movie.wikiLinkFr) !== 'string') {
     console.error("Cant' get synopsys: no wiki link in movie obj.");
     return movie; // continue on errors.
   }
 
   const params = {
-    origin: '*',
     action: 'parse',
     format: 'json',
     prop: 'text',
@@ -140,12 +140,10 @@ M.getSynopsis = function (movie) {
     disablelimitreport: 1,
     disableeditsection: 1,
     disabletoc: 1,
-    page: movie.wikiLinkFr.replace(/.*\/wiki\//, ''),
+    page: decodeURIComponent(movie.wikiLinkFr.replace(/.*\/wiki\//, '')),
   };
-  // const uri = movie.wikiLinkFr.replace('/wiki/', `/w/api.php?${$.param(params)}&page=`);
-
-  // return $.getJSON(uri)
-  return cozy.client.fetchJSON('GET', `/remote/org.wikipedia.fr.api?params=${$.param(params)}`)
+  return cozy.client.fetchJSON('GET', `/remote/org.wikipedia.fr.api?params=${encodeURIComponent($.param(params))}`)
+  .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res))
   .then((data) => {
     // TODO: not good enough.
     const html = data.parse.text['*'];

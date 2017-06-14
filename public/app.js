@@ -652,8 +652,9 @@ M.musicbrainz2DeezerTrack = function (track, album) {
     dur_max: Math.round(track.length / 1000 * 1.1),
   };
   params = _.pairs(params).map(kv => `${kv[0]}:"${kv[1]}"`).join(' ');
-  return cozy.client.fetchJSON('GET', `/remote/com.deezer.api.track?q=${params}`)
+  return cozy.client.fetchJSON('GET', `/remote/com.deezer.api.track?q=${encodeURIComponent(encodeURIComponent(params))}`)
   // $.getJSON(`//api.deezer.com/search/track/?output=jsonp&callback=?&strict=on&q=${params}`)
+  .then(res => (typeof(res) === 'string') ? JSON.parse(res) : res)
   .then((res) => {
     const deezerTrack = res.data[0];
     if (deezerTrack) {
@@ -683,11 +684,279 @@ module.exports = M;
 
 });
 
-require.register("lib/musicbrainz.js", function(exports, require, module) {
+require.register("lib/img_fetcher.js", function(exports, require, module) {
+'use-strict'
+
+const imgs = {};
+
+module.exports = (uri, doctype, path) => {
+  if (!(uri in imgs)) {
+    imgs[uri] = new Promise((resolve, reject) => {
+      Promise.all([
+        cozy.client.authorize(),
+        cozy.client.fullpath(`/remote/${doctype}?path=${encodeURIComponent(path)}`),
+      ]).then((res) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', res[1]);
+        xhr.setRequestHeader('Authorization', res[0].token.toAuthHeader());
+        xhr.responseType = 'arraybuffer';
+        xhr.onload = e => resolve(base64ArrayBuffer(e.currentTarget.response));
+
+        xhr.send();
+      });
+    });
+  }
+
+  return imgs[uri];
+};
+
+
+/*eslint-disable no-alert, no-console */
+function base64ArrayBuffer(arrayBuffer) {
+  var base64    = ''
+  var encodings = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+
+  var bytes         = new Uint8Array(arrayBuffer)
+  var byteLength    = bytes.byteLength
+  var byteRemainder = byteLength % 3
+  var mainLength    = byteLength - byteRemainder
+
+  var a, b, c, d
+  var chunk
+
+  // Main loop deals with bytes in chunks of 3
+  for (var i = 0; i < mainLength; i = i + 3) {
+    // Combine the three bytes into a single integer
+    chunk = (bytes[i] << 16) | (bytes[i + 1] << 8) | bytes[i + 2]
+
+    // Use bitmasks to extract 6-bit segments from the triplet
+    a = (chunk & 16515072) >> 18 // 16515072 = (2^6 - 1) << 18
+    b = (chunk & 258048)   >> 12 // 258048   = (2^6 - 1) << 12
+    c = (chunk & 4032)     >>  6 // 4032     = (2^6 - 1) << 6
+    d = chunk & 63               // 63       = 2^6 - 1
+
+    // Convert the raw binary segments to the appropriate ASCII encoding
+    base64 += encodings[a] + encodings[b] + encodings[c] + encodings[d]
+  }
+
+  // Deal with the remaining bytes and padding
+  if (byteRemainder == 1) {
+    chunk = bytes[mainLength]
+
+    a = (chunk & 252) >> 2 // 252 = (2^6 - 1) << 2
+
+    // Set the 4 least significant bits to zero
+    b = (chunk & 3)   << 4 // 3   = 2^2 - 1
+
+    base64 += encodings[a] + encodings[b] + '=='
+  } else if (byteRemainder == 2) {
+    chunk = (bytes[mainLength] << 8) | bytes[mainLength + 1]
+
+    a = (chunk & 64512) >> 10 // 64512 = (2^6 - 1) << 10
+    b = (chunk & 1008)  >>  4 // 1008  = (2^6 - 1) << 4
+
+    // Set the 2 least significant bits to zero
+    c = (chunk & 15)    <<  2 // 15    = 2^4 - 1
+
+    base64 += encodings[a] + encodings[b] + encodings[c] + '='
+  }
+
+  return base64
+}
+});
+
+;require.register("lib/musicbrainz.js", function(exports, require, module) {
+'use_strict';
+
+const AsyncPromise = require('./async_promise');
+const WalkTreeUtils = require('./walktree_utils');
+
+const promiseSeries = AsyncPromise.series;
+const promiseFind = AsyncPromise.find;
+const get = WalkTreeUtils.get;
+
+
+const M = {};
+
+// https://ssl14.ovh.net/~hoodbrai/proxy.php?http://musicbrainz-mirror.eu:5000/ws/2/
+
+// --> mirror.musicbrainz.release-group.search
+// https://ssl14.ovh.net/~hoodbrai/proxy.php?http://musicbrainz-mirror.eu:5000/ws/2/release-group/?fmt=json&query={{q}}
+
+// --> mirror.musicbrainz.release-group
+// https://ssl14.ovh.net/~hoodbrai/proxy.php?http://musicbrainz-mirror.eu:5000/ws/2/release-group/{{rgid}}/?fmt=json&{{params}}
+
+// --> mirror.musicbrainz.release
+// https://ssl14.ovh.net/~hoodbrai/proxy.php?http://musicbrainz-mirror.eu:5000/ws/2/release/{{rid}}/?fmt=json&{{params}}
+
+// --> mirror.musicbrainz.recording.search
+// https://ssl14.ovh.net/~hoodbrai/proxy.php?http://musicbrainz-mirror.eu:5000/ws/2/recording?fmt=json&query={{q}}
+
+
+// const DOMAIN = '//ssl14.ovh.net/~hoodbrai/proxy.php?http://musicbrainz-mirror.eu:5000';
+// const DOMAIN = '//cluster015.ovh.net/~fingyqpv/proxy.php?http://musicbrainz-mirror.eu:5000';
+// const DOMAIN = '//musicbrainz-mirror.eu:5000'; // NO valid SSL !
+// const DOMAIN = '//musicbrainz.org';
+
+const THROTTLING_PERIOD = 100;
+
+// Musicbrainz
+M.getPlayList = function (movie) {
+  const query = `release:${encodeURIComponent(movie.originalTitle)}%20AND%20type:soundtrack`;
+  // let uri = `${DOMAIN}/ws/2/release-group/?fmt=json&query=`;
+  // uri += query;
+
+  // if (movie.composer && movie.composer.label) {
+  //     uri += `%20AND%20artistname:${movie.composer.label}`;
+  // }
+
+  // return $.getJSON(uri)
+  return cozy.client.fetchJSON('GET', `/remote/mirror.musicbrainz.release-group.search?q=${query}`)
+  .then((res) => {
+    const filtered = res['release-groups'].filter(item => item.score > 90);
+    movie.soundtracks = filtered.map(rg => ({
+      title: rg.title,
+      musicbrainzReleaseGroupId: rg.id,
+      artist: get(rg, 'artist-credits', 0, 'artist', 'name'),
+    }));
+    return movie;
+  });
+};
+
+M._getReleaseGroupById = function (rgId) {
+  return cozy.client.fetchJSON('GET', `/remote/mirror.musicbrainz.release-group?rgid=${rgId}&params=${encodeURIComponent('inc=url-rels+releases&status=official')}`);
+  // return $.getJSON(`${DOMAIN}/ws/2/release-group/${rgId}/?fmt=json&inc=url-rels+releases&status=official`);
+};
+
+M._findReleaseGroup = function (movie) {
+  // Find the release group with the same imdbId.
+  const title = movie.soundtrack.label || movie.originalTitle;
+
+  const query = `release:${encodeURIComponent(title)}%20AND%20type:soundtrack`;
+  // let uri = `${DOMAIN}/ws/2/release-group/?fmt=json&query=`;
+  // uri += query;
+
+  // Doesnt work : always empty result...
+  // if (movie.composer && movie.composer.label) {
+  //     uri += `%20AND%20artistname:${movie.composer.label}`;
+  // }
+
+  // return $.getJSON(uri)
+  return cozy.client.fetchJSON('GET', `/remote/mirror.musicbrainz.release-group.search?q=${query}`)
+  .then((res) => { // highlight best release-groups candidates.
+    return res['release-groups'].sort((a, b) => {
+      if (a.score > 90 || b.score > 90) {
+        return (a.score === b.score) ? b.count - a.count : b.score - a.score;
+      }
+
+      // sort with more releases first, then the best title match first,
+      return (a.count === b.count) ? b.score - a.score : b.count - a.count;
+    });
+  })
+  .then((releaseGroups) => { // Look in each releasegroup, the one with imdbid.
+    return promiseFind(releaseGroups, (releaseGroup) => {
+      return M._getReleaseGroupById(releaseGroup.id)
+      .then((releaseGroup) => {
+        const withSameIMDBId = releaseGroup.relations.some(
+          relation => relation.url.resource === `http://www.imdb.com/title/${movie.imdbId}/`);
+
+        if (withSameIMDBId) {
+          return releaseGroup;
+        }
+        return false;
+      });
+    }, THROTTLING_PERIOD).then((found) => {
+      if (found === undefined) {
+        return Promise.reject("Can't find releaseGroup with corresponding imdbId");
+      }
+      return found;
+    });
+  });
+};
+
+M.getBestRecording = function (movie) {
+  return Promise.resolve()
+  .then(() => {
+    if (movie.soundtrack.musicbrainzReleaseGroupId) {
+      return M._getReleaseGroupById(movie.soundtrack.musicbrainzReleaseGroupId);
+    }
+    return M._findReleaseGroup(movie);
+  })
+  .then((releaseGroup) => {
+    movie.soundtrack = $.extend(movie.soundtrack, {
+      musicbrainzReleaseGroupId: releaseGroup.id,
+      artist: get(releaseGroup, 'artist-credits', 0, 'artist', 'name'),
+    });
+    return releaseGroup;
+  })
+  .then((releaseGroup) => { // choose oldest release, and or right lang.
+    const releases = releaseGroup.releases.sort((a, b) => {
+      const extractYear = (rg) => {
+        const date = rg.date || rg['first-release-date'];
+        return date ? date.slice(0, 4) : new Date().getFullYear().toString();
+      };
+      const yearA = extractYear(a);
+      const yearB = extractYear(b);
+
+      if (yearA === yearB) {
+        return (a.country === 'FR') ? -1 : 1;
+      }
+
+      return (yearA < yearB) ? -1 : 1;
+    });
+    return releases[0];
+  })
+  .then((release) => { // get recordings for the specified group.
+    // return $.getJSON(`${DOMAIN}/ws/2/release/${release.id}/?fmt=json&inc=recordings+artist-credits+labels`)
+    return cozy.client.fetchJSON('GET', `/remote/mirror.musicbrainz.release?rid=${release.id}&params=${encodeURIComponent('inc=recordings+artist-credits+labels')}`)
+    .then((res) => {
+      const soundtrack = movie.soundtrack;
+      let tracks = get(res, 'media', 0, 'tracks');
+      tracks = tracks.map(track => ({
+        artist: get(track, 'artist-credit', 0, 'artist', 'name'),
+        number: track.number,
+        musicbrainzId: track.id,
+        length: track.length,
+        title: track.title,
+      }));
+      soundtrack.tracks = tracks;
+      soundtrack.title = res.title;
+      soundtrack.musicLabel = get(res, 'label-info', 0, 'label', 'name');
+    });
+  })
+  .then(() => movie);
+};
+
+
+M.getRecordings = function (movie) {
+  return promiseSeries(movie.soundtracks, M.getRecording)
+  .then(() => movie);
+};
+
+
+M.getRecording = function (releaseGroup) {
+  // return $.getJSON(`${DOMAIN}/ws/2/recording?fmt=json&query=rgid:${releaseGroup.musicbrainzReleaseGroupId}`)
+  return cozy.client.fetchJSON('GET', `/remote/mirror.musicbrainz.recording.search?q=rgid:${releaseGroup.musicbrainzReleaseGroupId}`)
+  .then((res) => {
+    if (res.recordings) {
+      releaseGroup.tracks = res.recordings;
+    }
+    return releaseGroup;
+  }).catch(() => releaseGroup);
+};
+
+
+M.getSoundtrack = function (movie) {
+  return M.getBestRecording(movie);
+  // return Promise.resolve(
+  //   movie.soundtrack.musicbrainzReleaseGroupId ? movie : M.getBestRecording(movie));
+};
+
+module.exports = M;
 
 });
 
-;require.register("lib/walktree_utils.js", function(exports, require, module) {
+require.register("lib/walktree_utils.js", function(exports, require, module) {
 'use_strict';
 
 module.exports.get = function (obj, ...prop) {
@@ -758,8 +1027,8 @@ M.getMovieData = function (wikidataId) {
   }
   LIMIT 1`;
 
-  // return $.getJSON(wdk.sparqlQuery(sparql))
-  return cozy.client.fetchJSON('GET', `/remote/org.wikidata.sparql?q=${sparql}`)
+  return $.getJSON(wdk.sparqlQuery(sparql))
+  // return cozy.client.fetchJSON('GET', `/remote/org.wikidata.sparql?q=${encodeURIComponent(encodeURIComponent(sparql))}`)
   .then(wdk.simplifySparqlResults)
   .then((movies) => {
     if (!movies || movies.length === 0) { throw new Error('this ID is not a movie'); }
@@ -791,15 +1060,17 @@ M.getPoster = function (movie) {
   }
 
   const params = {
-    origin: '*',
+    // origin: '*',
+
     action: 'parse',
     format: 'json',
     prop: 'images',
-    page: movie.wikiLink.replace(/.*\/wiki\//, ''),
+    page: decodeURIComponent(movie.wikiLink.replace(/.*\/wiki\//, '')),
   };
   // const uri = movie.wikiLink.replace('/wiki/', `/w/api.php?${$.param(params)}&page=`);
   // return $.getJSON(uri)
-  return cozy.client.fetchJSON('GET', `/remote/org.wikipedia.en.api?params=${$.param(params)}`)
+  return cozy.client.fetchJSON('GET', `/remote/org.wikipedia.en.api?params=${encodeURIComponent($.param(params))}`)
+  .then(res => (typeof(res) === 'string') ? JSON.parse(res) : res)
   .then((data) => {
     const images = get(data, 'parse', 'images');
     let name;
@@ -813,15 +1084,18 @@ M.getPoster = function (movie) {
   })
   .then((fileName) => {
     const params = {
-      origin: '*',
+      // origin: '*',
       action: 'query',
       format: 'json',
       prop: 'imageinfo',
       iiprop: 'url',
       titles: `Image:${fileName}`,
     };
-    return $.getJSON(`https://en.wikipedia.org/w/api.php?${$.param(params)}`);
-  }).then((data) => {
+    // return $.getJSON(`https://en.wikipedia.org/w/api.php?${$.param(params)}`);
+    return cozy.client.fetchJSON('GET', `/remote/org.wikipedia.en.api?params=${encodeURIComponent($.param(params))}`);
+  })
+  .then(res => (typeof(res) === 'string') ? JSON.parse(res) : res)
+  .then((data) => {
     movie.posterUri = get(getFirst(get(data, 'query', 'pages')), 'imageinfo', 0, 'url');
     return movie;
   });
@@ -835,7 +1109,7 @@ M.getSynopsis = function (movie) {
   }
 
   const params = {
-    origin: '*',
+    // origin: '*',
     action: 'parse',
     format: 'json',
     prop: 'text',
@@ -843,12 +1117,12 @@ M.getSynopsis = function (movie) {
     disablelimitreport: 1,
     disableeditsection: 1,
     disabletoc: 1,
-    page: movie.wikiLinkFr.replace(/.*\/wiki\//, ''),
+    page: decodeURIComponent(movie.wikiLinkFr.replace(/.*\/wiki\//, '')),
   };
   // const uri = movie.wikiLinkFr.replace('/wiki/', `/w/api.php?${$.param(params)}&page=`);
-
   // return $.getJSON(uri)
-  return cozy.client.fetchJSON('GET', `/remote/org.wikipedia.fr.api?params=${$.param(params)}`)
+  return cozy.client.fetchJSON('GET', `/remote/org.wikipedia.fr.api?params=${encodeURIComponent($.param(params))}`)
+  .then(res => (typeof(res) === 'string') ? JSON.parse(res) : res)
   .then((data) => {
     // TODO: not good enough.
     const html = data.parse.text['*'];
@@ -1007,13 +1281,9 @@ function getFilmSuggestionObjectAPI(filmTitle, limit) {
     language: 'fr',
     type: 'item',
     limit: limit,
-
-    // action: 'wbsearchentities',
-    // format: 'json',
-    // origin: '*',
   };
-  // return $.getJSON(`//www.wikidata.org/w/api.php?${$.param(params)}`)
-  cozy.client.fetchJSON('GET', `/remote/org.wikidata.wbsearchentities?params=${$.param(params)}`)
+  return cozy.client.fetchJSON('GET', `/remote/org.wikidata.wbsearchentities?params=${encodeURIComponent($.param(params))}`)
+  .then(res => (typeof(res) === 'string') ? JSON.parse(res) : res)
   .then((res) => {
     console.log(res);
     const items = res.search.filter(item => item.description &&
@@ -1041,6 +1311,7 @@ const Wikidata = require('../lib/wikidata');
 const WikidataSuggestions = require('../lib/wikidata_suggestions_film');
 const Deezer = require('../lib/deezer');
 const Musicbrainz = require('../lib/musicbrainz');
+const ImgFetcher = require('lib/img_fetcher');
 
 
 let Movie = null;
@@ -1131,6 +1402,17 @@ module.exports = Movie = CozyModel.extend({
   hasDeezerIds: function () {
     return this.has('soundtrack') && this.attributes.soundtrack.tracks
       && this.attributes.soundtrack.tracks.some(track => track.deezerId);
+  },
+
+  getPoster: function () {
+    return (this.has('posterUri') ? Promise.resolve() : this.fetchPosterUri())
+    .then(() => {
+      const uri = this.get('posterUri');
+      const path = decodeURIComponent(uri.replace(/.*org\//, ''));
+
+      return ImgFetcher(uri, 'org.wikimedia.uploads', path);
+    })
+    .then(data => `data:image;base64,${data}`);
   },
 });
 
@@ -1472,6 +1754,9 @@ const template = require('./templates/movie_details');
 module.exports = Mn.View.extend({
   template: template,
 
+  ui:  {
+    img: 'img.poster',
+  },
   regions: {
     player: {
       el: '.player',
@@ -1510,6 +1795,11 @@ module.exports = Mn.View.extend({
   },
 
   onRender: function () {
+    this.model.getPoster()
+    .then((dataUri) => {
+      this.ui.img.attr('src', dataUri);
+    });
+
     if (this.model.has('soundtrack') && this.model.get('soundtrack').tracks) {
       const album = new Backbone.Model(this.model.get('soundtrack'));
       album.set('hasDeezerIds', this.model.hasDeezerIds());
@@ -1539,6 +1829,11 @@ module.exports = Mn.View.extend({
   template: template,
   tagName: 'li',
 
+  ui: {
+    poster: '.poster',
+    img: '.poster img',
+  },
+
   events: {
     //eslint-disable-next-line
     'click': 'showDetails',
@@ -1549,12 +1844,21 @@ module.exports = Mn.View.extend({
   },
 
   initialize: function () {
-    this.model.fetchPosterUri();
+    this.model.getPoster();
+  },
+
+  onRender: function () {
+    this.model.getPoster()
+    .then((dataUri) => {
+      this.ui.img.attr('src', dataUri);
+    });
   },
 
   showDetails: function () {
     app.trigger('details:show', this.model);
   },
+
+
 });
 
 });
@@ -2018,8 +2322,8 @@ var __templateData = function template(locals) {
 var buf = [];
 var jade_mixins = {};
 var jade_interp;
-;var locals_for_with = (locals || {});(function (countryOfOrigin, director, duration, genre, id, label, posterUri, publicationDate, runningTasks, synopsis, viewed, wikiLinkFr) {
-buf.push("<div class=\"moviedetails\"><img" + (jade.attr("src", posterUri, true, false)) + " class=\"poster\"/><div class=\"movieabout\"><h2>" + (jade.escape(null == (jade_interp = label) ? "" : jade_interp)) + "</h2><div class=\"characteristics\"><b>");
+;var locals_for_with = (locals || {});(function (countryOfOrigin, director, duration, genre, id, label, publicationDate, runningTasks, synopsis, viewed, wikiLinkFr) {
+buf.push("<div class=\"moviedetails\"><img class=\"poster\"/><div class=\"movieabout\"><h2>" + (jade.escape(null == (jade_interp = label) ? "" : jade_interp)) + "</h2><div class=\"characteristics\"><b>");
 if ( genre)
 {
 buf.push((jade.escape(null == (jade_interp = genre.label) ? "" : jade_interp)) + "&ensp;|&ensp;");
@@ -2075,7 +2379,7 @@ if ( !runningTasks.fetch_soundtrack)
 {
 buf.push("<div class=\"emptymessage\">La bande originale n'a pas été trouvée sur Musicbrainz.</div>");
 }
-buf.push("</div></div><div class=\"close\"></div>");}.call(this,"countryOfOrigin" in locals_for_with?locals_for_with.countryOfOrigin:typeof countryOfOrigin!=="undefined"?countryOfOrigin:undefined,"director" in locals_for_with?locals_for_with.director:typeof director!=="undefined"?director:undefined,"duration" in locals_for_with?locals_for_with.duration:typeof duration!=="undefined"?duration:undefined,"genre" in locals_for_with?locals_for_with.genre:typeof genre!=="undefined"?genre:undefined,"id" in locals_for_with?locals_for_with.id:typeof id!=="undefined"?id:undefined,"label" in locals_for_with?locals_for_with.label:typeof label!=="undefined"?label:undefined,"posterUri" in locals_for_with?locals_for_with.posterUri:typeof posterUri!=="undefined"?posterUri:undefined,"publicationDate" in locals_for_with?locals_for_with.publicationDate:typeof publicationDate!=="undefined"?publicationDate:undefined,"runningTasks" in locals_for_with?locals_for_with.runningTasks:typeof runningTasks!=="undefined"?runningTasks:undefined,"synopsis" in locals_for_with?locals_for_with.synopsis:typeof synopsis!=="undefined"?synopsis:undefined,"viewed" in locals_for_with?locals_for_with.viewed:typeof viewed!=="undefined"?viewed:undefined,"wikiLinkFr" in locals_for_with?locals_for_with.wikiLinkFr:typeof wikiLinkFr!=="undefined"?wikiLinkFr:undefined));;return buf.join("");
+buf.push("</div></div><div class=\"close\"></div>");}.call(this,"countryOfOrigin" in locals_for_with?locals_for_with.countryOfOrigin:typeof countryOfOrigin!=="undefined"?countryOfOrigin:undefined,"director" in locals_for_with?locals_for_with.director:typeof director!=="undefined"?director:undefined,"duration" in locals_for_with?locals_for_with.duration:typeof duration!=="undefined"?duration:undefined,"genre" in locals_for_with?locals_for_with.genre:typeof genre!=="undefined"?genre:undefined,"id" in locals_for_with?locals_for_with.id:typeof id!=="undefined"?id:undefined,"label" in locals_for_with?locals_for_with.label:typeof label!=="undefined"?label:undefined,"publicationDate" in locals_for_with?locals_for_with.publicationDate:typeof publicationDate!=="undefined"?publicationDate:undefined,"runningTasks" in locals_for_with?locals_for_with.runningTasks:typeof runningTasks!=="undefined"?runningTasks:undefined,"synopsis" in locals_for_with?locals_for_with.synopsis:typeof synopsis!=="undefined"?synopsis:undefined,"viewed" in locals_for_with?locals_for_with.viewed:typeof viewed!=="undefined"?viewed:undefined,"wikiLinkFr" in locals_for_with?locals_for_with.wikiLinkFr:typeof wikiLinkFr!=="undefined"?wikiLinkFr:undefined));;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {
@@ -2097,7 +2401,7 @@ var jade_interp;
 buf.push("<div class=\"movieitem\"><div class=\"placeholder\"><h3>" + (jade.escape(null == (jade_interp = label) ? "" : jade_interp)) + "</h3><img src=\"img/cover_icon.png\"/></div>");
 if ( posterUri)
 {
-buf.push("<div class=\"poster\"><img" + (jade.attr("src", posterUri, true, false)) + (jade.attr("title", label, true, false)) + " onerror=\"this.style.display='none';\"/></div>");
+buf.push("<div class=\"poster\"><img" + (jade.attr("title", label, true, false)) + "/></div>");
 }
 buf.push("</div>");}.call(this,"label" in locals_for_with?locals_for_with.label:typeof label!=="undefined"?label:undefined,"posterUri" in locals_for_with?locals_for_with.posterUri:typeof posterUri!=="undefined"?posterUri:undefined));;return buf.join("");
 };

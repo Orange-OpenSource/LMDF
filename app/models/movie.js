@@ -5,6 +5,7 @@ const Wikidata = require('../lib/wikidata');
 const WikidataSuggestions = require('../lib/wikidata_suggestions_film');
 const Deezer = require('../lib/deezer');
 const Musicbrainz = require('../lib/musicbrainz');
+const ImgFetcher = require('lib/img_fetcher');
 
 
 let Movie = null;
@@ -95,6 +96,17 @@ module.exports = Movie = CozyModel.extend({
   hasDeezerIds: function () {
     return this.has('soundtrack') && this.attributes.soundtrack.tracks
       && this.attributes.soundtrack.tracks.some(track => track.deezerId);
+  },
+
+  getPoster: function () {
+    return (this.has('posterUri') ? Promise.resolve() : this.fetchPosterUri())
+    .then(() => {
+      const uri = this.get('posterUri');
+      const path = decodeURIComponent(uri.replace(/.*org\//, ''));
+
+      return ImgFetcher(uri, 'org.wikimedia.uploads', path);
+    })
+    .then(data => `data:image;base64,${data}`);
   },
 });
 

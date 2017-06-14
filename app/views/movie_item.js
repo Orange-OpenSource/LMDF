@@ -6,6 +6,11 @@ module.exports = Mn.View.extend({
   template: template,
   tagName: 'li',
 
+  ui: {
+    poster: '.poster',
+    img: '.poster img',
+  },
+
   events: {
     //eslint-disable-next-line
     'click': 'showDetails',
@@ -16,10 +21,19 @@ module.exports = Mn.View.extend({
   },
 
   initialize: function () {
-    this.model.fetchPosterUri();
+    this.model.getPoster();
+  },
+
+  onRender: function () {
+    this.model.getPoster()
+    .then((dataUri) => {
+      this.ui.img.attr('src', dataUri);
+    });
   },
 
   showDetails: function () {
     app.trigger('details:show', this.model);
   },
+
+
 });
