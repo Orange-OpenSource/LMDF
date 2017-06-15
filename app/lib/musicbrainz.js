@@ -15,7 +15,7 @@ const THROTTLING_PERIOD = 500;
 // Musicbrainz
 M.getPlayList = function (movie) {
   // const query = `release:${encodeURIComponent(movie.originalTitle)}%20AND%20type:soundtrack`;
-  let query = `release:${encodeURIComponent(movie.originalTitle)}%20AND%20type:soundtrack`;
+  let query = `release:%22${encodeURIComponent(movie.originalTitle)}%22%20AND%20type:soundtrack`;
   query = encodeURIComponent(query);
   return cozy.client.fetchJSON('GET', `/remote/org.musicbrainz.release-group.search?q=${query}`)
   .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res))
@@ -41,7 +41,7 @@ M._findReleaseGroup = function (movie) {
   // Find the release group with the same imdbId.
   const title = movie.soundtrack.label || movie.originalTitle;
 
-  let query = `release:${encodeURIComponent(title)}%20AND%20type:soundtrack`;
+  let query = `release:%22${encodeURIComponent(title)}%22%20AND%20type:soundtrack`;
   query = encodeURIComponent(query);
   // Doesnt work : always empty result...
   // if (movie.composer && movie.composer.label) {
