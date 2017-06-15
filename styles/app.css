@@ -94,9 +94,14 @@ body {
 }
 
 .message {
-  display: block;
-  position: fixed;
+  position: absolute;
   width: 100vw;
+  text-align: center;
+}
+.message > div {
+  display: inline-block;
+  min-width: 50%;
+  max-width: 90%;
   /*background: rgb(80, 190, 135);*/
 }
 
@@ -548,12 +553,16 @@ ul.movielibrary .movieitem .placeholder h3 {
   }
   .details {
     position: absolute;
-    top: 0px;
+    /*! top: 0px; */
     left:0px;
+    
+    /* flex-basis: 100vw; */
   }
   .details > div {
     width: 100vw;
-    height: 100vh;
+    height: calc(100vh - 53px);
+    /* width: 100vw; */
+    /*height: 100vh;*/
   }
 }
 @media(max-width: 767px) {

@@ -136,7 +136,7 @@ M.getPoster = function (movie) {
 M.getSynopsis = function (movie) {
   if (typeof (movie.wikiLinkFr) !== 'string') {
     console.error("Cant' get synopsys: no wiki link in movie obj.");
-    return movie; // continue on errors.
+    return Promise.resolve(movie); // continue on errors.
   }
 
   const params = {
