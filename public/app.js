@@ -400,13 +400,14 @@ module.exports = `${name}-${version}`;
 require.register("lib/async_promise.js", function(exports, require, module) {
 'use-strict';
 
-module.exports.series = function (iterable, callback, self) {
+module.exports.series = function (iterable, callback, self, period) {
+  period = period || 100;
   const results = [];
 
   return iterable.reduce((sequence, id, index, array) => {
     return sequence.then((res) => {
       results.push(res);
-      return callback.call(self, id, index, array);
+      return waitPromise(period).then(() => callback.call(self, id, index, array));
     });
   }, Promise.resolve(true))
   .then(res => new Promise((resolve) => { // don't handle reject there.
@@ -416,12 +417,18 @@ module.exports.series = function (iterable, callback, self) {
 };
 
 const waitPromise = function (period) {
+  if (!period) {
+    return Promise.resolve();
+  }
+
   return new Promise((resolve) => { // this promise always resolve :)
     setTimeout(resolve, period);
   });
 };
 
 module.exports.find = function (iterable, predicate, period) {
+  period = period || 100;
+
   const recursive = (list) => {
     const current = list.shift();
     if (current === undefined) { return Promise.resolve(undefined); }
@@ -448,7 +455,9 @@ module.exports.backbone2Promise = function (obj, method, options) {
 };
 
 
-module.exports.queryPaginated = function (query) {
+module.exports.queryPaginated = function (query, period) {
+  period = period || 100;
+
   let docs = [];
   const recursive = (skip) => {
     return query(skip)
@@ -459,7 +468,7 @@ module.exports.queryPaginated = function (query) {
       }
 
       skip += results.limit;
-      return recursive(skip);
+      return waitPromise(period).then(() => recursive(skip));
     });
   };
 
@@ -1038,6 +1047,7 @@ M.getMovieData = function (wikidataId) {
 M.getPoster = function (movie) {
   if (typeof (movie.wikiLink) !== 'string') {
     console.error("Cant' get poster: no wiki link in movie obj.");
+    movie.posterUri = false;
     return Promise.resolve(movie); // continue on errors.
   }
 
@@ -1074,7 +1084,13 @@ M.getPoster = function (movie) {
   .then((data) => {
     movie.posterUri = get(getFirst(get(data, 'query', 'pages')), 'imageinfo', 0, 'url');
     return movie;
-  });
+  })
+  .catch((err) => {
+    console.warn(err);
+    movie.posterUri = false;
+    return Promise.resolve(movie);
+  })
+  ;
 };
 
 
@@ -1383,8 +1399,9 @@ module.exports = Movie = CozyModel.extend({
     return (this.has('posterUri') ? Promise.resolve() : this.fetchPosterUri())
     .then(() => {
       const uri = this.get('posterUri');
-      const path = decodeURIComponent(uri.replace(/.*org\//, ''));
+      if (!uri) { return Promise.reject(); }
 
+      const path = decodeURIComponent(uri.replace(/.*org\//, ''));
       return ImgFetcher(uri, 'org.wikimedia.uploads', path);
     })
     .then(data => `data:image;base64,${data}`);

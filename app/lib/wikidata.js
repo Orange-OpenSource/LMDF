@@ -86,6 +86,7 @@ M.getMovieData = function (wikidataId) {
 M.getPoster = function (movie) {
   if (typeof (movie.wikiLink) !== 'string') {
     console.error("Cant' get poster: no wiki link in movie obj.");
+    movie.posterUri = false;
     return Promise.resolve(movie); // continue on errors.
   }
 
@@ -122,7 +123,13 @@ M.getPoster = function (movie) {
   .then((data) => {
     movie.posterUri = get(getFirst(get(data, 'query', 'pages')), 'imageinfo', 0, 'url');
     return movie;
-  });
+  })
+  .catch((err) => {
+    console.warn(err);
+    movie.posterUri = false;
+    return Promise.resolve(movie);
+  })
+  ;
 };
 
 

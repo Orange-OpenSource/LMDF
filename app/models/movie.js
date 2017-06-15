@@ -102,8 +102,9 @@ module.exports = Movie = CozyModel.extend({
     return (this.has('posterUri') ? Promise.resolve() : this.fetchPosterUri())
     .then(() => {
       const uri = this.get('posterUri');
-      const path = decodeURIComponent(uri.replace(/.*org\//, ''));
+      if (!uri) { return Promise.reject(); }
 
+      const path = decodeURIComponent(uri.replace(/.*org\//, ''));
       return ImgFetcher(uri, 'org.wikimedia.uploads', path);
     })
     .then(data => `data:image;base64,${data}`);
