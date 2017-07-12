@@ -146,6 +146,22 @@ body {
   flex-basis: 16.25rem;
 }
 
+
+.drawer .appversion {
+  color: #666666;
+  position: absolute;
+  left: 10px;
+  bottom: 50px;
+}
+
+.drawer[aria-expanded=false] .appversion {
+  display: none;
+}
+
+.drawer[aria-expanded=true] .appversion {
+  display: block;
+}
+
 .drawer button.toggle {
   position: absolute;
   bottom: 0px;

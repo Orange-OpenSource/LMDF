@@ -1,7 +1,10 @@
 'use-strict';
 
+const appName = require('../lib/appname_version');
+
 const SearchView = require('views/search');
 const template = require('./templates/left_panel');
+
 
 module.exports = Mn.View.extend({
   tagName: 'aside',
@@ -22,6 +25,9 @@ module.exports = Mn.View.extend({
     search: '.search',
   },
 
+  serializeData: function () {
+    return { appName: appName };
+  },
   onRender: function () {
     this.showChildView('search', new SearchView());
     // Listen to toggle from responsive topbar button toggle-drawer.
