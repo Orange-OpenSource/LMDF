@@ -41,7 +41,10 @@
 
 
 
-    a.synopsis(href=wikiLinkFr, target="_blank")!= synopsis
+    if wikiLinkFr
+      .synopsis!= synopsis
+      a.wikipedia(href=wikiLinkFr, target="_blank") wikipedia
+        i.fa.fa-external-link
 
 hr
 .soundtrack

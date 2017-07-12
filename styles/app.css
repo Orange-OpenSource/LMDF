@@ -423,6 +423,7 @@ ul.movielibrary .movieitem .placeholder h3 {
   height: 260px;
   padding-left:30px;
   overflow: hidden;
+  position: relative;
 }
 
 .details .movieabout .characteristics {
@@ -449,6 +450,23 @@ ul.movielibrary .movieitem .placeholder h3 {
 .details .movieabout .synopsis {
   text-decoration: none;
   color: white;
+}
+
+.details .movieabout .wikipedia {
+  position: absolute;
+  text-align: right;
+  bottom: 0px;
+  right: 0;
+  width: 100%;
+  padding-top: 10px;
+  /*! padding-right: 10px; */
+  background: linear-gradient(to top, black, black 50%, rgba(0,0,0,0)); 
+  color: white;
+}
+
+.details .movieabout .wikipedia i.fa {
+  margin-left: 5px;
+  font-size: 80%;
 }
 
 .details hr {
