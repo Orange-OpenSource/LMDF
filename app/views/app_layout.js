@@ -3,6 +3,7 @@
 const MessageView = require('views/message');
 const DetailsView = require('views/movie_details');
 const LibraryView = require('views/movie_library');
+const VideoStreamsView = require('views/videostreams');
 const SearchResultsView = require('views/movie_searchresults');
 const LeftPanelView = require('views/left_panel');
 const template = require('views/templates/app_layout');
@@ -36,7 +37,8 @@ module.exports = Mn.View.extend({
 
   onRender: function () {
     this.showChildView('message', new MessageView());
-    this.showChildView('library', new LibraryView({ collection: app.movies }));
+    // this.showChildView('library', new LibraryView({ collection: app.movies }));
+    this.showChildView('library', new VideoStreamsView({ collection: app.videoStreams }));
     this.showChildView('leftpanel', new LeftPanelView());
   },
 

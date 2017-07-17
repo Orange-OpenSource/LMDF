@@ -82,6 +82,79 @@ M.getMovieData = function (wikidataId) {
   });
 };
 
+M.getTVSerieData = function (wikidataId) {
+  let sparql = `SELECT ?label ?wikiLink ?wikiLinkFr ?originalTitle ?composer ?composerLabel
+      ?genre ?genreLabel ?publicationDate ?director ?directorLabel
+      ?musicBrainzRGId ?imdbId ?countryOfOrigin
+      ?countryOfOriginLabel ?countryOfOriginLanguageCode
+      ?soundtrack
+    WHERE {
+     wd:${wikidataId} wdt:P31/wdt:P279* wd:Q5398426;
+        rdfs:label ?label.
+
+    OPTIONAL { wd:${wikidataId} wdt:P1476 ?originalTitle. }
+    OPTIONAL { wd:${wikidataId} wdt:P86 ?composer. }
+    OPTIONAL { wd:${wikidataId} wdt:P136 ?genre. }
+    FILTER NOT EXISTS { wd:${wikidataId} wdt:P136/wdt:P279* wd:Q291. }
+    OPTIONAL { wd:${wikidataId} wdt:P495 ?countryOfOrigin. }
+    OPTIONAL {
+      wd:${wikidataId} wdt:P495 ?_country.
+      ?_country wdt:P37 ?_language.
+      ?_language wdt:P218 ?countryOfOriginLanguageCode.
+    }
+    OPTIONAL { wd:${wikidataId} wdt:P577 ?publicationDate. }
+    OPTIONAL { wd:${wikidataId} wdt:P57 ?director. }
+    OPTIONAL {
+      wd:${wikidataId} wdt:P406 ?soundtrackAlbum.
+      ?soundtrackAlbum wdt:P436 ?musicBrainzRGId.
+    }
+
+    OPTIONAL { wd:${wikidataId} wdt:P436 ?musicBrainzRGId. }
+    OPTIONAL { wd:${wikidataId} wdt:P345 ?imdbId. }
+    OPTIONAL {
+      ?wikiLinkFr schema:about wd:${wikidataId}.
+      ?wikiLinkFr schema:inLanguage "fr".
+      FILTER (SUBSTR(str(?wikiLinkFr), 1, 25) = "https://fr.wikipedia.org/")
+    }
+
+    OPTIONAL {
+      ?wikiLink schema:about wd:${wikidataId}.
+      ?wikiLink schema:inLanguage "en".
+      FILTER (SUBSTR(str(?wikiLink), 1, 25) = "https://en.wikipedia.org/")
+    }
+
+    SERVICE wikibase:label { bd:serviceParam wikibase:language "fr" . }
+
+    filter langMatches(lang(?label),'fr')
+  }
+  LIMIT 1`;
+
+
+  // return $.getJSON(wdk.sparqlQuery(sparql))
+  sparql = encodeURIComponent(encodeURIComponent(sparql));
+  return cozy.client.fetchJSON('GET', `/remote/org.wikidata.sparql?q=${sparql}`)
+  .then(wdk.simplifySparqlResults)
+  .then((movies) => {
+    if (!movies || movies.length === 0) { throw new Error('this ID is not a movie'); }
+
+    const movie = movies[0];
+
+    movie.countryOfOrigin = $.extend({
+      languageCode: movie.countryOfOriginLanguageCode,
+    }, movie.countryOfOrigin);
+    delete movie.countryOfOriginLanguageCode;
+
+    movie.soundtrack = $.extend({
+      musicbrainzReleaseGroupId: movie.musicBrainzRGId,
+      artist: (movie.composer) ? movie.composer.label : undefined,
+    }, movie.soundtrack);
+    delete movie.composer;
+    delete movie.musicBrainzRGId;
+
+    movie.wikidataId = wikidataId;
+    return movie;
+  });
+};
 
 M.getPoster = function (movie) {
   if (typeof (movie.wikiLink) !== 'string') {

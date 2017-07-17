@@ -18,8 +18,8 @@ module.exports = {
           'vendor/marionette/backbone.js',
           'vendor/marionette/backbone.radio.js',
           'vendor/marionette/backbone.marionette.js',
-          //'vendor/moment.min.js',
-          //'vendor/moment_locale-fr.js',
+          'vendor/moment.min.js',
+          'vendor/moment_locale-fr.js',
           ]
       }
     },

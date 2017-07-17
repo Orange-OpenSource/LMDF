@@ -8,6 +8,7 @@ const AppLayout = require('views/app_layout');
 
 const Properties = require('models/properties');
 const MoviesCollection = require('./collections/movies');
+const VideoStreamsCollection = require('./collections/videostreams');
 
 const bPromise = AsyncPromise.backbone2Promise;
 
@@ -17,7 +18,7 @@ const Application = Mn.Application.extend({
 
   prepare: function () {
     this._splashMessages();
-
+    moment.locale('fr');
     const appElem = $('[role=application]')[0];
 
     this.cozyDomain = appElem.dataset.cozyDomain;
@@ -28,17 +29,21 @@ const Application = Mn.Application.extend({
     cozy.bar.init({ appName: 'La musique de mes films' });
 
     this.movies = new MoviesCollection();
+    this.videoStreams = new VideoStreamsCollection();
     this.properties = Properties;
     return this.properties.fetch()
-    .then(() => bPromise(this.movies, this.movies.fetch));
+    .then(() => Promise.all([
+      this.videoStreams.fetch(),
+      this.movies.fetch(),
+    ]));
   },
 
   prepareInBackground: function () {
-    this.trigger('message:display',
-      'Ajout des films visionnés via VoD et Replay sur Livebox ...', 'addFromVideoStreams');
-    this.movies.addFromVideoStreams()
-    .catch(err => this.trigger('message:error', err))
-    .then(() => this.trigger('message:hide', 'addFromVideoStreams'));
+    // this.trigger('message:display',
+    //   'Ajout des films visionnés via VoD et Replay sur Livebox ...', 'addFromVideoStreams');
+    // this.movies.addFromVideoStreams()
+    // .catch(err => this.trigger('message:error', err))
+    // .then(() => this.trigger('message:hide', 'addFromVideoStreams'));
 
     return Promise.resolve();
   },
@@ -91,4 +96,3 @@ document.addEventListener('DOMContentLoaded', () => {
     application.trigger('message:error', msg);
   });
 });
-

@@ -30,7 +30,7 @@
     },
     "videostream": {
       "description": "Identifier les films dans la liste des vidéos VOD et Replay que vous avez visionné.",
-      "type": "org.fing.mesinfos.videostream"
+      "type": "fr.orange.videostream"
     },
     "movie": {
       "description": "Créer et gérer votre bibliothèque de films.",
