@@ -15,14 +15,22 @@ module.exports = Mn.View.extend({
     Toggle: {},
   },
 
-  ui: {},
+  ui: {
+    libraryOptions: '.selectlibrary li',
+    search: '.search',
+  },
 
   triggers: {
     //eslint-disable-next-line
     'click': 'expand',
   },
+
+  events: {
+    'click @ui.libraryOptions': 'onLibraryChanged',
+  },
+
   regions: {
-    search: '.search',
+    search: '@ui.search',
   },
 
   serializeData: function () {
@@ -32,5 +40,13 @@ module.exports = Mn.View.extend({
     this.showChildView('search', new SearchView());
     // Listen to toggle from responsive topbar button toggle-drawer.
     $('.toggle-drawer').click(() => this.triggerMethod('toggle'));
+  },
+
+  onLibraryChanged: function (ev) {
+    const elem = ev.currentTarget;
+    this.ui.libraryOptions.toggleClass('selected', false);
+
+    elem.classList.add('selected');
+    app.trigger('library:show', elem.dataset.value);
   },
 });

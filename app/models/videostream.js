@@ -10,6 +10,15 @@ const ImgFetcher = require('lib/img_fetcher');
 module.exports = CozyModel.extend({
   docType: 'fr.orange.videostream',
 
+  getAudiovisualWork: function () {
+    if (!this.audiovisualWork) {
+      // this.audiovisualWork = app.movies.find((movie) => {
+        // return movie.has('viewed') && _.findWhere(movie.get('viewed'), { videoStreamId: this.get('_id') });
+      // });
+      this.audiovisualWork = app.movies.at(Math.ceil(Math.random() * 50));
+    }
+    return this.audiovisualWork;
+  },
 });
 
 

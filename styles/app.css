@@ -136,7 +136,9 @@ body {
   position: relative;
 }
 
-.drawer[aria-expanded=false] {
+.drawer[aria-expanded=false],
+.drawer[aria-expanded=false] .selectlibrary li 
+{
   /*! flex-basis: 34px; */
   /*! flex-grow: 0; */
   width: 34px;
@@ -265,6 +267,54 @@ body {
   font-weight: 800;
 }
 
+.drawer ul.selectlibrary {
+  /*color: #999999;
+  padding-left: 25px;
+  line-height: 2em;*/
+  list-style: none;
+  cursor: pointer;
+  padding: 0px;
+  margin: 0px;
+  /*! width: 34px; */
+  /*! display: block; */
+  /*! position: relative; */
+}
+
+.drawer .selectlibrary li {
+  height: 42px;
+  border-bottom: #999999 solid 1px;  
+  position: relative;
+  padding-left: 34px;
+  line-height: 42px;
+  color: #999999;
+  overflow: hidden;
+  display: block;
+}
+
+.drawer .selectlibrary li .illumination {
+  font-size: 25px;
+  line-height: 40px;
+  position: absolute;
+  left:0px;
+  padding: 0 7px;
+  /*! background: white; */
+  color: #999999;
+  z-index: 1;
+
+  width: 33px;
+  top: 1px;
+}
+
+
+.drawer .selectlibrary li.selected .illumination {
+  
+  color: #FF6600;
+}
+
+.drawer .selectlibrary .selected {
+  color: white;
+}
+
 .container {
   flex: 1;
   height: 100%;
@@ -308,6 +358,62 @@ main {
   margin-left: 30px;
 }
 
+
+.library .videostreamitem {
+  width: 134px;
+  height: 230px;
+  text-align: center;
+  line-height: 100%;
+  position: relative;
+  background: #D6D6D6;
+}
+
+.library .videostreamitem .placeholder {
+  height: 100%;
+  width: 100%;
+  border: solid 1px #D6D6D6;
+  vertical-align: middle;
+  background: #D6D6D6;
+  position: relative;
+}
+
+.library .videostreamitem .placeholder h3 {
+  font-size: 16px;
+  margin-left: 10px;
+  margin-right: 10px;
+  color: #595959;
+}
+
+.library .videostreamitem .placeholder .subtitle {
+  font-size: 14px;
+  margin-left: 6px;
+  margin-right: 6px;
+  color: #595959;
+}
+
+
+.library .videostreamitem .date {
+  position: absolute;
+  width: 100%;
+  text-align: center;
+  bottom: 5px;
+  font-size: 13px;
+  /*text-shadow:
+     -1px -1px 0 #fff,  
+      1px -1px 0 #fff,
+      -1px 1px 0 #fff,
+       1px 1px 0 #fff;
+  */
+  /* text-shadow: 2px 0 0 #fff, -2px 0 0 #fff, 0 2px 0 #fff, 0 -2px 0 #fff, 
+    1px 1px #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff;
+  */
+  /*text-shadow: 2px 0 0 #FF6600, -2px 0 0 #FF6600, 0 2px 0 #FF6600, 0 -2px 0 #FF6600, 
+    1px 1px #FF6600, -1px -1px 0 #FF6600, 1px -1px 0 #FF6600, -1px 1px 0 #FF6600; */
+}
+
+
+
+
 ul.movielibrary {
   padding: 0px;
   list-style: none;
@@ -345,8 +451,6 @@ ul.movielibrary .movieitem .poster img {
   max-height: 100%;
   transition: opacity 0.25s;
 }
-
-
 
 ul.movielibrary .movieitem .placeholder {
   height: 100%;

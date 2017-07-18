@@ -62,7 +62,7 @@ module.exports = CozyCollection.extend({
 
   getIndexVideoStreamByDate: function () {
     this.indexVideoStreamByDate = this.indexVideoStreamByDate || cozy.client.data.defineIndex(
-      'org.fing.mesinfos.videostream',
+      'fr.orange.videostream',
       // ['timestamp', 'action', 'details', 'content']
       ['timestamp']
       );

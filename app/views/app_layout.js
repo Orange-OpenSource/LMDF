@@ -2,7 +2,7 @@
 
 const MessageView = require('views/message');
 const DetailsView = require('views/movie_details');
-const LibraryView = require('views/movie_library');
+const MovieLibraryView = require('views/movie_library');
 const VideoStreamsView = require('views/videostreams');
 const SearchResultsView = require('views/movie_searchresults');
 const LeftPanelView = require('views/left_panel');
@@ -33,12 +33,12 @@ module.exports = Mn.View.extend({
     this.listenTo(app, 'search', this.showSearchResults);
     this.listenTo(app, 'search:close', this.closeSearchResults);
     this.listenTo(app, 'details:show', this.showMovieDetails);
+    this.listenTo(app, 'library:show', this.showLibrary);
   },
 
   onRender: function () {
     this.showChildView('message', new MessageView());
-    // this.showChildView('library', new LibraryView({ collection: app.movies }));
-    this.showChildView('library', new VideoStreamsView({ collection: app.videoStreams }));
+    this.showLibrary('videostreams'); // default view is videostream.
     this.showChildView('leftpanel', new LeftPanelView());
   },
 
@@ -58,6 +58,21 @@ module.exports = Mn.View.extend({
         model: new Backbone.Model(query)
       }));
     }
+  },
+
+  showLibrary: function (slug) {
+    let view = null;
+
+    switch (slug) {
+      case 'videostreams': view = new VideoStreamsView({ collection: app.videoStreams }); break;
+      case 'movies': view = new MovieLibraryView({ collection: app.movies }); break;
+      default: view = null;
+    }
+    console.log(view);
+    this.getRegion('library').empty();
+    this.showChildView('library', view);
+
+    this.closeSearchResults();
   },
 
   closeSearchResults: function () {

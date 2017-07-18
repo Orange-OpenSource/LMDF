@@ -2,5 +2,16 @@
   i.fa.fa-plus
 .tools &nbsp;
 
+ul.selectlibrary
+  li.selected(type="radio", name="optionslibrary", data-value="videostreams")
+    .illumination P
+    | Programmes visionnés
+  li(type="radio", name="optionslibrary", data-value="movies")
+    .illumination F
+    | Films
+  li(type="radio", name="optionslibrary", data-value="tvseries")
+    .illumination S
+    | Séries
+
 .appversion= appName
 button.toggle

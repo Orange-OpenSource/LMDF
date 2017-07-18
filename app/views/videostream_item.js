@@ -1,5 +1,6 @@
 'use-strict';
 
+const MovieItem = require('./movie_item');
 const template = require('./templates/videostream_item');
 
 module.exports = Mn.View.extend({
@@ -11,25 +12,29 @@ module.exports = Mn.View.extend({
     img: '.poster img',
   },
 
+  regions: {
+    audiovisualwork: '.audiovisualwork',
+  },
+
   events: {
     //eslint-disable-next-line
     // 'click': 'showDetails',
   },
 
-  modelEvents: {
-    change: 'render',
-  },
+  // modelEvents: {
+  //   change: 'render',
+  // },
   //
   // initialize: function () {
   //   this.model.getPoster();
   // },
   //
-  // onRender: function () {
-  //   this.model.getPoster()
-  //   .then((dataUri) => {
-  //     this.ui.img.attr('src', dataUri);
-  //   });
-  // },
+  onRender: function () {
+    const audiovisualWork = this.model.getAudiovisualWork();
+    if (audiovisualWork) {
+      this.showChildView('audiovisualwork', new MovieItem({ model: audiovisualWork }));
+    }
+  },
 
   // showDetails: function () {
   //   app.trigger('details:show', this.model);
