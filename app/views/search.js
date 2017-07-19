@@ -1,6 +1,6 @@
 'use-strict';
 
-const findWikidataMovieMatches = require('../lib/wikidata_suggestions_film').findMovieMatches;
+const findWikidataMovieMatches = require('../lib/wikidata_suggestions').findMovieMatches;
 const template = require('views/templates/search');
 
 module.exports = Mn.View.extend({

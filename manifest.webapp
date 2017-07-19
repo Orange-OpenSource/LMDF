@@ -36,6 +36,10 @@
       "description": "Créer et gérer votre bibliothèque de films.",
       "type": "fr.orange.movie"
     },
+    "tvseries": {
+      "description": "Créer et gérer votre bibliothèque de séries TV.",
+      "type": "fr.orange.tvserie"
+    },
     "apps": {
       "description": "Required by the cozy-bar to display the icons of the apps",
       "type": "io.cozy.apps",

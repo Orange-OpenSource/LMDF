@@ -8,6 +8,7 @@ const AppLayout = require('views/app_layout');
 
 const Properties = require('models/properties');
 const MoviesCollection = require('./collections/movies');
+const TVSeriesCollection = require('./collections/tvseries');
 const VideoStreamsCollection = require('./collections/videostreams');
 
 const bPromise = AsyncPromise.backbone2Promise;
@@ -29,6 +30,7 @@ const Application = Mn.Application.extend({
     cozy.bar.init({ appName: 'La musique de mes films' });
 
     this.movies = new MoviesCollection();
+    this.tvseries = new TVSeriesCollection();
     this.videoStreams = new VideoStreamsCollection();
     this.properties = Properties;
     this._initBloodhound();
@@ -40,7 +42,6 @@ const Application = Mn.Application.extend({
   },
 
   prepareInBackground: function () {
-    $.getJSON('/data/movies_title_wdid.json')
     // this.trigger('message:display',
     //   'Ajout des films visionnés via VoD et Replay sur Livebox ...', 'addFromVideoStreams');
     // this.movies.addFromVideoStreams()
@@ -63,7 +64,7 @@ const Application = Mn.Application.extend({
       identify: item => item.id,
       // sorter: (a, b) => { return (a.label < b.label) ? -1 : 1; },
       prefetch: {
-        url: 'data/wikidata_movie_labels.json',
+        url: 'data/wikidata_movie_tvserie_labels.json',
         cache: false,
         //cacheKey: 'M',
       },

@@ -66,6 +66,7 @@ module.exports = Mn.View.extend({
     switch (slug) {
       case 'videostreams': view = new VideoStreamsView({ collection: app.videoStreams }); break;
       case 'movies': view = new MovieLibraryView({ collection: app.movies }); break;
+      case 'tvseries': view = new MovieLibraryView({ collection: app.tvseries }); break;
       default: view = null;
     }
     console.log(view);

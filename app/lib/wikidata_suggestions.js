@@ -11,7 +11,6 @@ module.exports.findMovieMatches = function (filmTitle, nextSync, nextAsync) {
   .then(nextAsync);
 };
 
-
 module.exports.fetchMoviesSuggestions = function (title) {
   return Promise.all([
     new Promise(resolve => app.bloodhound.search(title, resolve)),
@@ -39,9 +38,16 @@ function getFilmSuggestionObjectAPI(filmTitle, limit) {
   return cozy.client.fetchJSON('GET', `/remote/org.wikidata.wbsearchentities?params=${params}`)
   .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res))
   .then((res) => {
-    const items = res.search.filter(item => item.description &&
-       (item.description.indexOf('film') !== -1
-       || item.description.indexOf('movie') !== -1));
+    const items = res.search.filter(item => {
+      if (item.description) {
+        const description = item.description.toLowerCase();
+        return (description.indexOf('film') !== -1
+        || description.indexOf('movie') !== -1
+        || description.indexOf('tv series') !== -1
+        || description.indexOf('television series') !== -1);
+      }
+      return false;
+    });
 
     // Option: sort instead of filter.
     // let items = res.search.sort((item,itemB) =>

@@ -1,13 +1,11 @@
 'use strict';
 
 const AsyncPromise = require('../lib/async_promise');
-const WikidataSuggestions = require('../lib/wikidata_suggestions_film');
-const Movie = require('../models/movie');
+const WikidataSuggestions = require('../lib/wikidata_suggestions');
+const Model = require('../models/audiovisualwork');
 
-
-module.exports =
-Backbone.Collection.extend({
-  model: Movie,
+module.exports = Backbone.Collection.extend({
+  model: Model,
   modelId: attrs => attrs.wikidataId,
 
   findByWDId: function (wdId) {
@@ -15,20 +13,20 @@ Backbone.Collection.extend({
   },
 
   fromWDSuggestionMovie: function (wdSuggestion) {
-    const movie = this.findByWDId(wdSuggestion.id);
-    if (movie) {
-      return Promise.resolve(movie);
+    const avw = this.findByWDId(wdSuggestion.id);
+    if (avw) {
+      return Promise.resolve(avw);
     }
 
-    return Movie.fromWDSuggestionMovie(wdSuggestion)
-    .then((movie) => {
-      this.add(movie);
-      return movie;
+    return Model.fromWDSuggestion(wdSuggestion)
+    .then((avw) => {
+      this.add(avw);
+      return avw;
     }).catch((err) => {
-      const msg = `Erreur à la récupération des données pour le film ${wdSuggestion.id}`;
-      if (err.message === 'this ID is not a movie') {
+      const msg = `Erreur à la récupération des données pour le programme ${wdSuggestion.id}`;
+      if (err.message === 'this ID is neither a movie nor a tv serie') {
         // Fail silently and quitely
-        console.info(`Cette entité ${wdSuggestion.id} n'est pas un film.`);
+        console.info(`Cette entité ${wdSuggestion.id} n'est pas ni un film, ni un série.`);
       } else {
         // Fail silently
         console.error(msg);

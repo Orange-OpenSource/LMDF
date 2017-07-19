@@ -67,7 +67,7 @@ module.exports = Mn.View.extend({
   },
 
   saveMovie: function () {
-    app.movies.add(this.model);
+    // app.movies.add(this.model);
     this.model.save();
   },
 });
