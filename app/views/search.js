@@ -29,10 +29,13 @@ module.exports = Mn.View.extend({
       minLength: 3,
       // limit: 10,
     }, {
-      name: 'movie',
-      source: _.debounce(findWikidataMovieMatches, 300),
-      async: true,
-      //display: suggestion => suggestion.match.text
+      name: 'label',
+      source: app.bloodhound,
+      display: 'label',
+      // name: 'movie',
+      // source: _.debounce(findWikidataMovieMatches, 300),
+      // async: true,
+      // // display: suggestion => suggestion.match.text
     });
   },
 

@@ -11,8 +11,18 @@ module.exports.findMovieMatches = function (filmTitle, nextSync, nextAsync) {
   .then(nextAsync);
 };
 
+
 module.exports.fetchMoviesSuggestions = function (title) {
-  return getFilmSuggestionObjectAPI(title);
+  return Promise.all([
+    new Promise(resolve => app.bloodhound.search(title, resolve)),
+    getFilmSuggestionObjectAPI(title),
+  ])
+  .then((results) => {
+    let suggestions = results[0].concat(results[1]);
+    suggestions = _.uniq(suggestions, s => s.id);
+    return suggestions;
+  });
+  // return getFilmSuggestionObjectAPI(title);
 };
 
 function getFilmSuggestionObjectAPI(filmTitle, limit) {

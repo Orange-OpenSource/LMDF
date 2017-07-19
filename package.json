@@ -3,6 +3,7 @@
   "version": "3.0.5",
   "description": "Re-découvrez la musique des films que vous avez regardés sur votre LiveBox Orange.",
   "scripts": {
+    "updateprefetch": "node scripts/fetch_movie_titles.js",
     "watch": "brunch watch",
     "build": "eslint -c .eslintrc.json app/ && brunch build --production",
     "lint": "eslint -c .eslintrc.json app/"
