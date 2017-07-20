@@ -38,6 +38,7 @@ const Application = Mn.Application.extend({
     .then(() => Promise.all([
       this.videoStreams.fetch(),
       this.movies.fetch(),
+      this.tvseries.fetch(),
     ]));
   },
 

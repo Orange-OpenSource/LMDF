@@ -21,12 +21,14 @@ module.exports = Mn.View.extend({
   },
 
   initialize: function () {
-    this.model.getPoster();
+    this.model.getPoster().then(() => console.log('toto2'));
   },
 
   onRender: function () {
     this.model.getPoster()
     .then((dataUri) => {
+      console.log('toto')
+      console.log(dataUri.length)
       this.ui.img.attr('src', dataUri);
     });
   },

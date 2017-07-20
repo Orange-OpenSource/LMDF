@@ -97,13 +97,24 @@ module.exports = AudioVisualWork = CozyModel.extend({
   },
 
   getPoster: function () {
-    return (this.has('posterUri') ? Promise.resolve() : this.fetchPosterUri())
-    .then(() => {
-      const uri = this.get('posterUri');
-      if (!uri) { return Promise.reject(); }
+    return Promise.resolve().then(() => {
+      if (this.has('imdbId')) {
+        const params = $.param({
+          apikey: 'cbefad9e',
+          i: this.get('imdbId'),
+          h: 260,
+        });
+        return ImgFetcher(`https://img.omdbapi.com/?${params}`, 'com.omdbapi.img', { params });
+      }
 
-      const path = decodeURIComponent(uri.replace(/.*org\//, ''));
-      return ImgFetcher(uri, 'org.wikimedia.uploads', path);
+      return (this.has('posterUri') ? Promise.resolve() : this.fetchPosterUri())
+        .then(() => {
+          const uri = this.get('posterUri');
+          if (!uri) { return Promise.reject(); }
+
+          const path = decodeURIComponent(uri.replace(/.*org\//, ''));
+          return ImgFetcher(uri, 'org.wikimedia.uploads', { path });
+        });
     })
     .then(data => `data:image;base64,${data}`);
   },

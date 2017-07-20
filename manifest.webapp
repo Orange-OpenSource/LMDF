@@ -84,6 +84,10 @@
     "wikimediauploads": {
       "description": "Fetch movie posters from wikimedia.",
       "type": "org.wikimedia.uploads"
+    },
+    "omdbapiimg": {
+      "description": "Fetch movie and serie poster from omdbapi",
+      "type": "com.omdbapi.img"
     }
   }
 }
