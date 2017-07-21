@@ -15,7 +15,8 @@ module.exports = Movie = AudioVisualWork.extend({
     if (this.isNew()) {
       app.movies.add(this);
     }
-    AudioVisualWork.prototype.save.call(this, arguments); 
+    //eslint-disable-next-line
+    return AudioVisualWork.prototype.save.call(this, arguments);
   },
 });
 

@@ -16,7 +16,7 @@ module.exports = TVSerie = AudioVisualWork.extend({
       app.tvseries.add(this);
     }
     //eslint-disable-next-line
-    AudioVisualWork.prototype.save.call(this, arguments);
+    return AudioVisualWork.prototype.save.call(this, arguments);
   },
   // fetchPosterUri: function () {
   //   return this._runFetch(Wikidata.getPoster, 'posterUri');

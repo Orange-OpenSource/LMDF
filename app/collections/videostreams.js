@@ -4,6 +4,7 @@ const CozyCollection = require('../lib/backbone_cozycollection');
 
 const AsyncPromise = require('../lib/async_promise');
 const Model = require('../models/videostream');
+const AudioVisualWork = require('../models/audiovisualwork');
 
 
 module.exports = CozyCollection.extend({
@@ -13,8 +14,22 @@ module.exports = CozyCollection.extend({
     return (a.get('timestamp') > b.get('timestamp')) ? -1 : 1;
   },
 
+  findAudioVisualWork: function (videoStream) {
+    return videoStream.findAudioVisualWork()
+    .then((avw) => {
+      avw.setViewed(videoStream);
+      return avw.save();
+    }).catch((err) => {
+      // Fail silenlty.
+      console.error(err);
+      return Promise.resolve();
+    }).then(() => console.log('hello toto'));
+  },
+  //
   // addVideoStreamToLibrary: function (videoStream) {
   //   return Promise.resolve().then(() => {
+  //     const avw = app.movies.findWhere({ orangeTitle: videoStream.content.title })
+  //       || app.series.findWhere({ orangeTitle: videoStream.content.title })
   //     const movie = this.find(movie => movie.get('orangeTitle') === videoStream.content.title);
   //
   //     if (movie) {
@@ -32,32 +47,38 @@ module.exports = CozyCollection.extend({
   //     return Promise.resolve();
   //   });
   // },
-  //
-  //
-  // addFromVideoStreams: function () {
-  //   const since = app.properties.get('lastVideoStream') || '';
-  //   let last = since;
-  //
-  //   return AsyncPromise.queryPaginated(skip => this.getIndexVideoStreamByDate()
-  //     .then(index => cozy.client.data.query(index,
-  //       { selector: { timestamp: { $gt: since } }, skip, wholeResponse: true }))
-  //   )
-  //   .then((results) => {
-  //     const lastResult = results[results.length - 1];
-  //     if (lastResult && lastResult.timestamp > since) {
-  //       last = lastResult.timestamp;
-  //     }
-  //
-  //     const videoStreams = results.filter(vs => (vs.action === 'Visualisation'
-  //       && vs.details && vs.details.offerName !== 'AVSP TV LIVE' && vs.details.offerName !== 'OTV'
-  //       && vs.content && !vs.content.subTitle));
-  //     return AsyncPromise.series(videoStreams, this.addVideoStreamToLibrary, this);
-  //   })
-  //   .then(() => {
-  //     app.properties.set('lastVideoStream', last);
-  //     return app.properties.save();
-  //   });
-  // },
+
+  findAudioVisualWorks: function () {
+    const since = app.properties.get('lastVideoStream') || '';
+    const videoStreams = this.filter(vs => vs.get('timestamp') > since);
+    return AsyncPromise.series(videoStreams, this.findAudioVisualWork, this)
+    .then(() => {
+      app.properties.set('lastVideoStream', this.first().get('timestamp'));
+      return app.properties.save();
+    });
+
+    // let last = since;
+
+    // return AsyncPromise.queryPaginated(skip => this.getIndexVideoStreamByDate()
+    //   .then(index => cozy.client.data.query(index,
+    //     { selector: { timestamp: { $gt: since } }, skip, wholeResponse: true }))
+    // )
+    // .then((results) => {
+    //   const lastResult = results[results.length - 1];
+    //   if (lastResult && lastResult.timestamp > since) {
+    //     last = lastResult.timestamp;
+    //   }
+    //
+    //   const videoStreams = results.filter(vs => (vs.action === 'Visualisation'
+    //     && vs.details && vs.details.offerName !== 'AVSP TV LIVE' && vs.details.offerName !== 'OTV'
+    //     && vs.content && !vs.content.subTitle));
+    //   return AsyncPromise.series(videoStreams, this.addVideoStreamToLibrary, this);
+    // })
+    // .then(() => {
+    //   app.properties.set('lastVideoStream', last);
+    //   return app.properties.save();
+    // });
+  },
   //
   //
   // getIndexVideoStreamByDate: function () {

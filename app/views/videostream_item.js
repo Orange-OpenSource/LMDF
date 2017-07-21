@@ -30,7 +30,7 @@ module.exports = Mn.View.extend({
   // },
   //
   onRender: function () {
-    const audiovisualWork = this.model.getAudiovisualWork();
+    const audiovisualWork = this.model.getAudioVisualWork();
     if (audiovisualWork) {
       this.showChildView('audiovisualwork', new MovieItem({ model: audiovisualWork }));
     }

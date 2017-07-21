@@ -18,13 +18,11 @@ module.exports = AudioVisualWork = CozyModel.extend({
   setViewed: function (videoStream) {
     const viewed = this.get('viewed') || [];
 
-    if (viewed.some(view => view.timestamp === videoStream.timestamp)) {
-      return;
-    }
+    if (viewed.some(view => view.timestamp === videoStream.get('timestamp'))) { return; }
 
     viewed.push({
-      timestamp: videoStream.timestamp,
-      videoStreamId: videoStream._id,
+      timestamp: videoStream.get('timestamp'),
+      videoStreamId: videoStream.get('_id'),
       accountType: 'orange',
     });
     this.set('viewed', viewed);

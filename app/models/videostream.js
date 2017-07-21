@@ -1,6 +1,7 @@
 'use strict';
 
 const CozyModel = require('../lib/backbone_cozymodel');
+const AudioVisualWork = require('../models/audiovisualwork');
 // const Wikidata = require('../lib/wikidata');
 // const WikidataSuggestions = require('../lib/wikidata_suggestions_film');
 // const Deezer = require('../lib/deezer');
@@ -10,14 +11,59 @@ const CozyModel = require('../lib/backbone_cozymodel');
 module.exports = CozyModel.extend({
   docType: 'fr.orange.videostream',
 
-  getAudiovisualWork: function () {
-    if (!this.audiovisualWork) {
-      // this.audiovisualWork = app.movies.find((movie) => {
-        // return movie.has('viewed') && _.findWhere(movie.get('viewed'), { videoStreamId: this.get('_id') });
-      // });
-      this.audiovisualWork = app.movies.at(Math.ceil(Math.random() * 50));
+  getAudioVisualWork: function () {
+    if (!this.audioVisualWork) {
+      const findVideoStream = (movie) => {
+        return movie.has('viewed') && _.findWhere(movie.get('viewed'), { videoStreamId: this.get('_id') });
+      };
+      this.audioVisualWork = app.movies.find(findVideoStream)
+        || app.tvseries.find(findVideoStream)
+        || null;
+              // this.audiovisualWork = app.movies.at(Math.ceil(Math.random() * 50));
     }
-    return this.audiovisualWork;
+    return this.audioVisualWork;
+  },
+
+  getName: function () {
+    const content = this.get('content');
+    if (!content) { return ''; }
+
+    // Movies
+    if (this.get('action') === 'Visualisation'
+     && this.get('details') && this.get('details').offerName !== 'AVSP TV LIVE'
+     && this.get('details').offerName !== 'OTV' && !content.subTitle) {
+      return content.title;
+    }
+
+    // series
+    // look in subtitle, remove %d - in front, and  - S%d%d at the end.
+
+    let title = content.subTitle;
+    if (!title) { return ''; }
+
+    console.log(title);
+    title = title.replace(/^\d+[ ]*-[ ]*/, '');
+    console.log(title);
+    title = title.replace(/[ ]*-?[ ]+S\d+$/, '');
+    console.log(title);
+    title = title.replace(/[ ]*-[ ]*VOST$/, '');
+    console.log(title);
+    title = title.replace(/&/g, ' ');
+    console.log(title);
+
+    return title;
+  },
+
+  findAudioVisualWork: function () {
+    const name = this.getName();
+    if (!name) { return Promise.reject('neither a film nor tvserie'); } // TODO
+
+    const avw = app.movies.findWhere({ orangeName: name }) || app.tvseries.findWhere({ orangeName: name });
+    if (avw) { return Promise.resolve(avw); }
+
+    return new Promise(resolve => app.bloodhound.search(name, resolve))
+    // WikidataSuggestions.fetchMoviesSuggestions(name)
+    .then(suggestions => AudioVisualWork.fromWDSuggestion(suggestions[0]));
   },
 });
 

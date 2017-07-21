@@ -43,11 +43,11 @@ const Application = Mn.Application.extend({
   },
 
   prepareInBackground: function () {
-    // this.trigger('message:display',
-    //   'Ajout des films visionnés via VoD et Replay sur Livebox ...', 'addFromVideoStreams');
-    // this.movies.addFromVideoStreams()
-    // .catch(err => this.trigger('message:error', err))
-    // .then(() => this.trigger('message:hide', 'addFromVideoStreams'));
+    this.trigger('message:display',
+      'Ajout des films et séries visionnés via VoD et Replay sur Livebox ...', 'findAudioVisualWorks');
+    this.videoStreams.findAudioVisualWorks()
+    .catch(err => this.trigger('message:error', err))
+    .then(() => this.trigger('message:hide', 'findAudioVisualWorks'));
 
     return Promise.resolve();
   },
