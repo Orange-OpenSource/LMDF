@@ -65,8 +65,12 @@ module.exports = Mn.View.extend({
 
     switch (slug) {
       case 'videostreams': view = new VideoStreamsView({ collection: app.videoStreams }); break;
-      case 'movies': view = new MovieLibraryView({ collection: app.movies, model: new Backbone.Model({ title: 'Mes Fims' }) }); break;
-      case 'tvseries': view = new MovieLibraryView({ collection: app.tvseries, model: new Backbone.Model({ title: 'Mes Séries' }) }); break;
+      case 'movies':
+        view = new MovieLibraryView({ collection: app.movies, model: new Backbone.Model({ title: 'Mes Fims' }) });
+        break;
+      case 'tvseries':
+        view = new MovieLibraryView({ collection: app.tvseries, model: new Backbone.Model({ title: 'Mes Séries' }) });
+        break;
       default: view = null;
     }
     console.log(view);

@@ -27,8 +27,6 @@ module.exports = Mn.View.extend({
   onRender: function () {
     this.model.getPoster()
     .then((dataUri) => {
-      console.log('toto')
-      console.log(dataUri.length)
       this.ui.img.attr('src', dataUri);
     });
   },
@@ -36,6 +34,4 @@ module.exports = Mn.View.extend({
   showDetails: function () {
     app.trigger('details:show', this.model);
   },
-
-
 });

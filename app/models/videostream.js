@@ -26,32 +26,29 @@ module.exports = CozyModel.extend({
 
   getName: function () {
     const content = this.get('content');
-    if (!content) { return ''; }
+    if (!content) { return name; }
 
     // Movies
     if (this.get('action') === 'Visualisation'
      && this.get('details') && this.get('details').offerName !== 'AVSP TV LIVE'
      && this.get('details').offerName !== 'OTV' && !content.subTitle) {
-      return content.title;
+      return content.title.replace(' - HD', '')
+        .replace(/^BA - /, '')
+        .replace(/ - extrait exclusif offert$/, '')
+        .replace(/ - extrait offert$/, '')
+        .replace(/ - édition spéciale$/, '')
+        ;
     }
 
     // series
     // look in subtitle, remove %d - in front, and  - S%d%d at the end.
+    if (!content.subTitle) { return ''; }
 
-    let title = content.subTitle;
-    if (!title) { return ''; }
-
-    console.log(title);
-    title = title.replace(/^\d+[ ]*-[ ]*/, '');
-    console.log(title);
-    title = title.replace(/[ ]*-?[ ]+S\d+$/, '');
-    console.log(title);
-    title = title.replace(/[ ]*-[ ]*VOST$/, '');
-    console.log(title);
-    title = title.replace(/&/g, ' ');
-    console.log(title);
-
-    return title;
+    return content.subTitle.replace(/^\d+[ ]*-[ ]*/, '')
+      .replace(/[ ]*-?[ ]+S\d+$/, '')
+      .replace(/[ ]*-[ ]*VOST$/, '')
+      .replace(/&/g, ' ')
+      ;
   },
 
   findAudioVisualWork: function () {

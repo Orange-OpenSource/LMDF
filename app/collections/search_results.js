@@ -35,7 +35,6 @@ module.exports = Backbone.Collection.extend({
     });
   },
 
-
   fromKeyword: function (keyword) {
     return WikidataSuggestions.fetchMoviesSuggestions(keyword)
     .then((suggestions) => {

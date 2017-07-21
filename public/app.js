@@ -153,14 +153,13 @@ require.register("application.js", function(exports, require, module) {
 
 // Main application that create a Mn.Application singleton and
 // exposes it.
-const AsyncPromise = require('./lib/async_promise');
 const Router = require('router');
 const AppLayout = require('views/app_layout');
 
 const Properties = require('models/properties');
 const MoviesCollection = require('./collections/movies');
-
-const bPromise = AsyncPromise.backbone2Promise;
+const TVSeriesCollection = require('./collections/tvseries');
+const VideoStreamsCollection = require('./collections/videostreams');
 
 require('views/behaviors');
 
@@ -168,7 +167,7 @@ const Application = Mn.Application.extend({
 
   prepare: function () {
     this._splashMessages();
-
+    moment.locale('fr');
     const appElem = $('[role=application]')[0];
 
     this.cozyDomain = appElem.dataset.cozyDomain;
@@ -179,17 +178,24 @@ const Application = Mn.Application.extend({
     cozy.bar.init({ appName: 'La musique de mes films' });
 
     this.movies = new MoviesCollection();
+    this.tvseries = new TVSeriesCollection();
+    this.videoStreams = new VideoStreamsCollection();
     this.properties = Properties;
+    this._initBloodhound();
     return this.properties.fetch()
-    .then(() => bPromise(this.movies, this.movies.fetch));
+    .then(() => Promise.all([
+      this.videoStreams.fetch(),
+      this.movies.fetch(),
+      this.tvseries.fetch(),
+    ]));
   },
 
   prepareInBackground: function () {
     this.trigger('message:display',
-      'Ajout des films visionnés via VoD et Replay sur Livebox ...', 'addFromVideoStreams');
-    this.movies.addFromVideoStreams()
+      'Ajout des films et séries visionnés via VoD et Replay sur Livebox ...', 'findAudioVisualWorks');
+    this.videoStreams.findAudioVisualWorks()
     .catch(err => this.trigger('message:error', err))
-    .then(() => this.trigger('message:hide', 'addFromVideoStreams'));
+    .then(() => this.trigger('message:hide', 'findAudioVisualWorks'));
 
     return Promise.resolve();
   },
@@ -197,6 +203,19 @@ const Application = Mn.Application.extend({
   _splashMessages: function () {
     this.listenTo(this, 'message:display message:error',
       message => $('#splashmessage').html(message));
+  },
+
+  _initBloodhound: function () {
+    this.bloodhound = new Bloodhound({
+      datumTokenizer: Bloodhound.tokenizers.obj.whitespace('label'),
+      queryTokenizer: Bloodhound.tokenizers.whitespace,
+      identify: item => item.id,
+      prefetch: {
+        url: 'data/wikidata_movie_tvserie_labels.json',
+        cache: false,
+        //cacheKey: 'M',
+      },
+    });
   },
 
   onBeforeStart: function () {
@@ -243,7 +262,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-
 });
 
 require.register("collections/movies.js", function(exports, require, module) {
@@ -251,85 +269,12 @@ require.register("collections/movies.js", function(exports, require, module) {
 
 const CozyCollection = require('../lib/backbone_cozycollection');
 
-const AsyncPromise = require('../lib/async_promise');
 const Movie = require('../models/movie');
-
 
 module.exports = CozyCollection.extend({
   model: Movie,
   modelId: attrs => (attrs.wikidataId ? attrs.wikidataId : attrs.label),
   comparator: 'label',
-
-//  docType: Movie.prototype.docType.toLowerCase(),
-
-  addVideoStreamToLibrary: function (videoStream) {
-    return Promise.resolve().then(() => {
-      const movie = this.find(movie => movie.get('orangeTitle') === videoStream.content.title);
-
-      if (movie) {
-        return movie;
-      }
-      return Movie.fromOrangeTitle(videoStream.content.title);
-    }).then((movie) => {
-      movie.setViewed(videoStream);
-      this.add(movie);
-
-      return movie.save(); // TODO : doesn't return a promise !
-    }).catch((err) => {
-      // Fail silenlty.
-      console.error(err);
-      return Promise.resolve();
-    });
-  },
-
-
-  addFromVideoStreams: function () {
-    const since = app.properties.get('lastVideoStream') || '';
-    let last = since;
-
-    return AsyncPromise.queryPaginated(skip => this.getIndexVideoStreamByDate()
-      .then(index => cozy.client.data.query(index,
-        { selector: { timestamp: { $gt: since } }, skip, wholeResponse: true }))
-    )
-    .then((results) => {
-      const lastResult = results[results.length - 1];
-      if (lastResult && lastResult.timestamp > since) {
-        last = lastResult.timestamp;
-      }
-
-      const videoStreams = results.filter(vs => (vs.action === 'Visualisation'
-        && vs.details && vs.details.offerName !== 'AVSP TV LIVE' && vs.details.offerName !== 'OTV'
-        && vs.content && !vs.content.subTitle));
-      return AsyncPromise.series(videoStreams, this.addVideoStreamToLibrary, this);
-    })
-    .then(() => {
-      app.properties.set('lastVideoStream', last);
-      return app.properties.save();
-    });
-  },
-
-
-  getIndexVideoStreamByDate: function () {
-    this.indexVideoStreamByDate = this.indexVideoStreamByDate || cozy.client.data.defineIndex(
-      'org.fing.mesinfos.videostream',
-      // ['timestamp', 'action', 'details', 'content']
-      ['timestamp']
-      );
-
-    return this.indexVideoStreamByDate;
-  },
-
-  //TODO
-  // defineVideoStreamMoviesByDateView: function () {
-  //   const mapFun = function (doc) {
-  //     if (doc.action === 'Visualisation'
-  //       && doc.details.offerName !== 'AVSP TV LIVE' && doc.details.offerName !== 'OTV'
-  //       && !(doc.content.subTitle && doc.content.subTitle !== '')) {
-  //       emit(doc.timestamp);
-  //     }
-  //   };
-  //   return cozysdk.defineView('videostream', 'moviesByDate', mapFun.toString());
-  // },
 });
 
 });
@@ -338,13 +283,11 @@ require.register("collections/search_results.js", function(exports, require, mod
 'use strict';
 
 const AsyncPromise = require('../lib/async_promise');
-const WikidataSuggestions = require('../lib/wikidata_suggestions_film');
-const Movie = require('../models/movie');
+const WikidataSuggestions = require('../lib/wikidata_suggestions');
+const Model = require('../models/audiovisualwork');
 
-
-module.exports =
-Backbone.Collection.extend({
-  model: Movie,
+module.exports = Backbone.Collection.extend({
+  model: Model,
   modelId: attrs => attrs.wikidataId,
 
   findByWDId: function (wdId) {
@@ -352,20 +295,20 @@ Backbone.Collection.extend({
   },
 
   fromWDSuggestionMovie: function (wdSuggestion) {
-    const movie = this.findByWDId(wdSuggestion.id);
-    if (movie) {
-      return Promise.resolve(movie);
+    const avw = this.findByWDId(wdSuggestion.id);
+    if (avw) {
+      return Promise.resolve(avw);
     }
 
-    return Movie.fromWDSuggestionMovie(wdSuggestion)
-    .then((movie) => {
-      this.add(movie);
-      return movie;
+    return Model.fromWDSuggestion(wdSuggestion)
+    .then((avw) => {
+      this.add(avw);
+      return avw;
     }).catch((err) => {
-      const msg = `Erreur à la récupération des données pour le film ${wdSuggestion.id}`;
-      if (err.message === 'this ID is not a movie') {
+      const msg = `Erreur à la récupération des données pour le programme ${wdSuggestion.id}`;
+      if (err.message === 'this ID is neither a movie nor a tv serie') {
         // Fail silently and quitely
-        console.info(`Cette entité ${wdSuggestion.id} n'est pas un film.`);
+        console.info(`Cette entité ${wdSuggestion.id} n'est pas ni un film, ni un série.`);
       } else {
         // Fail silently
         console.error(msg);
@@ -374,13 +317,65 @@ Backbone.Collection.extend({
     });
   },
 
-
   fromKeyword: function (keyword) {
     return WikidataSuggestions.fetchMoviesSuggestions(keyword)
     .then((suggestions) => {
       return AsyncPromise.series(suggestions, this.fromWDSuggestionMovie, this);
     }).catch(err => console.error(err)) // Fail silently.
     .then(() => this.trigger('done'));
+  },
+});
+
+});
+
+require.register("collections/tvseries.js", function(exports, require, module) {
+'use strict';
+
+const CozyCollection = require('../lib/backbone_cozycollection');
+const Model = require('../models/tvserie');
+
+module.exports = CozyCollection.extend({
+  model: Model,
+  modelId: attrs => (attrs.wikidataId ? attrs.wikidataId : attrs.label),
+  comparator: 'label',
+});
+
+});
+
+require.register("collections/videostreams.js", function(exports, require, module) {
+'use strict';
+
+const CozyCollection = require('../lib/backbone_cozycollection');
+
+const AsyncPromise = require('../lib/async_promise');
+const Model = require('../models/videostream');
+
+module.exports = CozyCollection.extend({
+  model: Model,
+  comparator: (a, b) => {
+    return (a.get('timestamp') > b.get('timestamp')) ? -1 : 1;
+  },
+
+  findAudioVisualWork: function (videoStream) {
+    return videoStream.findAudioVisualWork()
+    .then((avw) => {
+      avw.setViewed(videoStream);
+      return avw.save();
+    }).catch((err) => {
+      // Fail silenlty.
+      console.error(err);
+      return Promise.resolve();
+    }).then(() => console.log('hello toto'));
+  },
+
+  findAudioVisualWorks: function () {
+    const since = app.properties.get('lastVideoStream') || '';
+    const videoStreams = this.filter(vs => vs.get('timestamp') > since);
+    return AsyncPromise.series(videoStreams, this.findAudioVisualWork, this)
+    .then(() => {
+      app.properties.set('lastVideoStream', this.first().get('timestamp'));
+      return app.properties.save();
+    });
   },
 });
 
@@ -698,12 +693,12 @@ require.register("lib/img_fetcher.js", function(exports, require, module) {
 
 const imgs = {};
 
-module.exports = (uri, doctype, path) => {
+module.exports = (uri, doctype, options) => {
   if (!(uri in imgs)) {
     imgs[uri] = new Promise((resolve) => {
       Promise.all([
         cozy.client.authorize(),
-        cozy.client.fullpath(`/remote/${doctype}?path=${encodeURIComponent(path)}`),
+        cozy.client.fullpath(`/remote/${doctype}?${$.param(options)}`),
       ]).then((res) => {
         const xhr = new XMLHttpRequest();
         xhr.open('GET', res[1]);
@@ -1043,6 +1038,161 @@ M.getMovieData = function (wikidataId) {
   });
 };
 
+M.getTVSerieData = function (wikidataId) {
+  let sparql = `SELECT ?label ?wikiLink ?wikiLinkFr ?originalTitle ?composer ?composerLabel
+      ?genre ?genreLabel ?publicationDate ?director ?directorLabel
+      ?musicBrainzRGId ?imdbId ?countryOfOrigin
+      ?countryOfOriginLabel ?countryOfOriginLanguageCode
+      ?soundtrack
+    WHERE {
+     wd:${wikidataId} wdt:P31/wdt:P279* wd:Q5398426;
+        rdfs:label ?label.
+
+    OPTIONAL { wd:${wikidataId} wdt:P1476 ?originalTitle. }
+    OPTIONAL { wd:${wikidataId} wdt:P86 ?composer. }
+    OPTIONAL { wd:${wikidataId} wdt:P136 ?genre. }
+    FILTER NOT EXISTS { wd:${wikidataId} wdt:P136/wdt:P279* wd:Q291. }
+    OPTIONAL { wd:${wikidataId} wdt:P495 ?countryOfOrigin. }
+    OPTIONAL {
+      wd:${wikidataId} wdt:P495 ?_country.
+      ?_country wdt:P37 ?_language.
+      ?_language wdt:P218 ?countryOfOriginLanguageCode.
+    }
+    OPTIONAL { wd:${wikidataId} wdt:P577 ?publicationDate. }
+    OPTIONAL { wd:${wikidataId} wdt:P57 ?director. }
+    OPTIONAL {
+      wd:${wikidataId} wdt:P406 ?soundtrackAlbum.
+      ?soundtrackAlbum wdt:P436 ?musicBrainzRGId.
+    }
+
+    OPTIONAL { wd:${wikidataId} wdt:P436 ?musicBrainzRGId. }
+    OPTIONAL { wd:${wikidataId} wdt:P345 ?imdbId. }
+    OPTIONAL {
+      ?wikiLinkFr schema:about wd:${wikidataId}.
+      ?wikiLinkFr schema:inLanguage "fr".
+      FILTER (SUBSTR(str(?wikiLinkFr), 1, 25) = "https://fr.wikipedia.org/")
+    }
+
+    OPTIONAL {
+      ?wikiLink schema:about wd:${wikidataId}.
+      ?wikiLink schema:inLanguage "en".
+      FILTER (SUBSTR(str(?wikiLink), 1, 25) = "https://en.wikipedia.org/")
+    }
+
+    SERVICE wikibase:label { bd:serviceParam wikibase:language "fr" . }
+
+    filter langMatches(lang(?label),'fr')
+  }
+  LIMIT 1`;
+
+
+  // return $.getJSON(wdk.sparqlQuery(sparql))
+  sparql = encodeURIComponent(encodeURIComponent(sparql));
+  return cozy.client.fetchJSON('GET', `/remote/org.wikidata.sparql?q=${sparql}`)
+  .then(wdk.simplifySparqlResults)
+  .then((movies) => {
+    if (!movies || movies.length === 0) { throw new Error('this ID is not a movie'); }
+
+    const movie = movies[0];
+
+    movie.countryOfOrigin = $.extend({
+      languageCode: movie.countryOfOriginLanguageCode,
+    }, movie.countryOfOrigin);
+    delete movie.countryOfOriginLanguageCode;
+
+    movie.soundtrack = $.extend({
+      musicbrainzReleaseGroupId: movie.musicBrainzRGId,
+      artist: (movie.composer) ? movie.composer.label : undefined,
+    }, movie.soundtrack);
+    delete movie.composer;
+    delete movie.musicBrainzRGId;
+
+    movie.wikidataId = wikidataId;
+    return movie;
+  });
+};
+
+M.getMovieOrTVSerieData = function (wikidataId) {
+  let sparql = `SELECT ?label ?wikiLink ?wikiLinkFr ?originalTitle ?composer ?composerLabel
+  ?genre ?genreLabel ?publicationDate ?duration ?director ?directorLabel
+  ?musicBrainzRGId ?imdbId ?countryOfOrigin
+  ?countryOfOriginLabel ?countryOfOriginLanguageCode
+  ?soundtrack
+  ?isMovie
+  WHERE {
+    {
+      wd:${wikidataId} wdt:P31/wdt:P279* wd:Q11424;
+        rdfs:label ?isMovie.
+    } UNION {
+      wd:${wikidataId} wdt:P31/wdt:P279* wd:Q5398426.
+    }
+    wd:${wikidataId} rdfs:label ?label.
+
+  OPTIONAL { wd:${wikidataId} wdt:P1476 ?originalTitle. }
+  OPTIONAL { wd:${wikidataId} wdt:P86 ?composer. }
+  OPTIONAL { wd:${wikidataId} wdt:P136 ?genre. }
+  FILTER NOT EXISTS { wd:${wikidataId} wdt:P136/wdt:P279* wd:Q291. }
+  OPTIONAL { wd:${wikidataId} wdt:P495 ?countryOfOrigin. }
+  OPTIONAL {
+    wd:${wikidataId} wdt:P495 ?_country.
+    ?_country wdt:P37 ?_language.
+    ?_language wdt:P218 ?countryOfOriginLanguageCode.
+  }
+  OPTIONAL { wd:${wikidataId} wdt:P577 ?publicationDate. }
+  OPTIONAL { wd:${wikidataId} wdt:P2047 ?duration. }
+  OPTIONAL { wd:${wikidataId} wdt:P57 ?director. }
+  OPTIONAL {
+    wd:${wikidataId} wdt:P406 ?soundtrackAlbum.
+    ?soundtrackAlbum wdt:P436 ?musicBrainzRGId.
+  }
+
+  OPTIONAL { wd:${wikidataId} wdt:P436 ?musicBrainzRGId. }
+  OPTIONAL { wd:${wikidataId} wdt:P345 ?imdbId. }
+  OPTIONAL {
+    ?wikiLinkFr schema:about wd:${wikidataId}.
+    ?wikiLinkFr schema:inLanguage "fr".
+    FILTER (SUBSTR(str(?wikiLinkFr), 1, 25) = "https://fr.wikipedia.org/")
+  }
+
+  OPTIONAL {
+    ?wikiLink schema:about wd:${wikidataId}.
+    ?wikiLink schema:inLanguage "en".
+    FILTER (SUBSTR(str(?wikiLink), 1, 25) = "https://en.wikipedia.org/")
+  }
+
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "fr" . }
+
+  filter langMatches(lang(?label),'fr')
+  }
+  LIMIT 1`;
+
+
+  // return $.getJSON(wdk.sparqlQuery(sparql))
+  sparql = encodeURIComponent(encodeURIComponent(sparql));
+  return cozy.client.fetchJSON('GET', `/remote/org.wikidata.sparql?q=${sparql}`)
+  .then(wdk.simplifySparqlResults)
+  .then((avws) => {
+    if (!avws || avws.length === 0) { throw new Error('this ID is nor a movie nor a tvserie'); }
+
+    const avw = avws[0];
+
+    avw.countryOfOrigin = $.extend({
+      languageCode: avw.countryOfOriginLanguageCode,
+    }, avw.countryOfOrigin);
+    delete avw.countryOfOriginLanguageCode;
+
+    avw.soundtrack = $.extend({
+      musicbrainzReleaseGroupId: avw.musicBrainzRGId,
+      artist: (avw.composer) ? avw.composer.label : undefined,
+    }, avw.soundtrack);
+    delete avw.composer;
+    delete avw.musicBrainzRGId;
+
+    avw.wikidataId = wikidataId;
+    return avw;
+  });
+};
+
 
 M.getPoster = function (movie) {
   if (typeof (movie.wikiLink) !== 'string') {
@@ -1245,7 +1395,7 @@ module.exports = M;
 
 });
 
-;require.register("lib/wikidata_suggestions_film.js", function(exports, require, module) {
+;require.register("lib/wikidata_suggestions.js", function(exports, require, module) {
 'use strict';
 
 // query items with label
@@ -1260,7 +1410,15 @@ module.exports.findMovieMatches = function (filmTitle, nextSync, nextAsync) {
 };
 
 module.exports.fetchMoviesSuggestions = function (title) {
-  return getFilmSuggestionObjectAPI(title);
+  return Promise.all([
+    new Promise(resolve => app.bloodhound.search(title, resolve)),
+    getFilmSuggestionObjectAPI(title),
+  ])
+  .then((results) => {
+    let suggestions = results[0].concat(results[1]);
+    suggestions = _.uniq(suggestions, s => s.id);
+    return suggestions;
+  });
 };
 
 function getFilmSuggestionObjectAPI(filmTitle, limit) {
@@ -1277,9 +1435,16 @@ function getFilmSuggestionObjectAPI(filmTitle, limit) {
   return cozy.client.fetchJSON('GET', `/remote/org.wikidata.wbsearchentities?params=${params}`)
   .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res))
   .then((res) => {
-    const items = res.search.filter(item => item.description &&
-       (item.description.indexOf('film') !== -1
-       || item.description.indexOf('movie') !== -1));
+    const items = res.search.filter((item) => {
+      if (item.description) {
+        const description = item.description.toLowerCase();
+        return (description.indexOf('film') !== -1
+        || description.indexOf('movie') !== -1
+        || description.indexOf('tv series') !== -1
+        || description.indexOf('television series') !== -1);
+      }
+      return false;
+    });
 
     // Option: sort instead of filter.
     // let items = res.search.sort((item,itemB) =>
@@ -1294,22 +1459,18 @@ function getFilmSuggestionObjectAPI(filmTitle, limit) {
 
 });
 
-;require.register("models/movie.js", function(exports, require, module) {
+;require.register("models/audiovisualwork.js", function(exports, require, module) {
 'use strict';
 
 const CozyModel = require('../lib/backbone_cozymodel');
 const Wikidata = require('../lib/wikidata');
-const WikidataSuggestions = require('../lib/wikidata_suggestions_film');
 const Deezer = require('../lib/deezer');
 const Musicbrainz = require('../lib/musicbrainz');
 const ImgFetcher = require('lib/img_fetcher');
 
+let AudioVisualWork = null;
 
-let Movie = null;
-
-module.exports = Movie = CozyModel.extend({
-  docType: 'fr.orange.movie',
-
+module.exports = AudioVisualWork = CozyModel.extend({
   initialize: function () {
     this.runningTasks = {};
   },
@@ -1317,13 +1478,11 @@ module.exports = Movie = CozyModel.extend({
   setViewed: function (videoStream) {
     const viewed = this.get('viewed') || [];
 
-    if (viewed.some(view => view.timestamp === videoStream.timestamp)) {
-      return;
-    }
+    if (viewed.some(view => view.timestamp === videoStream.get('timestamp'))) { return; }
 
     viewed.push({
-      timestamp: videoStream.timestamp,
-      videoStreamId: videoStream._id,
+      timestamp: videoStream.get('timestamp'),
+      videoStreamId: videoStream.get('_id'),
       accountType: 'orange',
     });
     this.set('viewed', viewed);
@@ -1396,63 +1555,67 @@ module.exports = Movie = CozyModel.extend({
   },
 
   getPoster: function () {
-    return (this.has('posterUri') ? Promise.resolve() : this.fetchPosterUri())
-    .then(() => {
-      const uri = this.get('posterUri');
-      if (!uri) { return Promise.reject(); }
+    return Promise.resolve().then(() => {
+      if (this.has('imdbId')) {
+        const params = $.param({
+          apikey: 'cbefad9e',
+          i: this.get('imdbId'),
+          h: 260,
+        });
+        return ImgFetcher(`https://img.omdbapi.com/?${params}`, 'com.omdbapi.img', { params });
+      }
 
-      const path = decodeURIComponent(uri.replace(/.*org\//, ''));
-      return ImgFetcher(uri, 'org.wikimedia.uploads', path);
+      return (this.has('posterUri') ? Promise.resolve() : this.fetchPosterUri())
+        .then(() => {
+          const uri = this.get('posterUri');
+          if (!uri) { return Promise.reject(); }
+
+          const path = decodeURIComponent(uri.replace(/.*org\//, ''));
+          return ImgFetcher(uri, 'org.wikimedia.uploads', { path });
+        });
     })
     .then(data => `data:image;base64,${data}`);
   },
 });
 
 
-Movie.fromWDSuggestionMovie = function (wdSuggestion) {
-  return Wikidata.getMovieData(wdSuggestion.id)
-  .then(attrs => new Movie(attrs))
-  ;
-};
+AudioVisualWork.fromWDSuggestion = function (wdSuggestion) {
+  //eslint-disable-next-line
+  const Movie = require('./movie');
+  //eslint-disable-next-line
+  const TVSerie = require('./tvserie');
 
-Movie.fromOrangeTitle = function (title) {
-  const prepareTitle = (title) => {
-    return title.replace(' - HD', '')
-    .replace(/^BA - /, '')
-    .replace(/ - extrait exclusif offert$/, '')
-    .replace(/ - extrait offert$/, '')
-    .replace(/ - édition spéciale$/, '')
-    ;
-  };
-
-  return fromFrenchTitle(prepareTitle(title))
-  .catch((err) => {
-    console.warn(`Can't find movie: ${title} (err, see below). Create empty movie.`);
-    console.error(err);
-
-    return new Movie({ label: prepareTitle(title) });
-  })
-  .then((movie) => {
-    movie.set('orangeTitle', title);
-    return movie;
-  });
-};
-
-function fromFrenchTitle(title) {
-  return WikidataSuggestions.fetchMoviesSuggestions(title)
-  .then((suggestions) => {
-    if (!suggestions || suggestions.length === 0) {
-      return Promise.reject(`Can't find Movie with french title: ${title}`);
+  return Wikidata.getMovieOrTVSerieData(wdSuggestion.id)
+  .then((attrs) => {
+    if (attrs.isMovie) {
+      delete attrs.isMovie;
+      return new Movie(attrs);
     }
-
-    // TODO: improve the choice of the suggestion !
-    return Movie.fromWDSuggestionMovie(suggestions[0]);
+    return new TVSerie(attrs);
   });
-}
+};
 
 });
 
-;require.register("models/properties.js", function(exports, require, module) {
+require.register("models/movie.js", function(exports, require, module) {
+'use strict';
+
+const AudioVisualWork = require('./audiovisualwork');
+
+module.exports = AudioVisualWork.extend({
+  docType: 'fr.orange.movie',
+  save: function () {
+    if (this.isNew()) {
+      app.movies.add(this);
+    }
+    //eslint-disable-next-line
+    return AudioVisualWork.prototype.save.call(this, arguments);
+  },
+});
+
+});
+
+require.register("models/properties.js", function(exports, require, module) {
 'use-strict';
 
 const CozySingleton = require('../lib/backbone_cozysingleton');
@@ -1465,7 +1628,136 @@ module.exports = new Properties();
 
 });
 
-require.register("router.js", function(exports, require, module) {
+require.register("models/tvserie.js", function(exports, require, module) {
+'use strict';
+
+const AudioVisualWork = require('./audiovisualwork');
+
+module.exports = AudioVisualWork.extend({
+  docType: 'fr.orange.tvserie',
+  save: function () {
+    if (this.isNew()) {
+      app.tvseries.add(this);
+    }
+    //eslint-disable-next-line
+    return AudioVisualWork.prototype.save.call(this, arguments);
+  },
+});
+
+});
+
+require.register("models/videostream.js", function(exports, require, module) {
+'use strict';
+
+const CozyModel = require('../lib/backbone_cozymodel');
+const AudioVisualWork = require('../models/audiovisualwork');
+// const Wikidata = require('../lib/wikidata');
+// const WikidataSuggestions = require('../lib/wikidata_suggestions_film');
+// const Deezer = require('../lib/deezer');
+// const Musicbrainz = require('../lib/musicbrainz');
+// const ImgFetcher = require('lib/img_fetcher');
+
+module.exports = CozyModel.extend({
+  docType: 'fr.orange.videostream',
+
+  getAudioVisualWork: function () {
+    if (!this.audioVisualWork) {
+      const findVideoStream = (movie) => {
+        return movie.has('viewed') && _.findWhere(movie.get('viewed'), { videoStreamId: this.get('_id') });
+      };
+      this.audioVisualWork = app.movies.find(findVideoStream)
+        || app.tvseries.find(findVideoStream)
+        || null;
+              // this.audiovisualWork = app.movies.at(Math.ceil(Math.random() * 50));
+    }
+    return this.audioVisualWork;
+  },
+
+  getName: function () {
+    const content = this.get('content');
+    if (!content) { return name; }
+
+    // Movies
+    if (this.get('action') === 'Visualisation'
+     && this.get('details') && this.get('details').offerName !== 'AVSP TV LIVE'
+     && this.get('details').offerName !== 'OTV' && !content.subTitle) {
+      return content.title.replace(' - HD', '')
+        .replace(/^BA - /, '')
+        .replace(/ - extrait exclusif offert$/, '')
+        .replace(/ - extrait offert$/, '')
+        .replace(/ - édition spéciale$/, '')
+        ;
+    }
+
+    // series
+    // look in subtitle, remove %d - in front, and  - S%d%d at the end.
+    if (!content.subTitle) { return ''; }
+
+    return content.subTitle.replace(/^\d+[ ]*-[ ]*/, '')
+      .replace(/[ ]*-?[ ]+S\d+$/, '')
+      .replace(/[ ]*-[ ]*VOST$/, '')
+      .replace(/&/g, ' ')
+      ;
+  },
+
+  findAudioVisualWork: function () {
+    const name = this.getName();
+    if (!name) { return Promise.reject('neither a film nor tvserie'); } // TODO
+
+    const avw = app.movies.findWhere({ orangeName: name }) || app.tvseries.findWhere({ orangeName: name });
+    if (avw) { return Promise.resolve(avw); }
+
+    return new Promise(resolve => app.bloodhound.search(name, resolve))
+    // WikidataSuggestions.fetchMoviesSuggestions(name)
+    .then(suggestions => AudioVisualWork.fromWDSuggestion(suggestions[0]));
+  },
+});
+
+
+// TVShow.fromWDSuggestionMovie = function (wdSuggestion) {
+//   return Wikidata.getMovieData(wdSuggestion.id)
+//   .then(attrs => new TV(attrs))
+//   ;
+// };
+
+// Movie.fromOrangeTitle = function (title) {
+//   const prepareTitle = (title) => {
+//     return title.replace(' - HD', '')
+//     .replace(/^BA - /, '')
+//     .replace(/ - extrait exclusif offert$/, '')
+//     .replace(/ - extrait offert$/, '')
+//     .replace(/ - édition spéciale$/, '')
+//     ;
+//   };
+//
+//   return fromFrenchTitle(prepareTitle(title))
+//   .catch((err) => {
+//     console.warn(`Can't find movie: ${title} (err, see below). Create empty movie.`);
+//     console.error(err);
+//
+//     return new Movie({ label: prepareTitle(title) });
+//   })
+//   .then((movie) => {
+//     movie.set('orangeTitle', title);
+//     return movie;
+//   });
+// };
+
+// function fromFrenchTitle(title) {
+//   return WikidataSuggestions.fetchMoviesSuggestions(title)
+//   .then((suggestions) => {
+//     if (!suggestions || suggestions.length === 0) {
+//       return Promise.reject(`Can't find Movie with french title: ${title}`);
+//     }
+//
+//     // TODO: improve the choice of the suggestion !
+//     return Movie.fromWDSuggestionMovie(suggestions[0]);
+//   });
+// }
+
+});
+
+;require.register("router.js", function(exports, require, module) {
 'use-strict';
 
 module.exports = Backbone.Router.extend({
@@ -1508,7 +1800,8 @@ require.register("views/app_layout.js", function(exports, require, module) {
 
 const MessageView = require('views/message');
 const DetailsView = require('views/movie_details');
-const LibraryView = require('views/movie_library');
+const MovieLibraryView = require('views/movie_library');
+const VideoStreamsView = require('views/videostreams');
 const SearchResultsView = require('views/movie_searchresults');
 const LeftPanelView = require('views/left_panel');
 const template = require('views/templates/app_layout');
@@ -1538,11 +1831,12 @@ module.exports = Mn.View.extend({
     this.listenTo(app, 'search', this.showSearchResults);
     this.listenTo(app, 'search:close', this.closeSearchResults);
     this.listenTo(app, 'details:show', this.showMovieDetails);
+    this.listenTo(app, 'library:show', this.showLibrary);
   },
 
   onRender: function () {
     this.showChildView('message', new MessageView());
-    this.showChildView('library', new LibraryView({ collection: app.movies }));
+    this.showLibrary('videostreams'); // default view is videostream.
     this.showChildView('leftpanel', new LeftPanelView());
   },
 
@@ -1562,6 +1856,26 @@ module.exports = Mn.View.extend({
         model: new Backbone.Model(query)
       }));
     }
+  },
+
+  showLibrary: function (slug) {
+    let view = null;
+
+    switch (slug) {
+      case 'videostreams': view = new VideoStreamsView({ collection: app.videoStreams }); break;
+      case 'movies':
+        view = new MovieLibraryView({ collection: app.movies, model: new Backbone.Model({ title: 'Mes Fims' }) });
+        break;
+      case 'tvseries':
+        view = new MovieLibraryView({ collection: app.tvseries, model: new Backbone.Model({ title: 'Mes Séries' }) });
+        break;
+      default: view = null;
+    }
+    console.log(view);
+    this.getRegion('library').empty();
+    this.showChildView('library', view);
+
+    this.closeSearchResults();
   },
 
   closeSearchResults: function () {
@@ -1644,8 +1958,11 @@ module.exports = Mn.Behavior.extend({
 require.register("views/left_panel.js", function(exports, require, module) {
 'use-strict';
 
+const appName = require('../lib/appname_version');
+
 const SearchView = require('views/search');
 const template = require('./templates/left_panel');
+
 
 module.exports = Mn.View.extend({
   tagName: 'aside',
@@ -1656,20 +1973,39 @@ module.exports = Mn.View.extend({
     Toggle: {},
   },
 
-  ui: {},
+  ui: {
+    libraryOptions: '.selectlibrary li',
+    search: '.search',
+  },
 
   triggers: {
     //eslint-disable-next-line
     'click': 'expand',
   },
-  regions: {
-    search: '.search',
+
+  events: {
+    'click @ui.libraryOptions': 'onLibraryChanged',
   },
 
+  regions: {
+    search: '@ui.search',
+  },
+
+  serializeData: function () {
+    return { appName: appName };
+  },
   onRender: function () {
     this.showChildView('search', new SearchView());
     // Listen to toggle from responsive topbar button toggle-drawer.
     $('.toggle-drawer').click(() => this.triggerMethod('toggle'));
+  },
+
+  onLibraryChanged: function (ev) {
+    const elem = ev.currentTarget;
+    this.ui.libraryOptions.toggleClass('selected', false);
+
+    elem.classList.add('selected');
+    app.trigger('library:show', elem.dataset.value);
   },
 });
 
@@ -1805,7 +2141,7 @@ module.exports = Mn.View.extend({
   },
 
   saveMovie: function () {
-    app.movies.add(this.model);
+    // app.movies.add(this.model);
     this.model.save();
   },
 });
@@ -1836,7 +2172,7 @@ module.exports = Mn.View.extend({
   },
 
   initialize: function () {
-    this.model.getPoster();
+    this.model.getPoster().then(() => console.log('toto2'));
   },
 
   onRender: function () {
@@ -1849,8 +2185,6 @@ module.exports = Mn.View.extend({
   showDetails: function () {
     app.trigger('details:show', this.model);
   },
-
-
 });
 
 });
@@ -2093,7 +2427,6 @@ module.exports = Mn.View.extend({
 require.register("views/search.js", function(exports, require, module) {
 'use-strict';
 
-const findWikidataMovieMatches = require('../lib/wikidata_suggestions_film').findMovieMatches;
 const template = require('views/templates/search');
 
 module.exports = Mn.View.extend({
@@ -2120,12 +2453,10 @@ module.exports = Mn.View.extend({
       hint: true,
       highlight: true,
       minLength: 3,
-      // limit: 10,
     }, {
-      name: 'movie',
-      source: _.debounce(findWikidataMovieMatches, 300),
-      async: true,
-      //display: suggestion => suggestion.match.text
+      name: 'label',
+      source: app.bloodhound,
+      display: 'label',
     });
   },
 
@@ -2246,8 +2577,8 @@ var __templateData = function template(locals) {
 var buf = [];
 var jade_mixins = {};
 var jade_interp;
-
-buf.push("<div class=\"search\"><i class=\"fa fa-plus\"></i></div><div class=\"tools\">&nbsp;</div><button class=\"toggle\"></button>");;return buf.join("");
+;var locals_for_with = (locals || {});(function (appName) {
+buf.push("<div class=\"search\"><i class=\"fa fa-plus\"></i></div><div class=\"tools\">&nbsp;</div><ul class=\"selectlibrary\"><li type=\"radio\" name=\"optionslibrary\" data-value=\"videostreams\" class=\"selected\"><div class=\"illumination\">P</div>Programmes visionnés</li><li type=\"radio\" name=\"optionslibrary\" data-value=\"movies\"><div class=\"illumination\">F</div>Films</li><li type=\"radio\" name=\"optionslibrary\" data-value=\"tvseries\"><div class=\"illumination\">S</div>Séries</li></ul><div class=\"appversion\">" + (jade.escape(null == (jade_interp = appName) ? "" : jade_interp)) + "</div><button class=\"toggle\"></button>");}.call(this,"appName" in locals_for_with?locals_for_with.appName:typeof appName!=="undefined"?appName:undefined));;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {
@@ -2352,7 +2683,12 @@ else
 {
 buf.push("<button class=\"delete\"><i class=\"fa fa-times\"></i>&nbsp;Supprimer de la bibliothèque</button>");
 }
-buf.push("</div><a" + (jade.attr("href", wikiLinkFr, true, false)) + " target=\"_blank\" class=\"synopsis\">" + (null == (jade_interp = synopsis) ? "" : jade_interp) + "</a></div></div><hr/><div class=\"soundtrack\"><h3>Musique associée");
+buf.push("</div>");
+if ( wikiLinkFr)
+{
+buf.push("<div class=\"synopsis\">" + (null == (jade_interp = synopsis) ? "" : jade_interp) + "</div><a" + (jade.attr("href", wikiLinkFr, true, false)) + " target=\"_blank\" class=\"wikipedia\">wikipedia<i class=\"fa fa-external-link\"></i></a>");
+}
+buf.push("</div></div><hr/><div class=\"soundtrack\"><h3>Musique associée");
 if ( runningTasks.fetch_deezerIds || runningTasks.fetch_soundtrack)
 {
 buf.push("<div class=\"waitmessage\">");
@@ -2414,7 +2750,7 @@ var buf = [];
 var jade_mixins = {};
 var jade_interp;
 
-buf.push("<p>Il n'y a aucun film dans votre vidéothèque Cozy !</p><p>Pour en ajouter, vous pouvez<ul><li>Si vous êtes client Livebox Orange, récupérer votre historique de VOD et Replay via en activant le&nbsp;<button class=\"konnector\">connecteur Orange Livebox.</button></li><li>Tout simplement, rechercher et ajouter un film avec la barre de recherche à gauche.</li></ul></p>");;return buf.join("");
+buf.push("<p>Il n'y a aucun film dans votre vidéothèque Cozy !</p><p>Pour en ajouter, vous pouvez<ul><li>Si vous êtes client Livebox Orange, récupérer votre historique de VOD et Replay via en activant le&nbsp;<button class=\"konnector\">connecteur Orange Livebox.</button></li><li>Tout simplement, rechercher et ajouter un film ou une série avec la barre de recherche à gauche.</li></ul></p>");;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {
@@ -2470,8 +2806,8 @@ var __templateData = function template(locals) {
 var buf = [];
 var jade_mixins = {};
 var jade_interp;
-
-buf.push("<h2>Mes films</h2><ul></ul>");;return buf.join("");
+;var locals_for_with = (locals || {});(function (title) {
+buf.push("<h2>" + (jade.escape(null == (jade_interp = title) ? "" : jade_interp)) + "</h2><ul></ul>");}.call(this,"title" in locals_for_with?locals_for_with.title:typeof title!=="undefined"?title:undefined));;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {
@@ -2522,7 +2858,125 @@ if (typeof define === 'function' && define.amd) {
 }
 });
 
-;require.register("___globals___", function(exports, require, module) {
+;require.register("views/templates/videostream_item.jade", function(exports, require, module) {
+var __templateData = function template(locals) {
+var buf = [];
+var jade_mixins = {};
+var jade_interp;
+;var locals_for_with = (locals || {});(function (content, timestamp) {
+buf.push("<div class=\"videostreamitem\"><div class=\"audiovisualwork\"><div class=\"placeholder\"><h3>" + (jade.escape(null == (jade_interp = content.title) ? "" : jade_interp)) + "</h3><div class=\"subtitle\">" + (jade.escape(null == (jade_interp = content.subTitle) ? "" : jade_interp)) + "</div></div></div><div class=\"date\">" + (jade.escape(null == (jade_interp = moment(timestamp).format('LT L')) ? "" : jade_interp)) + "</div></div>");}.call(this,"content" in locals_for_with?locals_for_with.content:typeof content!=="undefined"?content:undefined,"timestamp" in locals_for_with?locals_for_with.timestamp:typeof timestamp!=="undefined"?timestamp:undefined));;return buf.join("");
+};
+if (typeof define === 'function' && define.amd) {
+  define([], function() {
+    return __templateData;
+  });
+} else if (typeof module === 'object' && module && module.exports) {
+  module.exports = __templateData;
+} else {
+  __templateData;
+}
+});
+
+;require.register("views/templates/videostreams.jade", function(exports, require, module) {
+var __templateData = function template(locals) {
+var buf = [];
+var jade_mixins = {};
+var jade_interp;
+
+buf.push("<h2>Mes programmes visionnés via ma Livebox Orange</h2><ul></ul>");;return buf.join("");
+};
+if (typeof define === 'function' && define.amd) {
+  define([], function() {
+    return __templateData;
+  });
+} else if (typeof module === 'object' && module && module.exports) {
+  module.exports = __templateData;
+} else {
+  __templateData;
+}
+});
+
+;require.register("views/videostream_item.js", function(exports, require, module) {
+'use-strict';
+
+const MovieItem = require('./movie_item');
+const template = require('./templates/videostream_item');
+
+module.exports = Mn.View.extend({
+  template: template,
+  tagName: 'li',
+
+  ui: {
+    poster: '.poster',
+    img: '.poster img',
+  },
+
+  regions: {
+    audiovisualwork: '.audiovisualwork',
+  },
+
+  events: {
+    //eslint-disable-next-line
+    // 'click': 'showDetails',
+  },
+
+  // modelEvents: {
+  //   change: 'render',
+  // },
+  //
+  // initialize: function () {
+  //   this.model.getPoster();
+  // },
+  //
+  onRender: function () {
+    const audiovisualWork = this.model.getAudioVisualWork();
+    if (audiovisualWork) {
+      this.showChildView('audiovisualwork', new MovieItem({ model: audiovisualWork }));
+    }
+  },
+
+  // showDetails: function () {
+  //   app.trigger('details:show', this.model);
+  // },
+
+
+});
+
+});
+
+require.register("views/videostreams.js", function(exports, require, module) {
+'use strict';
+
+const ItemView = require('./videostream_item');
+const EmptyView = require('./movie_library_empty');
+const template = require('./templates/videostreams');
+
+const CollectionView = Mn.CollectionView.extend({
+  tagName: 'ul',
+  className: 'movielibrary',
+  childView: ItemView,
+  emptyView: EmptyView,
+});
+
+module.exports = Mn.View.extend({
+  className: 'mymovies',
+  template: template,
+
+  regions: {
+    collection: {
+      el: 'ul',
+      replaceElement: true,
+    },
+  },
+
+  onRender: function () {
+    this.showChildView('collection', new CollectionView({ collection: this.collection }));
+  },
+});
+
+});
+
+require.register("___globals___", function(exports, require, module) {
   
 });})();require('___globals___');
 

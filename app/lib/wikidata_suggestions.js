@@ -21,7 +21,6 @@ module.exports.fetchMoviesSuggestions = function (title) {
     suggestions = _.uniq(suggestions, s => s.id);
     return suggestions;
   });
-  // return getFilmSuggestionObjectAPI(title);
 };
 
 function getFilmSuggestionObjectAPI(filmTitle, limit) {
@@ -38,7 +37,7 @@ function getFilmSuggestionObjectAPI(filmTitle, limit) {
   return cozy.client.fetchJSON('GET', `/remote/org.wikidata.wbsearchentities?params=${params}`)
   .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res))
   .then((res) => {
-    const items = res.search.filter(item => {
+    const items = res.search.filter((item) => {
       if (item.description) {
         const description = item.description.toLowerCase();
         return (description.indexOf('film') !== -1

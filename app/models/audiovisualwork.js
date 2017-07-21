@@ -2,11 +2,9 @@
 
 const CozyModel = require('../lib/backbone_cozymodel');
 const Wikidata = require('../lib/wikidata');
-const WikidataSuggestions = require('../lib/wikidata_suggestions');
 const Deezer = require('../lib/deezer');
 const Musicbrainz = require('../lib/musicbrainz');
 const ImgFetcher = require('lib/img_fetcher');
-
 
 let AudioVisualWork = null;
 
