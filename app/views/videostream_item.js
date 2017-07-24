@@ -21,14 +21,10 @@ module.exports = Mn.View.extend({
     // 'click': 'showDetails',
   },
 
-  // modelEvents: {
-  //   change: 'render',
-  // },
-  //
-  // initialize: function () {
-  //   this.model.getPoster();
-  // },
-  //
+  modelEvents: {
+    change: 'render',
+  },
+
   onRender: function () {
     const audiovisualWork = this.model.getAudioVisualWork();
     if (audiovisualWork) {
@@ -39,6 +35,4 @@ module.exports = Mn.View.extend({
   // showDetails: function () {
   //   app.trigger('details:show', this.model);
   // },
-
-
 });

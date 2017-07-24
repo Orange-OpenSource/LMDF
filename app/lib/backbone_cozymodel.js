@@ -16,13 +16,12 @@ module.exports = Backbone.Model.extend({
   sync: function (method, model, options) {
     return this.syncPromise(method, model, options)
     .then(options.success, (err) => {
-      console.log(err);
+      console.error(err);
       options.error(err);
     });
   },
 
   syncPromise: function (method, model) {
-    console.log(model);
     if (method === 'create') {
       return cozy.client.data.create(this.docType, model.attributes);
     } else if (method === 'update') {

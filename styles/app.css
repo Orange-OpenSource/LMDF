@@ -439,7 +439,6 @@ ul.movielibrary .movieitem .poster {
   width: 100%;
   top: 0;
   left: 0;
-  line-height: 200px;
   display: inline-block;
 }
 
@@ -717,6 +716,10 @@ ul.movielibrary .movieitem .placeholder h3 {
     height: calc(100% - 44px);
   }
 
+  section h2 {
+    display: none;
+  }
+  
   .details {
     position: absolute;
     top: 0px;

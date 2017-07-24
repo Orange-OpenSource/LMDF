@@ -361,14 +361,17 @@ module.exports = CozyCollection.extend({
     .then((avw) => {
       avw.setViewed(videoStream);
       return avw.save();
-    }).catch((err) => {
+    })
+    .then(() => videoStream.trigger('change'))
+    .catch((err) => {
       // Fail silenlty.
       console.error(err);
       return Promise.resolve();
-    }).then(() => console.log('hello toto'));
+    });
   },
 
   findAudioVisualWorks: function () {
+    // const since = '';
     const since = app.properties.get('lastVideoStream') || '';
     const videoStreams = this.filter(vs => vs.get('timestamp') > since);
     return AsyncPromise.series(videoStreams, this.findAudioVisualWork, this)
@@ -518,13 +521,12 @@ module.exports = Backbone.Model.extend({
   sync: function (method, model, options) {
     return this.syncPromise(method, model, options)
     .then(options.success, (err) => {
-      console.log(err);
+      console.error(err);
       options.error(err);
     });
   },
 
   syncPromise: function (method, model) {
-    console.log(model);
     if (method === 'create') {
       return cozy.client.data.create(this.docType, model.attributes);
     } else if (method === 'update') {
@@ -1435,24 +1437,22 @@ function getFilmSuggestionObjectAPI(filmTitle, limit) {
   return cozy.client.fetchJSON('GET', `/remote/org.wikidata.wbsearchentities?params=${params}`)
   .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res))
   .then((res) => {
-    const items = res.search.filter((item) => {
+    // Option:filter.
+    // const items = res.search.filter((item) => {
+    // Option: sort instead of filter.
+    const items = res.search.sort((item) => {
       if (item.description) {
         const description = item.description.toLowerCase();
         return (description.indexOf('film') !== -1
         || description.indexOf('movie') !== -1
         || description.indexOf('tv series') !== -1
-        || description.indexOf('television series') !== -1);
+        || description.indexOf('television series') !== -1
+      // );
+        ) ? -1 : 1;
       }
-      return false;
+    //   return false;
+      return 0;
     });
-
-    // Option: sort instead of filter.
-    // let items = res.search.sort((item,itemB) =>
-    //   (item.description &&
-    //   (item.description.indexOf('film') !== -1
-    //   || item.description.indexOf('movie') !== -1)) ? -1 : 1
-    //   );
-
     return Promise.resolve(items);
   });
 }
@@ -1651,11 +1651,7 @@ require.register("models/videostream.js", function(exports, require, module) {
 
 const CozyModel = require('../lib/backbone_cozymodel');
 const AudioVisualWork = require('../models/audiovisualwork');
-// const Wikidata = require('../lib/wikidata');
-// const WikidataSuggestions = require('../lib/wikidata_suggestions_film');
-// const Deezer = require('../lib/deezer');
-// const Musicbrainz = require('../lib/musicbrainz');
-// const ImgFetcher = require('lib/img_fetcher');
+const WikidataSuggestions = require('../lib/wikidata_suggestions');
 
 module.exports = CozyModel.extend({
   docType: 'fr.orange.videostream',
@@ -1708,56 +1704,32 @@ module.exports = CozyModel.extend({
     if (avw) { return Promise.resolve(avw); }
 
     return new Promise(resolve => app.bloodhound.search(name, resolve))
-    // WikidataSuggestions.fetchMoviesSuggestions(name)
-    .then(suggestions => AudioVisualWork.fromWDSuggestion(suggestions[0]));
+    .then((suggestions) => {
+      if (suggestions.length === 0) {
+        return WikidataSuggestions.fetchMoviesSuggestions(name);
+      }
+      return suggestions;
+    })
+    .then((suggestions) => {
+      if (suggestions.length === 0) {
+        return Promise.reject(`${name} not found on wikidata`);
+      }
+      return AudioVisualWork.fromWDSuggestion(suggestions[0]);
+    }).then((avw) => {
+      // The AudioViualWork may already exist in the library.
+      avw = app.movies.findWhere({ wikidataId: avw.get('wikidataId') })
+        || app.tvseries.findWhere({ wikidataId: avw.get('wikidataId') })
+        || avw;
+
+      avw.set('orangeName', name);
+      return avw;
+    });
   },
 });
 
-
-// TVShow.fromWDSuggestionMovie = function (wdSuggestion) {
-//   return Wikidata.getMovieData(wdSuggestion.id)
-//   .then(attrs => new TV(attrs))
-//   ;
-// };
-
-// Movie.fromOrangeTitle = function (title) {
-//   const prepareTitle = (title) => {
-//     return title.replace(' - HD', '')
-//     .replace(/^BA - /, '')
-//     .replace(/ - extrait exclusif offert$/, '')
-//     .replace(/ - extrait offert$/, '')
-//     .replace(/ - édition spéciale$/, '')
-//     ;
-//   };
-//
-//   return fromFrenchTitle(prepareTitle(title))
-//   .catch((err) => {
-//     console.warn(`Can't find movie: ${title} (err, see below). Create empty movie.`);
-//     console.error(err);
-//
-//     return new Movie({ label: prepareTitle(title) });
-//   })
-//   .then((movie) => {
-//     movie.set('orangeTitle', title);
-//     return movie;
-//   });
-// };
-
-// function fromFrenchTitle(title) {
-//   return WikidataSuggestions.fetchMoviesSuggestions(title)
-//   .then((suggestions) => {
-//     if (!suggestions || suggestions.length === 0) {
-//       return Promise.reject(`Can't find Movie with french title: ${title}`);
-//     }
-//
-//     // TODO: improve the choice of the suggestion !
-//     return Movie.fromWDSuggestionMovie(suggestions[0]);
-//   });
-// }
-
 });
 
-;require.register("router.js", function(exports, require, module) {
+require.register("router.js", function(exports, require, module) {
 'use-strict';
 
 module.exports = Backbone.Router.extend({
@@ -1812,6 +1784,10 @@ module.exports = Mn.View.extend({
 
   behaviors: {},
 
+  ui: {
+    mainTitle: 'h1',
+  },
+
   regions: {
     leftpanel: {
       el: 'aside.drawer',
@@ -1832,6 +1808,7 @@ module.exports = Mn.View.extend({
     this.listenTo(app, 'search:close', this.closeSearchResults);
     this.listenTo(app, 'details:show', this.showMovieDetails);
     this.listenTo(app, 'library:show', this.showLibrary);
+    this.listenTo(app, 'mainTitle:set', title => this.ui.mainTitle.text(title));
   },
 
   onRender: function () {
@@ -1871,7 +1848,6 @@ module.exports = Mn.View.extend({
         break;
       default: view = null;
     }
-    console.log(view);
     this.getRegion('library').empty();
     this.showChildView('library', view);
 
@@ -2159,7 +2135,7 @@ module.exports = Mn.View.extend({
 
   ui: {
     poster: '.poster',
-    img: '.poster img',
+    // img: '.poster img',
   },
 
   events: {
@@ -2172,13 +2148,13 @@ module.exports = Mn.View.extend({
   },
 
   initialize: function () {
-    this.model.getPoster().then(() => console.log('toto2'));
+    this.model.getPoster();
   },
 
   onRender: function () {
     this.model.getPoster()
     .then((dataUri) => {
-      this.ui.img.attr('src', dataUri);
+      this.ui.poster.html(`<img title='${this.model.get('title')}' src='${dataUri}' >`);
     });
   },
 
@@ -2237,7 +2213,6 @@ module.exports = Mn.View.extend({
   fireIntent: function () {
     cozy.client.intents.create('CREATE', 'io.cozy.accounts', { slug: 'orangelivebox' })
     .start(document.getElementById('popin'))
-    // .then(account => console.log(account))
     .catch((err) => {
       const msg = "Erreur lors de l'activation du connecteur Orange Livebox";
       console.error(msg);
@@ -2272,6 +2247,7 @@ const SearchResultsView = Mn.CollectionView.extend({
 
 module.exports = Mn.View.extend({
   className: 'searchresults',
+  tagName: 'section',
   template: template,
 
   ui: {
@@ -2305,12 +2281,14 @@ module.exports = Mn.View.extend({
   onLoading: function () {
     this.$el.toggleClass('loading', true);
     this.ui.title.text(
-      `Recherche des films dont le titre contient « ${this.model.get('q')} » sur Wikidata, en cours :`);
+      `Recherche des films et séries dont le titre contient « ${this.model.get('q')} » sur Wikidata, en cours :`);
+    app.trigger('mainTitle:set', `Recherche : « ${this.model.get('q')} »`);
   },
 
   onLoaded: function () {
     this.$el.toggleClass('loading', false);
-    this.ui.title.text(`Films dont le titre contient « ${this.model.get('q')} », trouvés sur Wikidata :`);
+    this.ui.title.text(`Films et séries dont le titre contient « ${this.model.get('q')} », trouvés sur Wikidata :`);
+    app.trigger('mainTitle:set', `Films et séries pour : « ${this.model.get('q')} »`);
   },
 
 
@@ -2725,13 +2703,8 @@ var __templateData = function template(locals) {
 var buf = [];
 var jade_mixins = {};
 var jade_interp;
-;var locals_for_with = (locals || {});(function (label, posterUri) {
-buf.push("<div class=\"movieitem\"><div class=\"placeholder\"><h3>" + (jade.escape(null == (jade_interp = label) ? "" : jade_interp)) + "</h3><img src=\"img/cover_icon.png\"/></div>");
-if ( posterUri)
-{
-buf.push("<div class=\"poster\"><img" + (jade.attr("title", label, true, false)) + "/></div>");
-}
-buf.push("</div>");}.call(this,"label" in locals_for_with?locals_for_with.label:typeof label!=="undefined"?label:undefined,"posterUri" in locals_for_with?locals_for_with.posterUri:typeof posterUri!=="undefined"?posterUri:undefined));;return buf.join("");
+;var locals_for_with = (locals || {});(function (label) {
+buf.push("<div class=\"movieitem\"><div class=\"poster\"><div class=\"placeholder\"><h3>" + (jade.escape(null == (jade_interp = label) ? "" : jade_interp)) + "</h3><img src=\"img/cover_icon.png\"/></div></div></div>");}.call(this,"label" in locals_for_with?locals_for_with.label:typeof label!=="undefined"?label:undefined));;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {
@@ -2750,7 +2723,7 @@ var buf = [];
 var jade_mixins = {};
 var jade_interp;
 
-buf.push("<p>Il n'y a aucun film dans votre vidéothèque Cozy !</p><p>Pour en ajouter, vous pouvez<ul><li>Si vous êtes client Livebox Orange, récupérer votre historique de VOD et Replay via en activant le&nbsp;<button class=\"konnector\">connecteur Orange Livebox.</button></li><li>Tout simplement, rechercher et ajouter un film ou une série avec la barre de recherche à gauche.</li></ul></p>");;return buf.join("");
+buf.push("<p>Il n'y a aucun film dans votre vidéothèque Cozy !</p><p>Pour en ajouter, vous pouvez<ul><li>Si vous êtes client Livebox Orange, récupérer votre historique de VOD et Replay en activant le&nbsp;<button class=\"konnector\">connecteur Orange Livebox.</button></li><li>Tout simplement, rechercher et ajouter un film ou une série avec la barre de recherche à gauche.</li></ul></p>");;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {
@@ -2882,8 +2855,8 @@ var __templateData = function template(locals) {
 var buf = [];
 var jade_mixins = {};
 var jade_interp;
-
-buf.push("<h2>Mes programmes visionnés via ma Livebox Orange</h2><ul></ul>");;return buf.join("");
+;var locals_for_with = (locals || {});(function (title) {
+buf.push("<h2>" + (jade.escape(null == (jade_interp = title) ? "" : jade_interp)) + "</h2><ul></ul>");}.call(this,"title" in locals_for_with?locals_for_with.title:typeof title!=="undefined"?title:undefined));;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {
@@ -2920,14 +2893,10 @@ module.exports = Mn.View.extend({
     // 'click': 'showDetails',
   },
 
-  // modelEvents: {
-  //   change: 'render',
-  // },
-  //
-  // initialize: function () {
-  //   this.model.getPoster();
-  // },
-  //
+  modelEvents: {
+    change: 'render',
+  },
+
   onRender: function () {
     const audiovisualWork = this.model.getAudioVisualWork();
     if (audiovisualWork) {
@@ -2938,8 +2907,6 @@ module.exports = Mn.View.extend({
   // showDetails: function () {
   //   app.trigger('details:show', this.model);
   // },
-
-
 });
 
 });
@@ -2969,7 +2936,12 @@ module.exports = Mn.View.extend({
     },
   },
 
+  initialize: function () {
+    this.model = new Backbone.Model({ title: 'Mes programmes visionnés via ma Livebox Orange' });
+  },
+
   onRender: function () {
+    app.trigger('mainTitle:set', this.model.get('title'));
     this.showChildView('collection', new CollectionView({ collection: this.collection }));
   },
 });

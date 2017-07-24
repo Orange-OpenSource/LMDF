@@ -16,14 +16,17 @@ module.exports = CozyCollection.extend({
     .then((avw) => {
       avw.setViewed(videoStream);
       return avw.save();
-    }).catch((err) => {
+    })
+    .then(() => videoStream.trigger('change'))
+    .catch((err) => {
       // Fail silenlty.
       console.error(err);
       return Promise.resolve();
-    }).then(() => console.log('hello toto'));
+    });
   },
 
   findAudioVisualWorks: function () {
+    // const since = '';
     const since = app.properties.get('lastVideoStream') || '';
     const videoStreams = this.filter(vs => vs.get('timestamp') > since);
     return AsyncPromise.series(videoStreams, this.findAudioVisualWork, this)

@@ -8,7 +8,7 @@ module.exports = Mn.View.extend({
 
   ui: {
     poster: '.poster',
-    img: '.poster img',
+    // img: '.poster img',
   },
 
   events: {
@@ -21,13 +21,13 @@ module.exports = Mn.View.extend({
   },
 
   initialize: function () {
-    this.model.getPoster().then(() => console.log('toto2'));
+    this.model.getPoster();
   },
 
   onRender: function () {
     this.model.getPoster()
     .then((dataUri) => {
-      this.ui.img.attr('src', dataUri);
+      this.ui.poster.html(`<img title='${this.model.get('title')}' src='${dataUri}' >`);
     });
   },
 

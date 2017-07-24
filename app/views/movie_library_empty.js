@@ -13,7 +13,6 @@ module.exports = Mn.View.extend({
   fireIntent: function () {
     cozy.client.intents.create('CREATE', 'io.cozy.accounts', { slug: 'orangelivebox' })
     .start(document.getElementById('popin'))
-    // .then(account => console.log(account))
     .catch((err) => {
       const msg = "Erreur lors de l'activation du connecteur Orange Livebox";
       console.error(msg);

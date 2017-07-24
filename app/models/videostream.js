@@ -2,11 +2,7 @@
 
 const CozyModel = require('../lib/backbone_cozymodel');
 const AudioVisualWork = require('../models/audiovisualwork');
-// const Wikidata = require('../lib/wikidata');
-// const WikidataSuggestions = require('../lib/wikidata_suggestions_film');
-// const Deezer = require('../lib/deezer');
-// const Musicbrainz = require('../lib/musicbrainz');
-// const ImgFetcher = require('lib/img_fetcher');
+const WikidataSuggestions = require('../lib/wikidata_suggestions');
 
 module.exports = CozyModel.extend({
   docType: 'fr.orange.videostream',
@@ -59,49 +55,25 @@ module.exports = CozyModel.extend({
     if (avw) { return Promise.resolve(avw); }
 
     return new Promise(resolve => app.bloodhound.search(name, resolve))
-    // WikidataSuggestions.fetchMoviesSuggestions(name)
-    .then(suggestions => AudioVisualWork.fromWDSuggestion(suggestions[0]));
+    .then((suggestions) => {
+      if (suggestions.length === 0) {
+        return WikidataSuggestions.fetchMoviesSuggestions(name);
+      }
+      return suggestions;
+    })
+    .then((suggestions) => {
+      if (suggestions.length === 0) {
+        return Promise.reject(`${name} not found on wikidata`);
+      }
+      return AudioVisualWork.fromWDSuggestion(suggestions[0]);
+    }).then((avw) => {
+      // The AudioViualWork may already exist in the library.
+      avw = app.movies.findWhere({ wikidataId: avw.get('wikidataId') })
+        || app.tvseries.findWhere({ wikidataId: avw.get('wikidataId') })
+        || avw;
+
+      avw.set('orangeName', name);
+      return avw;
+    });
   },
 });
-
-
-// TVShow.fromWDSuggestionMovie = function (wdSuggestion) {
-//   return Wikidata.getMovieData(wdSuggestion.id)
-//   .then(attrs => new TV(attrs))
-//   ;
-// };
-
-// Movie.fromOrangeTitle = function (title) {
-//   const prepareTitle = (title) => {
-//     return title.replace(' - HD', '')
-//     .replace(/^BA - /, '')
-//     .replace(/ - extrait exclusif offert$/, '')
-//     .replace(/ - extrait offert$/, '')
-//     .replace(/ - édition spéciale$/, '')
-//     ;
-//   };
-//
-//   return fromFrenchTitle(prepareTitle(title))
-//   .catch((err) => {
-//     console.warn(`Can't find movie: ${title} (err, see below). Create empty movie.`);
-//     console.error(err);
-//
-//     return new Movie({ label: prepareTitle(title) });
-//   })
-//   .then((movie) => {
-//     movie.set('orangeTitle', title);
-//     return movie;
-//   });
-// };
-
-// function fromFrenchTitle(title) {
-//   return WikidataSuggestions.fetchMoviesSuggestions(title)
-//   .then((suggestions) => {
-//     if (!suggestions || suggestions.length === 0) {
-//       return Promise.reject(`Can't find Movie with french title: ${title}`);
-//     }
-//
-//     // TODO: improve the choice of the suggestion !
-//     return Movie.fromWDSuggestionMovie(suggestions[0]);
-//   });
-// }

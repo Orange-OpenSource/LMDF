@@ -22,7 +22,12 @@ module.exports = Mn.View.extend({
     },
   },
 
+  initialize: function () {
+    this.model = new Backbone.Model({ title: 'Mes programmes visionnés via ma Livebox Orange' });
+  },
+
   onRender: function () {
+    app.trigger('mainTitle:set', this.model.get('title'));
     this.showChildView('collection', new CollectionView({ collection: this.collection }));
   },
 });

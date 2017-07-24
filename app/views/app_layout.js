@@ -14,6 +14,10 @@ module.exports = Mn.View.extend({
 
   behaviors: {},
 
+  ui: {
+    mainTitle: 'h1',
+  },
+
   regions: {
     leftpanel: {
       el: 'aside.drawer',
@@ -34,6 +38,7 @@ module.exports = Mn.View.extend({
     this.listenTo(app, 'search:close', this.closeSearchResults);
     this.listenTo(app, 'details:show', this.showMovieDetails);
     this.listenTo(app, 'library:show', this.showLibrary);
+    this.listenTo(app, 'mainTitle:set', title => this.ui.mainTitle.text(title));
   },
 
   onRender: function () {
@@ -73,7 +78,6 @@ module.exports = Mn.View.extend({
         break;
       default: view = null;
     }
-    console.log(view);
     this.getRegion('library').empty();
     this.showChildView('library', view);
 

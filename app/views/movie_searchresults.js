@@ -20,6 +20,7 @@ const SearchResultsView = Mn.CollectionView.extend({
 
 module.exports = Mn.View.extend({
   className: 'searchresults',
+  tagName: 'section',
   template: template,
 
   ui: {
@@ -53,12 +54,14 @@ module.exports = Mn.View.extend({
   onLoading: function () {
     this.$el.toggleClass('loading', true);
     this.ui.title.text(
-      `Recherche des films dont le titre contient « ${this.model.get('q')} » sur Wikidata, en cours :`);
+      `Recherche des films et séries dont le titre contient « ${this.model.get('q')} » sur Wikidata, en cours :`);
+    app.trigger('mainTitle:set', `Recherche : « ${this.model.get('q')} »`);
   },
 
   onLoaded: function () {
     this.$el.toggleClass('loading', false);
-    this.ui.title.text(`Films dont le titre contient « ${this.model.get('q')} », trouvés sur Wikidata :`);
+    this.ui.title.text(`Films et séries dont le titre contient « ${this.model.get('q')} », trouvés sur Wikidata :`);
+    app.trigger('mainTitle:set', `Films et séries pour : « ${this.model.get('q')} »`);
   },
 
 
