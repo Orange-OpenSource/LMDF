@@ -194,7 +194,10 @@ const Application = Mn.Application.extend({
     this.trigger('message:display',
       'Ajout des films et séries visionnés via VoD et Replay sur Livebox ...', 'findAudioVisualWorks');
     this.videoStreams.findAudioVisualWorks()
-    .catch(err => this.trigger('message:error', err))
+    .catch((err) => {
+      console.error('Error in prepare in background', err);
+      this.trigger('message:error', err);
+    })
     .then(() => this.trigger('message:hide', 'findAudioVisualWorks'));
 
     return Promise.resolve();
@@ -376,7 +379,7 @@ module.exports = CozyCollection.extend({
     const videoStreams = this.filter(vs => vs.get('timestamp') > since);
     return AsyncPromise.series(videoStreams, this.findAudioVisualWork, this)
     .then(() => {
-      app.properties.set('lastVideoStream', this.first().get('timestamp'));
+      app.properties.set('lastVideoStream', this.size() > 0 ? this.first().get('timestamp') : '');
       return app.properties.save();
     });
   },

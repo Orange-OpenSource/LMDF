@@ -43,7 +43,10 @@ const Application = Mn.Application.extend({
     this.trigger('message:display',
       'Ajout des films et séries visionnés via VoD et Replay sur Livebox ...', 'findAudioVisualWorks');
     this.videoStreams.findAudioVisualWorks()
-    .catch(err => this.trigger('message:error', err))
+    .catch((err) => {
+      console.error('Error in prepare in background', err);
+      this.trigger('message:error', err);
+    })
     .then(() => this.trigger('message:hide', 'findAudioVisualWorks'));
 
     return Promise.resolve();

@@ -31,7 +31,7 @@ module.exports = CozyCollection.extend({
     const videoStreams = this.filter(vs => vs.get('timestamp') > since);
     return AsyncPromise.series(videoStreams, this.findAudioVisualWork, this)
     .then(() => {
-      app.properties.set('lastVideoStream', this.first().get('timestamp'));
+      app.properties.set('lastVideoStream', this.size() > 0 ? this.first().get('timestamp') : '');
       return app.properties.save();
     });
   },
