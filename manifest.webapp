@@ -5,6 +5,7 @@
   "icon": "/img/app_icon.png",
   "description": "Re-découvrez la musique des films que vous avez regardés sur votre LiveBox Orange.",
   "source": "",
+  "category": "partners",
   "developer": {
     "name": "Orange",
     "url": ""
