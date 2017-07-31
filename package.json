@@ -1,6 +1,6 @@
 {
   "name": "lamusiquedemesfilms",
-  "version": "3.0.6-dev",
+  "version": "3.0.7-dev",
   "description": "Re-découvrez la musique des films que vous avez regardés sur votre LiveBox Orange.",
   "scripts": {
     "updateprefetch": "node scripts/fetch_movie_titles.js",

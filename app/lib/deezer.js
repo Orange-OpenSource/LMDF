@@ -80,7 +80,7 @@ M.musicbrainz2DeezerTrack = function (track, album) {
     dur_max: Math.round(track.length / 1000 * 1.1),
   };
   params = _.pairs(params).map(kv => `${kv[0]}:"${kv[1]}"`).join(' ');
-  params = encodeURIComponent(encodeURIComponent(params));
+  params = encodeURIComponent(params);
   return cozy.client.fetchJSON('GET', `/remote/com.deezer.api.track?q=${params}`)
   .then(res => ((typeof res === 'string') ? JSON.parse(res) : res))
   .then((res) => {

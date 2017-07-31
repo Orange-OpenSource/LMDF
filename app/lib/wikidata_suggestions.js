@@ -33,8 +33,7 @@ function getFilmSuggestionObjectAPI(filmTitle, limit) {
   };
 
   params = $.param(params);
-  params = encodeURIComponent(params);
-  return cozy.client.fetchJSON('GET', `/remote/org.wikidata.wbsearchentities?params=${params}`)
+  return cozy.client.fetchJSON('GET', `/remote/org.wikidata.wbsearchentities?${params}`)
   .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res))
   .then((res) => {
     // Option:filter.

@@ -57,7 +57,7 @@ M.getMovieData = function (wikidataId) {
 
 
   // return $.getJSON(wdk.sparqlQuery(sparql))
-  sparql = encodeURIComponent(encodeURIComponent(sparql));
+  sparql = encodeURIComponent(sparql);
   return cozy.client.fetchJSON('GET', `/remote/org.wikidata.sparql?q=${sparql}`)
   .then(wdk.simplifySparqlResults)
   .then((movies) => {
@@ -131,7 +131,7 @@ M.getTVSerieData = function (wikidataId) {
 
 
   // return $.getJSON(wdk.sparqlQuery(sparql))
-  sparql = encodeURIComponent(encodeURIComponent(sparql));
+  sparql = encodeURIComponent(sparql);
   return cozy.client.fetchJSON('GET', `/remote/org.wikidata.sparql?q=${sparql}`)
   .then(wdk.simplifySparqlResults)
   .then((movies) => {
@@ -212,7 +212,7 @@ M.getMovieOrTVSerieData = function (wikidataId) {
 
 
   // return $.getJSON(wdk.sparqlQuery(sparql))
-  sparql = encodeURIComponent(encodeURIComponent(sparql));
+  sparql = encodeURIComponent(sparql);
   return cozy.client.fetchJSON('GET', `/remote/org.wikidata.sparql?q=${sparql}`)
   .then(wdk.simplifySparqlResults)
   .then((avws) => {
@@ -245,13 +245,8 @@ M.getPoster = function (movie) {
     return Promise.resolve(movie); // continue on errors.
   }
 
-  const params = {
-    action: 'parse',
-    format: 'json',
-    prop: 'images',
-    page: decodeURIComponent(movie.wikiLink.replace(/.*\/wiki\//, '')),
-  };
-  return cozy.client.fetchJSON('GET', `/remote/org.wikipedia.en.api?params=${encodeURIComponent($.param(params))}`)
+  const page = movie.wikiLink.replace(/.*\/wiki\//, '');
+  return cozy.client.fetchJSON('GET', `/remote/org.wikipedia.en.api.parse.images?page=${page}`)
   .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res))
   .then((data) => {
     const images = get(data, 'parse', 'images');
@@ -265,14 +260,8 @@ M.getPoster = function (movie) {
     return Promise.reject('No image');
   })
   .then((fileName) => {
-    const params = {
-      action: 'query',
-      format: 'json',
-      prop: 'imageinfo',
-      iiprop: 'url',
-      titles: `Image:${fileName}`,
-    };
-    return cozy.client.fetchJSON('GET', `/remote/org.wikipedia.en.api?params=${encodeURIComponent($.param(params))}`);
+    const titles = encodeURIComponent(`Image:${fileName}`);
+    return cozy.client.fetchJSON('GET', `/remote/org.wikipedia.en.api.query.imageinfo?titles=${titles}`);
   })
   .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res))
   .then((data) => {
@@ -295,16 +284,13 @@ M.getSynopsis = function (movie) {
   }
 
   const params = {
-    action: 'parse',
-    format: 'json',
-    prop: 'text',
     section: 1,
     disablelimitreport: 1,
     disableeditsection: 1,
     disabletoc: 1,
     page: decodeURIComponent(movie.wikiLinkFr.replace(/.*\/wiki\//, '')),
   };
-  return cozy.client.fetchJSON('GET', `/remote/org.wikipedia.fr.api?params=${encodeURIComponent($.param(params))}`)
+  return cozy.client.fetchJSON('GET', `/remote/org.wikipedia.fr.api.parse.text?${$.param(params)}`)
   .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res))
   .then((data) => {
     // TODO: not good enough.
@@ -318,7 +304,8 @@ M.getSynopsis = function (movie) {
 
 M.getMovieById = function (wikidataId) {
   return M.getMovieData(wikidataId)
-  .then(M.getPoster)
+  // useless since https://github.com/cozy/cozy-stack/pull/857 broke wikimedia fetch.
+  // .then(M.getPoster)
   .then(M.getSynopsis);
 };
 

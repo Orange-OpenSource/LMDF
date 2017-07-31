@@ -15,8 +15,7 @@ const THROTTLING_PERIOD = 500;
 // Musicbrainz
 M.getPlayList = function (movie) {
   // const query = `release:${encodeURIComponent(movie.originalTitle)}%20AND%20type:soundtrack`;
-  let query = `release:%22${encodeURIComponent(movie.originalTitle)}%22%20AND%20type:soundtrack`;
-  query = encodeURIComponent(query);
+  const query = `release:%22${encodeURIComponent(movie.originalTitle)}%22%20AND%20type:soundtrack`;
   return cozy.client.fetchJSON('GET', `/remote/org.musicbrainz.release-group.search?q=${query}`)
   .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res))
   .then((res) => {
@@ -31,9 +30,13 @@ M.getPlayList = function (movie) {
 };
 
 M._getReleaseGroupById = function (rgId) {
-  let params = 'inc=url-rels+releases&status=official';
-  params = encodeURIComponent(params);
-  return cozy.client.fetchJSON('GET', `/remote/org.musicbrainz.release-group?rgid=${rgId}&params=${params}`)
+  let params = {
+    rgid: rgId,
+    inc: 'url-rels+releases',
+    status: 'official',
+  };
+  params = $.param(params);
+  return cozy.client.fetchJSON('GET', `/remote/org.musicbrainz.release-group?${params}`)
   .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res));
 };
 
@@ -41,8 +44,7 @@ M._findReleaseGroup = function (movie) {
   // Find the release group with the same imdbId.
   const title = movie.soundtrack.label || movie.originalTitle;
 
-  let query = `release:%22${encodeURIComponent(title)}%22%20AND%20type:soundtrack`;
-  query = encodeURIComponent(query);
+  const query = `release:%22${encodeURIComponent(title)}%22%20AND%20type:soundtrack`;
   // Doesnt work : always empty result...
   // if (movie.composer && movie.composer.label) {
   //     uri += `%20AND%20artistname:${movie.composer.label}`;
@@ -114,9 +116,12 @@ M.getBestRecording = function (movie) {
     return releases[0];
   })
   .then((release) => { // get recordings for the specified group.
-    let params = 'inc=recordings+artist-credits+labels';
-    params = encodeURIComponent(params);
-    return cozy.client.fetchJSON('GET', `/remote/org.musicbrainz.release?rid=${release.id}&params=${params}`)
+    let params = {
+      rid: release.id,
+      inc: 'recordings+artist-credits+labels',
+    };
+    params = $.param(params);
+    return cozy.client.fetchJSON('GET', `/remote/org.musicbrainz.release?${params}`)
     .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res))
     .then((res) => {
       const soundtrack = movie.soundtrack;

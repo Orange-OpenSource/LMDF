@@ -7,7 +7,7 @@ module.exports = (uri, doctype, options) => {
     imgs[uri] = new Promise((resolve) => {
       Promise.all([
         cozy.client.authorize(),
-        cozy.client.fullpath(`/remote/${doctype}?${$.param(options)}`),
+        cozy.client.fullpath(`/remote/${doctype}?${options.params}`),
       ]).then((res) => {
         const xhr = new XMLHttpRequest();
         xhr.open('GET', res[1]);

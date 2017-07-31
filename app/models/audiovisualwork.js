@@ -103,14 +103,16 @@ module.exports = AudioVisualWork = CozyModel.extend({
         return ImgFetcher(`https://img.omdbapi.com/?${params}`, 'com.omdbapi.img', { params });
       }
 
-      return (this.has('posterUri') ? Promise.resolve() : this.fetchPosterUri())
-        .then(() => {
-          const uri = this.get('posterUri');
-          if (!uri) { return Promise.reject(); }
-
-          const path = decodeURIComponent(uri.replace(/.*org\//, ''));
-          return ImgFetcher(uri, 'org.wikimedia.uploads', { path });
-        });
+      return Promise.reject("can't fetch poster");
+      // Borken with : https://github.com/cozy/cozy-stack/pull/857
+      // return (this.has('posterUri') ? Promise.resolve() : this.fetchPosterUri())
+      //   .then(() => {
+      //     const uri = this.get('posterUri');
+      //     if (!uri) { return Promise.reject(); }
+      //
+      //     const params = `path=${uri.replace(/.*org\//, '')}`;
+      //     return ImgFetcher(uri, 'org.wikimedia.uploads', { params });
+      //   });
     })
     .then(data => `data:image;base64,${data}`);
   },

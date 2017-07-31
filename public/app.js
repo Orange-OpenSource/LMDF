@@ -392,7 +392,7 @@ require.register("lib/appname_version.js", function(exports, require, module) {
 
 const name = 'lamusiquedemesfilms';
 // use brunch-version plugin to populate these.
-const version = '3.0.6';
+const version = '3.0.7';
 
 module.exports = `${name}-${version}`;
 
@@ -661,7 +661,7 @@ M.musicbrainz2DeezerTrack = function (track, album) {
     dur_max: Math.round(track.length / 1000 * 1.1),
   };
   params = _.pairs(params).map(kv => `${kv[0]}:"${kv[1]}"`).join(' ');
-  params = encodeURIComponent(encodeURIComponent(params));
+  params = encodeURIComponent(params);
   return cozy.client.fetchJSON('GET', `/remote/com.deezer.api.track?q=${params}`)
   .then(res => ((typeof res === 'string') ? JSON.parse(res) : res))
   .then((res) => {
@@ -703,7 +703,7 @@ module.exports = (uri, doctype, options) => {
     imgs[uri] = new Promise((resolve) => {
       Promise.all([
         cozy.client.authorize(),
-        cozy.client.fullpath(`/remote/${doctype}?${$.param(options)}`),
+        cozy.client.fullpath(`/remote/${doctype}?${options.params}`),
       ]).then((res) => {
         const xhr = new XMLHttpRequest();
         xhr.open('GET', res[1]);
@@ -794,8 +794,7 @@ const THROTTLING_PERIOD = 500;
 // Musicbrainz
 M.getPlayList = function (movie) {
   // const query = `release:${encodeURIComponent(movie.originalTitle)}%20AND%20type:soundtrack`;
-  let query = `release:%22${encodeURIComponent(movie.originalTitle)}%22%20AND%20type:soundtrack`;
-  query = encodeURIComponent(query);
+  const query = `release:%22${encodeURIComponent(movie.originalTitle)}%22%20AND%20type:soundtrack`;
   return cozy.client.fetchJSON('GET', `/remote/org.musicbrainz.release-group.search?q=${query}`)
   .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res))
   .then((res) => {
@@ -810,9 +809,13 @@ M.getPlayList = function (movie) {
 };
 
 M._getReleaseGroupById = function (rgId) {
-  let params = 'inc=url-rels+releases&status=official';
-  params = encodeURIComponent(params);
-  return cozy.client.fetchJSON('GET', `/remote/org.musicbrainz.release-group?rgid=${rgId}&params=${params}`)
+  let params = {
+    rgid: rgId,
+    inc: 'url-rels+releases',
+    status: 'official',
+  };
+  params = $.param(params);
+  return cozy.client.fetchJSON('GET', `/remote/org.musicbrainz.release-group?${params}`)
   .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res));
 };
 
@@ -820,8 +823,7 @@ M._findReleaseGroup = function (movie) {
   // Find the release group with the same imdbId.
   const title = movie.soundtrack.label || movie.originalTitle;
 
-  let query = `release:%22${encodeURIComponent(title)}%22%20AND%20type:soundtrack`;
-  query = encodeURIComponent(query);
+  const query = `release:%22${encodeURIComponent(title)}%22%20AND%20type:soundtrack`;
   // Doesnt work : always empty result...
   // if (movie.composer && movie.composer.label) {
   //     uri += `%20AND%20artistname:${movie.composer.label}`;
@@ -893,9 +895,12 @@ M.getBestRecording = function (movie) {
     return releases[0];
   })
   .then((release) => { // get recordings for the specified group.
-    let params = 'inc=recordings+artist-credits+labels';
-    params = encodeURIComponent(params);
-    return cozy.client.fetchJSON('GET', `/remote/org.musicbrainz.release?rid=${release.id}&params=${params}`)
+    let params = {
+      rid: release.id,
+      inc: 'recordings+artist-credits+labels',
+    };
+    params = $.param(params);
+    return cozy.client.fetchJSON('GET', `/remote/org.musicbrainz.release?${params}`)
     .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res))
     .then((res) => {
       const soundtrack = movie.soundtrack;
@@ -1018,7 +1023,7 @@ M.getMovieData = function (wikidataId) {
 
 
   // return $.getJSON(wdk.sparqlQuery(sparql))
-  sparql = encodeURIComponent(encodeURIComponent(sparql));
+  sparql = encodeURIComponent(sparql);
   return cozy.client.fetchJSON('GET', `/remote/org.wikidata.sparql?q=${sparql}`)
   .then(wdk.simplifySparqlResults)
   .then((movies) => {
@@ -1092,7 +1097,7 @@ M.getTVSerieData = function (wikidataId) {
 
 
   // return $.getJSON(wdk.sparqlQuery(sparql))
-  sparql = encodeURIComponent(encodeURIComponent(sparql));
+  sparql = encodeURIComponent(sparql);
   return cozy.client.fetchJSON('GET', `/remote/org.wikidata.sparql?q=${sparql}`)
   .then(wdk.simplifySparqlResults)
   .then((movies) => {
@@ -1173,7 +1178,7 @@ M.getMovieOrTVSerieData = function (wikidataId) {
 
 
   // return $.getJSON(wdk.sparqlQuery(sparql))
-  sparql = encodeURIComponent(encodeURIComponent(sparql));
+  sparql = encodeURIComponent(sparql);
   return cozy.client.fetchJSON('GET', `/remote/org.wikidata.sparql?q=${sparql}`)
   .then(wdk.simplifySparqlResults)
   .then((avws) => {
@@ -1206,13 +1211,8 @@ M.getPoster = function (movie) {
     return Promise.resolve(movie); // continue on errors.
   }
 
-  const params = {
-    action: 'parse',
-    format: 'json',
-    prop: 'images',
-    page: decodeURIComponent(movie.wikiLink.replace(/.*\/wiki\//, '')),
-  };
-  return cozy.client.fetchJSON('GET', `/remote/org.wikipedia.en.api?params=${encodeURIComponent($.param(params))}`)
+  const page = movie.wikiLink.replace(/.*\/wiki\//, '');
+  return cozy.client.fetchJSON('GET', `/remote/org.wikipedia.en.api.parse.images?page=${page}`)
   .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res))
   .then((data) => {
     const images = get(data, 'parse', 'images');
@@ -1226,14 +1226,8 @@ M.getPoster = function (movie) {
     return Promise.reject('No image');
   })
   .then((fileName) => {
-    const params = {
-      action: 'query',
-      format: 'json',
-      prop: 'imageinfo',
-      iiprop: 'url',
-      titles: `Image:${fileName}`,
-    };
-    return cozy.client.fetchJSON('GET', `/remote/org.wikipedia.en.api?params=${encodeURIComponent($.param(params))}`);
+    const titles = encodeURIComponent(`Image:${fileName}`);
+    return cozy.client.fetchJSON('GET', `/remote/org.wikipedia.en.api.query.imageinfo?titles=${titles}`);
   })
   .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res))
   .then((data) => {
@@ -1256,16 +1250,13 @@ M.getSynopsis = function (movie) {
   }
 
   const params = {
-    action: 'parse',
-    format: 'json',
-    prop: 'text',
     section: 1,
     disablelimitreport: 1,
     disableeditsection: 1,
     disabletoc: 1,
     page: decodeURIComponent(movie.wikiLinkFr.replace(/.*\/wiki\//, '')),
   };
-  return cozy.client.fetchJSON('GET', `/remote/org.wikipedia.fr.api?params=${encodeURIComponent($.param(params))}`)
+  return cozy.client.fetchJSON('GET', `/remote/org.wikipedia.fr.api.parse.text?${$.param(params)}`)
   .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res))
   .then((data) => {
     // TODO: not good enough.
@@ -1279,7 +1270,8 @@ M.getSynopsis = function (movie) {
 
 M.getMovieById = function (wikidataId) {
   return M.getMovieData(wikidataId)
-  .then(M.getPoster)
+  // useless since https://github.com/cozy/cozy-stack/pull/857 broke wikimedia fetch.
+  // .then(M.getPoster)
   .then(M.getSynopsis);
 };
 
@@ -1436,8 +1428,7 @@ function getFilmSuggestionObjectAPI(filmTitle, limit) {
   };
 
   params = $.param(params);
-  params = encodeURIComponent(params);
-  return cozy.client.fetchJSON('GET', `/remote/org.wikidata.wbsearchentities?params=${params}`)
+  return cozy.client.fetchJSON('GET', `/remote/org.wikidata.wbsearchentities?${params}`)
   .then(res => ((typeof (res) === 'string') ? JSON.parse(res) : res))
   .then((res) => {
     // Option:filter.
@@ -1568,14 +1559,16 @@ module.exports = AudioVisualWork = CozyModel.extend({
         return ImgFetcher(`https://img.omdbapi.com/?${params}`, 'com.omdbapi.img', { params });
       }
 
-      return (this.has('posterUri') ? Promise.resolve() : this.fetchPosterUri())
-        .then(() => {
-          const uri = this.get('posterUri');
-          if (!uri) { return Promise.reject(); }
-
-          const path = decodeURIComponent(uri.replace(/.*org\//, ''));
-          return ImgFetcher(uri, 'org.wikimedia.uploads', { path });
-        });
+      return Promise.reject("can't fetch poster");
+      // Borken with : https://github.com/cozy/cozy-stack/pull/857
+      // return (this.has('posterUri') ? Promise.resolve() : this.fetchPosterUri())
+      //   .then(() => {
+      //     const uri = this.get('posterUri');
+      //     if (!uri) { return Promise.reject(); }
+      //
+      //     const params = `path=${uri.replace(/.*org\//, '')}`;
+      //     return ImgFetcher(uri, 'org.wikimedia.uploads', { params });
+      //   });
     })
     .then(data => `data:image;base64,${data}`);
   },
