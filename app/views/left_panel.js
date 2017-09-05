@@ -18,6 +18,7 @@ module.exports = Mn.View.extend({
   ui: {
     libraryOptions: '.selectlibrary li',
     search: '.search',
+    codesign: '.codesign div',
   },
 
   triggers: {
@@ -27,6 +28,7 @@ module.exports = Mn.View.extend({
 
   events: {
     'click @ui.libraryOptions': 'onLibraryChanged',
+    'click .howitworks': 'selectCodesign'
   },
 
   regions: {
@@ -43,10 +45,21 @@ module.exports = Mn.View.extend({
   },
 
   onLibraryChanged: function (ev) {
+    this._setSelected(ev);
+    const elem = ev.currentTarget;
+    app.trigger('library:show', elem.dataset.value);
+  },
+
+  selectCodesign: function (ev) {
+    this._setSelected(ev);
+    app.trigger('mainview:set', 'howitworks');
+  },
+
+  _setSelected: function (ev) {
     const elem = ev.currentTarget;
     this.ui.libraryOptions.toggleClass('selected', false);
+    this.ui.codesign.toggleClass('selected', false);
 
     elem.classList.add('selected');
-    app.trigger('library:show', elem.dataset.value);
   },
 });

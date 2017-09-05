@@ -36,6 +36,7 @@ const Application = Mn.Application.extend({
       this.videoStreams.fetch(),
       this.movies.fetch(),
       this.tvseries.fetch(),
+      $.getJSON('data/how_it_works.json').then((data) => { PLD.allItems = data; }),
     ]));
   },
 

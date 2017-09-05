@@ -1,5 +1,5 @@
 {
-  "version": "3.0.7-dev",
+  "version": "3.0.8-dev",
   "name": "La Musique de mes films",
   "slug": "app",
   "icon": "/img/app_icon.png",
@@ -44,7 +44,9 @@
     "apps": {
       "description": "Required by the cozy-bar to display the icons of the apps",
       "type": "io.cozy.apps",
-      "verbs": ["GET"]
+      "verbs": [
+        "GET"
+      ]
     },
     "wikidatasearchmovies": {
       "description": "Search movie titles from Wikidata",

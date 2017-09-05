@@ -27,10 +27,6 @@ module.exports = Mn.View.extend({
     title: 'h2',
   },
 
-  events: {
-    'click .close': 'onClose',
-  },
-
   regions: {
     collection: {
       el: 'ul',
@@ -69,9 +65,5 @@ module.exports = Mn.View.extend({
     const searchResultsView = new SearchResultsView({ collection: this.collection });
     this.showChildView('collection', searchResultsView);
     this.onSearch(this.model.attributes);
-  },
-
-  onClose: function () {
-    app.trigger('search:close');
   },
 });

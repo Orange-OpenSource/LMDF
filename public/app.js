@@ -187,6 +187,7 @@ const Application = Mn.Application.extend({
       this.videoStreams.fetch(),
       this.movies.fetch(),
       this.tvseries.fetch(),
+      $.getJSON('data/how_it_works.json').then((data) => { PLD.allItems = data; }),
     ]));
   },
 
@@ -392,7 +393,7 @@ require.register("lib/appname_version.js", function(exports, require, module) {
 
 const name = 'lamusiquedemesfilms';
 // use brunch-version plugin to populate these.
-const version = '3.0.7';
+const version = '3.0.8';
 
 module.exports = `${name}-${version}`;
 
@@ -1771,6 +1772,7 @@ const DetailsView = require('views/movie_details');
 const MovieLibraryView = require('views/movie_library');
 const VideoStreamsView = require('views/videostreams');
 const SearchResultsView = require('views/movie_searchresults');
+const HowItWorksView = require('views/how_it_works');
 const LeftPanelView = require('views/left_panel');
 const template = require('views/templates/app_layout');
 
@@ -1789,27 +1791,24 @@ module.exports = Mn.View.extend({
       el: 'aside.drawer',
       replaceElement: true,
     },
-    searchresults: {
-      el: '.searchresults',
-      replaceElement: true,
-    },
-    library: '.library',
+    main: 'main',
     player: '.player',
     details: '.details',
     message: '.message',
   },
 
   initialize: function () {
-    this.listenTo(app, 'search', this.showSearchResults);
-    this.listenTo(app, 'search:close', this.closeSearchResults);
+    this.listenTo(app, 'search', query => this.setMainView('search', query));
+    this.listenTo(app, 'library:show', this.setMainView);
+    this.listenTo(app, 'mainview:set', this.setMainView);
+
     this.listenTo(app, 'details:show', this.showMovieDetails);
-    this.listenTo(app, 'library:show', this.showLibrary);
     this.listenTo(app, 'mainTitle:set', title => this.ui.mainTitle.text(title));
   },
 
   onRender: function () {
     this.showChildView('message', new MessageView());
-    this.showLibrary('videostreams'); // default view is videostream.
+    this.setMainView('videostreams'); // default view is videostream.
     this.showChildView('leftpanel', new LeftPanelView());
   },
 
@@ -1821,20 +1820,13 @@ module.exports = Mn.View.extend({
     this.getRegion('details').empty();
   },
 
-
-  showSearchResults: function (query) {
-    if (!this.getRegion('searchresults').hasView()) {
-      this.getRegion('library').$el.hide();
-      this.showChildView('searchresults', new SearchResultsView({
-        model: new Backbone.Model(query)
-      }));
-    }
-  },
-
-  showLibrary: function (slug) {
+  setMainView: function (slug, options) {
+    if (slug === this.currentMain) return;
     let view = null;
-
     switch (slug) {
+      case 'search':
+        view = new SearchResultsView({ model: new Backbone.Model(options.query) });
+        break;
       case 'videostreams': view = new VideoStreamsView({ collection: app.videoStreams }); break;
       case 'movies':
         view = new MovieLibraryView({ collection: app.movies, model: new Backbone.Model({ title: 'Mes Fims' }) });
@@ -1842,17 +1834,16 @@ module.exports = Mn.View.extend({
       case 'tvseries':
         view = new MovieLibraryView({ collection: app.tvseries, model: new Backbone.Model({ title: 'Mes Séries' }) });
         break;
+      case 'howitworks':
+        view = new HowItWorksView();
+        break;
+
       default: view = null;
     }
-    this.getRegion('library').empty();
-    this.showChildView('library', view);
 
-    this.closeSearchResults();
-  },
-
-  closeSearchResults: function () {
-    this.getRegion('searchresults').empty();
-    this.getRegion('library').$el.show();
+    this.getRegion('main').empty();
+    this.showChildView('main', view);
+    this.currentMain = slug;
   },
 });
 
@@ -1927,6 +1918,23 @@ module.exports = Mn.Behavior.extend({
 
 });
 
+require.register("views/how_it_works.js", function(exports, require, module) {
+'use strict';
+
+const template = require('./templates/how_it_works');
+
+module.exports = Mn.View.extend({
+  className: 'howitworks',
+  template: template,
+
+  serializeData: function () {
+    // TODO
+    return { features: PLD.allItems };
+  },
+});
+
+});
+
 require.register("views/left_panel.js", function(exports, require, module) {
 'use-strict';
 
@@ -1948,6 +1956,7 @@ module.exports = Mn.View.extend({
   ui: {
     libraryOptions: '.selectlibrary li',
     search: '.search',
+    codesign: '.codesign div',
   },
 
   triggers: {
@@ -1957,6 +1966,7 @@ module.exports = Mn.View.extend({
 
   events: {
     'click @ui.libraryOptions': 'onLibraryChanged',
+    'click .howitworks': 'selectCodesign'
   },
 
   regions: {
@@ -1973,11 +1983,22 @@ module.exports = Mn.View.extend({
   },
 
   onLibraryChanged: function (ev) {
+    this._setSelected(ev);
+    const elem = ev.currentTarget;
+    app.trigger('library:show', elem.dataset.value);
+  },
+
+  selectCodesign: function (ev) {
+    this._setSelected(ev);
+    app.trigger('mainview:set', 'howitworks');
+  },
+
+  _setSelected: function (ev) {
     const elem = ev.currentTarget;
     this.ui.libraryOptions.toggleClass('selected', false);
+    this.ui.codesign.toggleClass('selected', false);
 
     elem.classList.add('selected');
-    app.trigger('library:show', elem.dataset.value);
   },
 });
 
@@ -2250,10 +2271,6 @@ module.exports = Mn.View.extend({
     title: 'h2',
   },
 
-  events: {
-    'click .close': 'onClose',
-  },
-
   regions: {
     collection: {
       el: 'ul',
@@ -2292,10 +2309,6 @@ module.exports = Mn.View.extend({
     const searchResultsView = new SearchResultsView({ collection: this.collection });
     this.showChildView('collection', searchResultsView);
     this.onSearch(this.model.attributes);
-  },
-
-  onClose: function () {
-    app.trigger('search:close');
   },
 });
 
@@ -2533,7 +2546,36 @@ var buf = [];
 var jade_mixins = {};
 var jade_interp;
 
-buf.push("<aside class=\"drawer\"></aside><div class=\"container\"><nav class=\"topbar\"><button class=\"toggle toggle-drawer\">&nbsp;</button><h1>La musique de mes films</h1></nav><main><section class=\"searchresults\"></section><section class=\"library\"></section></main></div><article class=\"details\"></article><div class=\"message\"></div><div id=\"popin\"></div>");;return buf.join("");
+buf.push("<aside class=\"drawer\"></aside><div class=\"container\"><nav class=\"topbar\"><button class=\"toggle toggle-drawer\">&nbsp;</button><h1>La musique de mes films</h1></nav><main></main></div><article class=\"details\"></article><div class=\"message\"></div><div id=\"popin\"></div>");;return buf.join("");
+};
+if (typeof define === 'function' && define.amd) {
+  define([], function() {
+    return __templateData;
+  });
+} else if (typeof module === 'object' && module && module.exports) {
+  module.exports = __templateData;
+} else {
+  __templateData;
+}
+});
+
+;require.register("views/templates/how_it_works.jade", function(exports, require, module) {
+var __templateData = function template(locals) {
+var buf = [];
+var jade_mixins = {};
+var jade_interp;
+;var locals_for_with = (locals || {});(function (features) {
+jade_mixins["featureInfos"] = jade_interp = function(feature){
+var block = (this && this.block), attributes = (this && this.attributes) || {};
+buf.push("<h3>" + (jade.escape(null == (jade_interp = feature.label) ? "" : jade_interp)) + "&ensp;?</h3><div class=\"howitworks\">" + (null == (jade_interp = feature.howItWorks) ? "" : jade_interp) + "</div>");
+};
+buf.push("<h2>Dans l'application, comment ça marche pour la ...</h2>");
+jade_mixins["featureInfos"](features['q:Q100']);
+jade_mixins["featureInfos"](features['q:Q101']);
+jade_mixins["featureInfos"](features['q:Q102']);
+jade_mixins["featureInfos"](features['q:Q103']);
+jade_mixins["featureInfos"](features['q:Q104']);
+jade_mixins["featureInfos"](features['q:Q105']);}.call(this,"features" in locals_for_with?locals_for_with.features:typeof features!=="undefined"?features:undefined));;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {
@@ -2552,7 +2594,7 @@ var buf = [];
 var jade_mixins = {};
 var jade_interp;
 ;var locals_for_with = (locals || {});(function (appName) {
-buf.push("<div class=\"search\"><i class=\"fa fa-plus\"></i></div><div class=\"tools\">&nbsp;</div><ul class=\"selectlibrary\"><li type=\"radio\" name=\"optionslibrary\" data-value=\"videostreams\" class=\"selected\"><div class=\"illumination\">P</div>Programmes visionnés</li><li type=\"radio\" name=\"optionslibrary\" data-value=\"movies\"><div class=\"illumination\">F</div>Films</li><li type=\"radio\" name=\"optionslibrary\" data-value=\"tvseries\"><div class=\"illumination\">S</div>Séries</li></ul><div class=\"appversion\">" + (jade.escape(null == (jade_interp = appName) ? "" : jade_interp)) + "</div><button class=\"toggle\"></button>");}.call(this,"appName" in locals_for_with?locals_for_with.appName:typeof appName!=="undefined"?appName:undefined));;return buf.join("");
+buf.push("<div class=\"search\"><i class=\"fa fa-plus\"></i></div><div class=\"tools\">&nbsp;</div><ul class=\"selectlibrary\"><li type=\"radio\" name=\"optionslibrary\" data-value=\"videostreams\" class=\"selected\"><div class=\"illumination\">P</div>Programmes visionnés</li><li type=\"radio\" name=\"optionslibrary\" data-value=\"movies\"><div class=\"illumination\">F</div>Films</li><li type=\"radio\" name=\"optionslibrary\" data-value=\"tvseries\"><div class=\"illumination\">S</div>Séries</li></ul><div class=\"codesign\"><div class=\"howitworks\">Comment ça marche ?</div><div class=\"code\">" + (jade.escape(null == (jade_interp = appName) ? "" : jade_interp)) + "</div></div><button class=\"toggle\"></button>");}.call(this,"appName" in locals_for_with?locals_for_with.appName:typeof appName!=="undefined"?appName:undefined));;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {
@@ -2738,7 +2780,7 @@ var buf = [];
 var jade_mixins = {};
 var jade_interp;
 ;var locals_for_with = (locals || {});(function (q) {
-buf.push("<h2>Résultats pour : «<span class=\"query\">" + (jade.escape(null == (jade_interp = q) ? "" : jade_interp)) + "</span>»</h2><div class=\"close\"></div><ul></ul>");}.call(this,"q" in locals_for_with?locals_for_with.q:typeof q!=="undefined"?q:undefined));;return buf.join("");
+buf.push("<h2>Résultats pour : «<span class=\"query\">" + (jade.escape(null == (jade_interp = q) ? "" : jade_interp)) + "</span>»</h2><ul></ul>");}.call(this,"q" in locals_for_with?locals_for_with.q:typeof q!=="undefined"?q:undefined));;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {

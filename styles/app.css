@@ -137,7 +137,7 @@ body {
 }
 
 .drawer[aria-expanded=false],
-.drawer[aria-expanded=false] .selectlibrary li 
+.drawer[aria-expanded=false] .selectlibrary li
 {
   /*! flex-basis: 34px; */
   /*! flex-grow: 0; */
@@ -146,22 +146,6 @@ body {
 
 .drawer[aria-expanded=true] {
   flex-basis: 16.25rem;
-}
-
-
-.drawer .appversion {
-  color: #666666;
-  position: absolute;
-  left: 10px;
-  bottom: 50px;
-}
-
-.drawer[aria-expanded=false] .appversion {
-  display: none;
-}
-
-.drawer[aria-expanded=true] .appversion {
-  display: block;
 }
 
 .drawer button.toggle {
@@ -282,7 +266,7 @@ body {
 
 .drawer .selectlibrary li {
   height: 42px;
-  border-bottom: #999999 solid 1px;  
+  border-bottom: #999999 solid 1px;
   position: relative;
   padding-left: 34px;
   line-height: 42px;
@@ -307,12 +291,59 @@ body {
 
 
 .drawer .selectlibrary li.selected .illumination {
-  
   color: #FF6600;
 }
 
 .drawer .selectlibrary .selected {
   color: white;
+}
+
+.codesign {
+  position: absolute;
+  left: 10px;
+  bottom: 50px;
+}
+
+.drawer[aria-expanded=false] .codesign {
+  display: none;
+}
+
+.drawer[aria-expanded=true] .codesign {
+  display: block;
+}
+
+
+.codesign div {
+  display: block;
+  color: #666666;
+  font-size: 15px;
+  text-align: left;
+  line-height: 2.5;
+}
+
+.codesign a:hover,
+.codesign div:hover  {
+  color: #aaa;
+  text-decoration: unset;
+}
+
+
+.codesign .selected {
+  color: #fff;
+}
+
+.codesign .howitworks {
+  cursor: pointer;
+}
+
+.codesign .help i.fa,
+.codesign .feedback i.fa {
+  font-size: 120%;
+}
+
+.codesign .code {
+  color: #666666;
+  font-size: 80%;
 }
 
 .container {
@@ -351,6 +382,9 @@ body {
   /*font-weight: normal;*/
 }
 
+
+/* main */
+
 main {
   height:100%;
   overflow-x: hidden;
@@ -359,7 +393,8 @@ main {
 }
 
 
-.library .videostreamitem {
+/* main library */
+main .videostreamitem {
   width: 134px;
   height: 230px;
   text-align: center;
@@ -368,7 +403,7 @@ main {
   background: #D6D6D6;
 }
 
-.library .videostreamitem .placeholder {
+main .videostreamitem .placeholder {
   height: 100%;
   width: 100%;
   border: solid 1px #D6D6D6;
@@ -377,14 +412,14 @@ main {
   position: relative;
 }
 
-.library .videostreamitem .placeholder h3 {
+main .videostreamitem .placeholder h3 {
   font-size: 16px;
   margin-left: 10px;
   margin-right: 10px;
   color: #595959;
 }
 
-.library .videostreamitem .placeholder .subtitle {
+main .videostreamitem .placeholder .subtitle {
   font-size: 14px;
   margin-left: 6px;
   margin-right: 6px;
@@ -399,15 +434,15 @@ main {
   bottom: 5px;
   font-size: 13px;
   /*text-shadow:
-     -1px -1px 0 #fff,  
+     -1px -1px 0 #fff,
       1px -1px 0 #fff,
       -1px 1px 0 #fff,
        1px 1px 0 #fff;
   */
-  /* text-shadow: 2px 0 0 #fff, -2px 0 0 #fff, 0 2px 0 #fff, 0 -2px 0 #fff, 
+  /* text-shadow: 2px 0 0 #fff, -2px 0 0 #fff, 0 2px 0 #fff, 0 -2px 0 #fff,
     1px 1px #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff;
   */
-  /*text-shadow: 2px 0 0 #FF6600, -2px 0 0 #FF6600, 0 2px 0 #FF6600, 0 -2px 0 #FF6600, 
+  /*text-shadow: 2px 0 0 #FF6600, -2px 0 0 #FF6600, 0 2px 0 #FF6600, 0 -2px 0 #FF6600,
     1px 1px #FF6600, -1px -1px 0 #FF6600, 1px -1px 0 #FF6600, -1px 1px 0 #FF6600; */
 }
 
@@ -475,6 +510,10 @@ ul.movielibrary .movieitem .placeholder h3 {
   color: #595959;
 }
 
+/* END main library */
+
+
+/* main searchresults */
 .searchresults {
   position: relative;
 }
@@ -487,6 +526,15 @@ ul.movielibrary .movieitem .placeholder h3 {
 .searchresults.loading .empty {
   display: none;
 }
+/* END main searchresults */
+
+/* main how it works */
+
+a {
+  color: black;
+}
+
+/* END main searchresults */
 
 .details {
   /*! flex-basis: 660px; */
@@ -563,7 +611,7 @@ ul.movielibrary .movieitem .placeholder h3 {
   width: 100%;
   padding-top: 10px;
   /*! padding-right: 10px; */
-  background: linear-gradient(to top, black, black 50%, rgba(0,0,0,0)); 
+  background: linear-gradient(to top, black, black 50%, rgba(0,0,0,0));
   color: white;
 }
 
@@ -692,7 +740,7 @@ ul.movielibrary .movieitem .placeholder h3 {
     position: absolute;
     /*! top: 0px; */
     left:0px;
-    
+
     /* flex-basis: 100vw; */
   }
   .details > div {
@@ -719,7 +767,7 @@ ul.movielibrary .movieitem .placeholder h3 {
   section h2 {
     display: none;
   }
-  
+
   .details {
     position: absolute;
     top: 0px;
@@ -746,5 +794,3 @@ ul.movielibrary .movieitem .placeholder h3 {
     font-size: 16px;
   }
 }
-
-

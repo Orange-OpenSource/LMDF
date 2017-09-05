@@ -1,12 +1,15 @@
 {
   "name": "lamusiquedemesfilms",
-  "version": "3.0.7-dev",
+  "version": "3.0.8-dev",
   "description": "Re-découvrez la musique des films que vous avez regardés sur votre LiveBox Orange.",
   "scripts": {
-    "updateprefetch": "node scripts/fetch_movie_titles.js",
     "watch": "brunch watch",
     "build": "eslint -c .eslintrc.json app/ && brunch build --production",
-    "lint": "eslint -c .eslintrc.json app/"
+    "update": "npm run update:prototype-ld && npm run update:cozy_usetracker && npm run update:movie_titles",
+    "lint": "eslint -c .eslintrc.json app/",
+    "update:prototype-ld": "wget -O vendor/prototype-ld.js https://raw.githubusercontent.com/jacquarg/prototype-ld/master/index.js",
+    "update:cozy_usetracker": "wget -O vendor/cozy_usetracker.js https://raw.githubusercontent.com/jacquarg/cozy-usetracker/master/cozy_usetracker.js",
+    "update:movie_titles": "node scripts/fetch_movie_titles.js"
   },
   "dependencies": {},
   "devDependencies": {
@@ -20,6 +23,6 @@
     "eslint-plugin-react": "^6.8.0",
     "jade-brunch": "2.8.0",
     "javascript-brunch": "^2.0.0",
-    "version-brunch": "^1.0.1"
+    "version-brunch": "git+https://github.com/jacquarg/version-brunch.git"
   }
 }
