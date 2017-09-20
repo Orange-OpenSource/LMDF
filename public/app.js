@@ -175,7 +175,6 @@ const Application = Mn.Application.extend({
       cozyURL: `//${this.cozyDomain}`,
       token: appElem.dataset.cozyToken,
     });
-    cozy.bar.init({ appName: 'La musique de mes films' });
 
     this.movies = new MoviesCollection();
     this.tvseries = new TVSeriesCollection();
@@ -192,6 +191,10 @@ const Application = Mn.Application.extend({
   },
 
   prepareInBackground: function () {
+    cozyUsetracker()
+    .catch(err => console.warn('Error while initializing tracking.', err))
+    .then(() => cozy.bar.init({ appName: 'La musique de mes films' }));
+
     this.trigger('message:display',
       'Ajout des films et séries visionnés via VoD et Replay sur Livebox ...', 'findAudioVisualWorks');
     this.videoStreams.findAudioVisualWorks()
@@ -393,7 +396,7 @@ require.register("lib/appname_version.js", function(exports, require, module) {
 
 const name = 'lamusiquedemesfilms';
 // use brunch-version plugin to populate these.
-const version = '3.0.8';
+const version = '3.0.9';
 
 module.exports = `${name}-${version}`;
 

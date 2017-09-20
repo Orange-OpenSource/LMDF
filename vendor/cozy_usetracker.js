@@ -9,7 +9,7 @@ cozyUsetracker = () => new Promise((resolve, reject) => {
 
   const root = document.querySelector('[role=application]')
   if (!(root && root.dataset &&
-    (root.dataset.cozyTracking === '' || root.dataset.cozyTracking === 'true'))) return
+    (root.dataset.cozyTracking === '' || root.dataset.cozyTracking === 'true'))) return resolve()
 
   const appName = root.dataset.cozyAppName
   const domain = root.dataset.cozyDomain
