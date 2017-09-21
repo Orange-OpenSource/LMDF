@@ -1,10 +1,7 @@
 'use_strict';
 
-const AsyncPromise = require('./async_promise');
 const WalkTreeUtils = require('./walktree_utils');
 
-const promiseSeries = AsyncPromise.series;
-const promiseFind = AsyncPromise.find;
 const get = WalkTreeUtils.get;
 
 
@@ -63,7 +60,7 @@ M._findReleaseGroup = function (movie) {
     });
   })
   .then((releaseGroups) => { // Look in each releasegroup, the one with imdbid.
-    return promiseFind(releaseGroups, (releaseGroup) => {
+    return funpromise.find(releaseGroups, (releaseGroup) => {
       return M._getReleaseGroupById(releaseGroup.id)
       .then((releaseGroup) => {
         const withSameIMDBId = releaseGroup.relations.some(
@@ -143,7 +140,7 @@ M.getBestRecording = function (movie) {
 
 
 M.getRecordings = function (movie) {
-  return promiseSeries(movie.soundtracks, M.getRecording)
+  return funpromise.series(movie.soundtracks, M.getRecording)
   .then(() => movie);
 };
 

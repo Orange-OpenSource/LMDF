@@ -289,7 +289,6 @@ module.exports = CozyCollection.extend({
 require.register("collections/search_results.js", function(exports, require, module) {
 'use strict';
 
-const AsyncPromise = require('../lib/async_promise');
 const WikidataSuggestions = require('../lib/wikidata_suggestions');
 const Model = require('../models/audiovisualwork');
 
@@ -327,7 +326,7 @@ module.exports = Backbone.Collection.extend({
   fromKeyword: function (keyword) {
     return WikidataSuggestions.fetchMoviesSuggestions(keyword)
     .then((suggestions) => {
-      return AsyncPromise.series(suggestions, this.fromWDSuggestionMovie, this);
+      return funpromise.series(suggestions, this.fromWDSuggestionMovie.bind(this));
     }).catch(err => console.error(err)) // Fail silently.
     .then(() => this.trigger('done'));
   },
@@ -353,8 +352,6 @@ require.register("collections/videostreams.js", function(exports, require, modul
 'use strict';
 
 const CozyCollection = require('../lib/backbone_cozycollection');
-
-const AsyncPromise = require('../lib/async_promise');
 const Model = require('../models/videostream');
 
 module.exports = CozyCollection.extend({
@@ -381,7 +378,7 @@ module.exports = CozyCollection.extend({
     // const since = '';
     const since = app.properties.get('lastVideoStream') || '';
     const videoStreams = this.filter(vs => vs.get('timestamp') > since);
-    return AsyncPromise.series(videoStreams, this.findAudioVisualWork, this)
+    return funpromise.series(videoStreams, this.findAudioVisualWork.bind(this))
     .then(() => {
       app.properties.set('lastVideoStream', this.size() > 0 ? this.first().get('timestamp') : '');
       return app.properties.save();
@@ -399,86 +396,6 @@ const name = 'lamusiquedemesfilms';
 const version = '3.0.9';
 
 module.exports = `${name}-${version}`;
-
-});
-
-require.register("lib/async_promise.js", function(exports, require, module) {
-'use-strict';
-
-module.exports.series = function (iterable, callback, self, period) {
-  period = period || 100;
-  const results = [];
-
-  return iterable.reduce((sequence, id, index, array) => {
-    return sequence.then((res) => {
-      results.push(res);
-      return waitPromise(period).then(() => callback.call(self, id, index, array));
-    });
-  }, Promise.resolve(true))
-  .then(res => new Promise((resolve) => { // don't handle reject there.
-    results.push(res);
-    resolve(results.slice(1));
-  }));
-};
-
-const waitPromise = function (period) {
-  if (!period) {
-    return Promise.resolve();
-  }
-
-  return new Promise((resolve) => { // this promise always resolve :)
-    setTimeout(resolve, period);
-  });
-};
-
-module.exports.find = function (iterable, predicate, period) {
-  period = period || 100;
-
-  const recursive = (list) => {
-    const current = list.shift();
-    if (current === undefined) { return Promise.resolve(undefined); }
-
-    return predicate(current)
-    .then((res) => {
-      if (res === false) {
-        return waitPromise(period).then(() => recursive(list));
-      }
-
-      return res;
-    });
-  };
-
-  return recursive(iterable.slice());
-};
-
-module.exports.backbone2Promise = function (obj, method, options) {
-  return new Promise((resolve, reject) => {
-    options = options || {};
-    options = $.extend(options, { success: resolve, error: reject });
-    method.call(obj, options);
-  });
-};
-
-
-module.exports.queryPaginated = function (query, period) {
-  period = period || 100;
-
-  let docs = [];
-  const recursive = (skip) => {
-    return query(skip)
-    .then((results) => {
-      docs = docs.concat(results.docs);
-      if (!results.next) {
-        return docs;
-      }
-
-      skip += results.limit;
-      return waitPromise(period).then(() => recursive(skip));
-    });
-  };
-
-  return recursive(0);
-};
 
 });
 
@@ -502,7 +419,12 @@ module.exports = Backbone.Collection.extend({
     const docType = new this.model().docType.toLowerCase();
 
     return cozy.client.data.defineIndex(docType, this.getFetchIndex())
-    .then(index => cozy.client.data.query(index, this.getFetchQuery()))
+    .then(index => funpromise.queryPaginated((skip) => {
+      const params = this.getFetchQuery();
+      params.skip = skip;
+      params.wholeResponse = true;
+      return cozy.client.data.query(index, params);
+    }))
     .then(options.success, options.error);
   },
 });
@@ -704,7 +626,7 @@ const imgs = {};
 
 module.exports = (uri, doctype, options) => {
   if (!(uri in imgs)) {
-    imgs[uri] = new Promise((resolve) => {
+    imgs[uri] = new Promise((resolve, reject) => {
       Promise.all([
         cozy.client.authorize(),
         cozy.client.fullpath(`/remote/${doctype}?${options.params}`),
@@ -713,7 +635,13 @@ module.exports = (uri, doctype, options) => {
         xhr.open('GET', res[1]);
         xhr.setRequestHeader('Authorization', res[0].token.toAuthHeader());
         xhr.responseType = 'arraybuffer';
-        xhr.onload = e => resolve(base64ArrayBuffer(e.currentTarget.response));
+        xhr.onload = (e) => {
+          if (xhr.status === 200) {
+            resolve(base64ArrayBuffer(e.currentTarget.response));
+          } else {
+            reject(xhr.statusText);
+          }
+        };
 
         xhr.send();
       });
@@ -783,11 +711,8 @@ function base64ArrayBuffer(arrayBuffer) {
 ;require.register("lib/musicbrainz.js", function(exports, require, module) {
 'use_strict';
 
-const AsyncPromise = require('./async_promise');
 const WalkTreeUtils = require('./walktree_utils');
 
-const promiseSeries = AsyncPromise.series;
-const promiseFind = AsyncPromise.find;
 const get = WalkTreeUtils.get;
 
 
@@ -846,7 +771,7 @@ M._findReleaseGroup = function (movie) {
     });
   })
   .then((releaseGroups) => { // Look in each releasegroup, the one with imdbid.
-    return promiseFind(releaseGroups, (releaseGroup) => {
+    return funpromise.find(releaseGroups, (releaseGroup) => {
       return M._getReleaseGroupById(releaseGroup.id)
       .then((releaseGroup) => {
         const withSameIMDBId = releaseGroup.relations.some(
@@ -926,7 +851,7 @@ M.getBestRecording = function (movie) {
 
 
 M.getRecordings = function (movie) {
-  return promiseSeries(movie.soundtracks, M.getRecording)
+  return funpromise.series(movie.soundtracks, M.getRecording)
   .then(() => movie);
 };
 
@@ -2572,7 +2497,7 @@ jade_mixins["featureInfos"] = jade_interp = function(feature){
 var block = (this && this.block), attributes = (this && this.attributes) || {};
 buf.push("<h3>" + (jade.escape(null == (jade_interp = feature.label) ? "" : jade_interp)) + "&ensp;?</h3><div class=\"howitworks\">" + (null == (jade_interp = feature.howItWorks) ? "" : jade_interp) + "</div>");
 };
-buf.push("<h2>Dans l'application, comment ça marche pour la ...</h2>");
+buf.push("<h2>Dans l'application, comment ça marche pour ...</h2>");
 jade_mixins["featureInfos"](features['q:Q100']);
 jade_mixins["featureInfos"](features['q:Q101']);
 jade_mixins["featureInfos"](features['q:Q102']);
@@ -2877,8 +2802,8 @@ var __templateData = function template(locals) {
 var buf = [];
 var jade_mixins = {};
 var jade_interp;
-;var locals_for_with = (locals || {});(function (content, timestamp) {
-buf.push("<div class=\"videostreamitem\"><div class=\"audiovisualwork\"><div class=\"placeholder\"><h3>" + (jade.escape(null == (jade_interp = content.title) ? "" : jade_interp)) + "</h3><div class=\"subtitle\">" + (jade.escape(null == (jade_interp = content.subTitle) ? "" : jade_interp)) + "</div></div></div><div class=\"date\">" + (jade.escape(null == (jade_interp = moment(timestamp).format('LT L')) ? "" : jade_interp)) + "</div></div>");}.call(this,"content" in locals_for_with?locals_for_with.content:typeof content!=="undefined"?content:undefined,"timestamp" in locals_for_with?locals_for_with.timestamp:typeof timestamp!=="undefined"?timestamp:undefined));;return buf.join("");
+;var locals_for_with = (locals || {});(function (action, content, timestamp) {
+buf.push("<div class=\"videostreamitem\"><div class=\"audiovisualwork\"><div class=\"placeholder\"><h3>" + (jade.escape(null == (jade_interp = content.title) ? "" : jade_interp)) + "</h3><div class=\"subtitle\">" + (jade.escape(null == (jade_interp = content.subTitle) ? "" : jade_interp)) + "</div></div></div><div class=\"date\">" + (jade.escape(null == (jade_interp = moment(timestamp).format('LT L')) ? "" : jade_interp)) + "</div><div class=\"commande\">" + (jade.escape(null == (jade_interp = action) ? "" : jade_interp)) + "</div></div>");}.call(this,"action" in locals_for_with?locals_for_with.action:typeof action!=="undefined"?action:undefined,"content" in locals_for_with?locals_for_with.content:typeof content!=="undefined"?content:undefined,"timestamp" in locals_for_with?locals_for_with.timestamp:typeof timestamp!=="undefined"?timestamp:undefined));;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {

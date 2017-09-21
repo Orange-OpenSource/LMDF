@@ -17,7 +17,12 @@ module.exports = Backbone.Collection.extend({
     const docType = new this.model().docType.toLowerCase();
 
     return cozy.client.data.defineIndex(docType, this.getFetchIndex())
-    .then(index => cozy.client.data.query(index, this.getFetchQuery()))
+    .then(index => funpromise.queryPaginated((skip) => {
+      const params = this.getFetchQuery();
+      params.skip = skip;
+      params.wholeResponse = true;
+      return cozy.client.data.query(index, params);
+    }))
     .then(options.success, options.error);
   },
 });

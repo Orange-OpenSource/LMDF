@@ -1,6 +1,5 @@
 'use strict';
 
-const AsyncPromise = require('../lib/async_promise');
 const WikidataSuggestions = require('../lib/wikidata_suggestions');
 const Model = require('../models/audiovisualwork');
 
@@ -38,7 +37,7 @@ module.exports = Backbone.Collection.extend({
   fromKeyword: function (keyword) {
     return WikidataSuggestions.fetchMoviesSuggestions(keyword)
     .then((suggestions) => {
-      return AsyncPromise.series(suggestions, this.fromWDSuggestionMovie, this);
+      return funpromise.series(suggestions, this.fromWDSuggestionMovie.bind(this));
     }).catch(err => console.error(err)) // Fail silently.
     .then(() => this.trigger('done'));
   },

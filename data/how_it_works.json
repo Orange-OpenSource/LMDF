@@ -1,8 +1,8 @@
 {
   "q:Q100": {
     "@id": "q:Q100",
-    "label": "complétion",
-    "howItWorks": "Pour afficher les titres de programmes contenant les caractères entrés, la complétion s'appuie sur une liste de titres de films et de noms de séries. Cette liste est constitué des données provenant de <a href='http://wikidata.org' >wikidata</a>, qui répondent aux critères suivants :<ul><li>être un film<ul><li>avec un nom en français,</li><li>comprenant un id imdb,</li><li>sorti après 1970.</li></ul></li><li>être une série TV,<ul><li>avec un nom en français.</li></ul></li></ul>",
+    "label": "la complétion du texte saisi",
+    "howItWorks": "Pour afficher les titres de programmes contenant les caractères entrés, la complétion s'appuie sur une liste de titres de films et de noms de séries. Cette liste est constitué des données provenant de <a href='http://wikidata.org' >Wikidata</a>, qui répondent aux critères suivants :<ul><li>soit être un film<ul><li>avec un nom en français,</li><li>comprenant un identifiant imdb,</li><li>sorti après 1970.</li></ul></li><li>soit être une série TV,<ul><li>avec un nom en français.</li></ul></li></ul>",
     "faq": [
       "Pourquoi seulement les films à partir de 1970 ? Afin de limiter le nombre de titre, et améliorer la réactivité de l'application"
     ],
@@ -12,28 +12,28 @@
   },
   "q:Q101": {
     "@id": "q:Q101",
-    "label": "recherche",
-    "howItWorks": "Les résultats de recherche sont l'ensemble des suggestions de complétions pour le titre indiqué, ainsi que l'ensemble des éléments trouvé via <a href='https://www.wikidata.org/w/api.php?action=help&modules=wbsearchentities'>l'api de recherche de wikidata</a>, dont la description contient le mot 'film', 'movie', 'tv series' ou 'television series', et qui sont des films avec un id IMDB, ou des séries."
+    "label": "la recherche du film",
+    "howItWorks": "Les résultats de recherche sont l'ensemble des suggestions de complétions pour le titre indiqué, ainsi que l'ensemble des éléments trouvé via <a href='https://www.wikidata.org/w/api.php?action=help&modules=wbsearchentities'>l'api de recherche de Wikidata</a>, dont la description contient le mot 'film', 'movie', 'tv series' ou 'television series', et qui sont des films avec un id IMDB, ou des séries. La recherche est faite sur le nom qui a été entré, et va plus loin que les propositions du mécanisme de complétion."
   },
   "q:Q102": {
     "@id": "q:Q102",
-    "label": "vignette",
-    "howItWorks": "À partir d'un objet film ou série TV, récupéré sur Wikidata, l'image est obtenue via l'API <a href='http://omdbapi.com/'>omdb</a>, en utilisant l'id IMDB comme clé, pour associé la bonne image au bon programme."
+    "label": "la vignette du film",
+    "howItWorks": "À partir d'un objet film ou série TV, récupéré sur Wikidata, la vignette est obtenue via l'API <a href='http://omdbapi.com/'>omdb</a>, en utilisant l'id IMDB comme clé, pour associé la bonne image au bon programme."
   },
   "q:Q103": {
     "@id": "q:Q103",
-    "label": "détails d'un film",
-    "howItWorks": "De nombreuses informations issue de wikidata sont affichées (genre, année, pays, durée, réalisateur). La vignette provenant de ombd est affichée. Le synopsis est la première section de la page wikipedia du programme (l'URL provenant des données Wikidata)."
+    "label": "les détails d'un film",
+    "howItWorks": "De nombreuses informations issue de Wikidata sont affichées (genre, année, pays, durée, réalisateur). La vignette provenant de OMDB est affichée. Le synopsis est la première section de la page Wikipedia du programme (l'URL provenant des données Wikidata)."
   },
   "q:Q104": {
     "@id": "q:Q104",
-    "label": "musique associée",
-    "howItWorks": "La musique associée est recherché dans la base de donnée <a href='https://musicbrainz.org'>musicbrainz</a>. À partir des données de wikidata sur le programme : on recherche l'album de la bande original dans musicbrainz, directement avec son id musicbrainz (si présent), ou bien en rechechant avec le titre du film, et en sélectionnant l'album présentant l'identifiant IMDB du film."
+    "label": "la musique associée",
+    "howItWorks": "La musique associée est recherché dans la base de donnée <a href='https://musicbrainz.org'>Musicbrainz</a>. À partir des données de Wikidata sur le programme, on recherche l'album de la bande originale dans musicbrainz, directement avec son id musicbrainz (s'il est présent), ou bien en recherchant avec le titre du film, et en sélectionnant l'album présentant l'identifiant IMDB du film."
   },
   "q:Q105": {
     "@id": "q:Q105",
     "label": "jouer la musique associée",
-    "howItWorks": "Chaque piste trouvée sur musicbrainz est recherchée sur Deezer, via le titre de l'album, le titre de la piste, ainsi que la durée de la piste."
+    "howItWorks": "Chaque piste trouvée sur Musicbrainz est recherchée sur <a href='https://deezer.com'>Deezer</a>, via le titre de l'album, le titre de la piste, ainsi que la durée de la piste."
   },
   "q:Q106": {
     "@id": "q:Q106",

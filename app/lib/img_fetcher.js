@@ -4,7 +4,7 @@ const imgs = {};
 
 module.exports = (uri, doctype, options) => {
   if (!(uri in imgs)) {
-    imgs[uri] = new Promise((resolve) => {
+    imgs[uri] = new Promise((resolve, reject) => {
       Promise.all([
         cozy.client.authorize(),
         cozy.client.fullpath(`/remote/${doctype}?${options.params}`),
@@ -13,7 +13,13 @@ module.exports = (uri, doctype, options) => {
         xhr.open('GET', res[1]);
         xhr.setRequestHeader('Authorization', res[0].token.toAuthHeader());
         xhr.responseType = 'arraybuffer';
-        xhr.onload = e => resolve(base64ArrayBuffer(e.currentTarget.response));
+        xhr.onload = (e) => {
+          if (xhr.status === 200) {
+            resolve(base64ArrayBuffer(e.currentTarget.response));
+          } else {
+            reject(xhr.statusText);
+          }
+        };
 
         xhr.send();
       });

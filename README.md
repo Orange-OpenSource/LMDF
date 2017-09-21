@@ -35,12 +35,14 @@ Le point d'entrée de l'application est `index.html` > `app/application.js`
 ## Licence TODO.
 
 ## TODO
-* usetracker
-* logo --> orange
-* check récupération données orange.
+* gestion état du connecteur --> vérif l'existence / l'état.
+
 
 ### Changelog
 
 #### 3.0.9
 * trace d'usage
 * logo en noir --> orange.
+* affichage vignettes film si erreur chargement image
+* récupération de plus de 100 éléments
+* relecture de "comment ça marche"

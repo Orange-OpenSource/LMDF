@@ -1,8 +1,6 @@
 'use strict';
 
 const CozyCollection = require('../lib/backbone_cozycollection');
-
-const AsyncPromise = require('../lib/async_promise');
 const Model = require('../models/videostream');
 
 module.exports = CozyCollection.extend({
@@ -29,7 +27,7 @@ module.exports = CozyCollection.extend({
     // const since = '';
     const since = app.properties.get('lastVideoStream') || '';
     const videoStreams = this.filter(vs => vs.get('timestamp') > since);
-    return AsyncPromise.series(videoStreams, this.findAudioVisualWork, this)
+    return funpromise.series(videoStreams, this.findAudioVisualWork.bind(this))
     .then(() => {
       app.properties.set('lastVideoStream', this.size() > 0 ? this.first().get('timestamp') : '');
       return app.properties.save();
