@@ -2099,7 +2099,7 @@ module.exports = Mn.View.extend({
   onRender: function () {
     this.model.getPoster()
     .then((dataUri) => {
-      this.ui.poster.html(`<img title='${this.model.get('title')}' src='${dataUri}' >`);
+      this.ui.poster.html(`<img src='${dataUri}' >`);
     });
   },
 
@@ -2803,7 +2803,7 @@ var buf = [];
 var jade_mixins = {};
 var jade_interp;
 ;var locals_for_with = (locals || {});(function (action, content, timestamp) {
-buf.push("<div class=\"videostreamitem\"><div class=\"audiovisualwork\"><div class=\"placeholder\"><h3>" + (jade.escape(null == (jade_interp = content.title) ? "" : jade_interp)) + "</h3><div class=\"subtitle\">" + (jade.escape(null == (jade_interp = content.subTitle) ? "" : jade_interp)) + "</div></div></div><div class=\"date\">" + (jade.escape(null == (jade_interp = moment(timestamp).format('LT L')) ? "" : jade_interp)) + "</div><div class=\"commande\">" + (jade.escape(null == (jade_interp = action) ? "" : jade_interp)) + "</div></div>");}.call(this,"action" in locals_for_with?locals_for_with.action:typeof action!=="undefined"?action:undefined,"content" in locals_for_with?locals_for_with.content:typeof content!=="undefined"?content:undefined,"timestamp" in locals_for_with?locals_for_with.timestamp:typeof timestamp!=="undefined"?timestamp:undefined));;return buf.join("");
+buf.push("<div" + (jade.attr("title", content.title + " - " + content.subTitle + "\n" + action, true, false)) + " class=\"videostreamitem\"><div class=\"audiovisualwork\"><div class=\"placeholder\"><h3>" + (jade.escape(null == (jade_interp = content.title) ? "" : jade_interp)) + "</h3><div class=\"subtitle\">" + (jade.escape(null == (jade_interp = content.subTitle) ? "" : jade_interp)) + "</div></div></div><div class=\"date\">" + (jade.escape(null == (jade_interp = moment(timestamp).format('LT L')) ? "" : jade_interp)) + "</div></div>");}.call(this,"action" in locals_for_with?locals_for_with.action:typeof action!=="undefined"?action:undefined,"content" in locals_for_with?locals_for_with.content:typeof content!=="undefined"?content:undefined,"timestamp" in locals_for_with?locals_for_with.timestamp:typeof timestamp!=="undefined"?timestamp:undefined));;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {

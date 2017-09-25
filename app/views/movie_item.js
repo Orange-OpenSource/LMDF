@@ -27,7 +27,7 @@ module.exports = Mn.View.extend({
   onRender: function () {
     this.model.getPoster()
     .then((dataUri) => {
-      this.ui.poster.html(`<img title='${this.model.get('title')}' src='${dataUri}' >`);
+      this.ui.poster.html(`<img src='${dataUri}' >`);
     });
   },
 
