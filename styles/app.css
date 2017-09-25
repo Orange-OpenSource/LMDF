@@ -83,7 +83,7 @@ body {
 [role="application"] {
   width: 100vw;
   /*! height: 100%; */
-  /*! position: relative; */
+  position: relative;
 
   display: -webkit-flex;
 	display: flex;
@@ -95,6 +95,8 @@ body {
 
 .message {
   position: absolute;
+  left:0px;
+  top:0px;
   width: 100vw;
   text-align: center;
 }
