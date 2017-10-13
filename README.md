@@ -35,12 +35,15 @@ Le point d'entrée de l'application est `index.html` > `app/application.js`
 ## Licence TODO.
 
 ## TODO
+
+* filtrer les - HD dans les séries aussi !
 * gestion état du connecteur --> vérif l'existence / l'état.
 
 
 ### Changelog
 
 #### 3.0.9
+* fix algorithme deezer
 * trace d'usage
 * logo en noir --> orange.
 * affichage vignettes film si erreur chargement image

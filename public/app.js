@@ -583,23 +583,38 @@ M.musicbrainz2DeezerTrack = function (track, album) {
     album: album.title,
     track: track.title,
       // artist: track.artist,
-    dur_min: Math.round(track.length / 1000 * 0.9),
-    dur_max: Math.round(track.length / 1000 * 1.1),
+    //dur_min: Math.round(track.length / 1000 * 0.9),
+    //dur_max: Math.round(track.length / 1000 * 1.1),
   };
   params = _.pairs(params).map(kv => `${kv[0]}:"${kv[1]}"`).join(' ');
   params = encodeURIComponent(params);
   return cozy.client.fetchJSON('GET', `/remote/com.deezer.api.track?q=${params}`)
   .then(res => ((typeof res === 'string') ? JSON.parse(res) : res))
   .then((res) => {
-    const deezerTrack = res.data[0];
-    if (deezerTrack) {
+    // Sort by title proximity
+    const tracks = res.data.sort((trackA, trackB) => {
+      return titleDistance(trackA.title, track.title) - titleDistance(trackB.title, track.title);
+    });
+    const deezerTrack = tracks[0];
+    // exclude too different track titles.
+    if (deezerTrack && titleDistance(deezerTrack.title, track.title) < track.title.length / 3
+      && deezerTrack.title.length > track.title.length / 3) {
       track.deezerId = deezerTrack.id;
-      // track.deezer = deezerTrack;
     } else {
       console.info(`Track: ${track.title} not found`);
     }
   }).catch(res => console.warn(res));
 };
+
+function titleDistance(a, b) {
+  // compare string of same length.
+  if (a.length > b.length) {
+    a = a.slice(0, b.length);
+  } else {
+    b = b.slice(0, a.length);
+  }
+  return Levenshtein.get(a, b);
+}
 
 
 M.getTracksId = function (movie) {
@@ -2918,3 +2933,5 @@ require.register("___globals___", function(exports, require, module) {
   
 });})();require('___globals___');
 
+
+//# sourceMappingURL=app.js.map
