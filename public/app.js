@@ -1910,7 +1910,7 @@ module.exports = Mn.View.extend({
   ui: {
     libraryOptions: '.selectlibrary li',
     search: '.search',
-    codesign: '.codesign div',
+    howitworks: '.howitworks',
   },
 
   triggers: {
@@ -1920,7 +1920,7 @@ module.exports = Mn.View.extend({
 
   events: {
     'click @ui.libraryOptions': 'onLibraryChanged',
-    'click .howitworks': 'selectCodesign'
+    'click @ui.howitworks': 'selectCodesign'
   },
 
   regions: {
@@ -1950,7 +1950,7 @@ module.exports = Mn.View.extend({
   _setSelected: function (ev) {
     const elem = ev.currentTarget;
     this.ui.libraryOptions.toggleClass('selected', false);
-    this.ui.codesign.toggleClass('selected', false);
+    this.ui.howitworks.toggleClass('selected', false);
 
     elem.classList.add('selected');
   },
@@ -2548,7 +2548,7 @@ var buf = [];
 var jade_mixins = {};
 var jade_interp;
 ;var locals_for_with = (locals || {});(function (appName) {
-buf.push("<div class=\"search\"><i class=\"fa fa-plus\"></i></div><div class=\"tools\">&nbsp;</div><ul class=\"selectlibrary\"><li type=\"radio\" name=\"optionslibrary\" data-value=\"videostreams\" class=\"selected\"><div class=\"illumination\">P</div>Programmes visionnés</li><li type=\"radio\" name=\"optionslibrary\" data-value=\"movies\"><div class=\"illumination\">F</div>Films</li><li type=\"radio\" name=\"optionslibrary\" data-value=\"tvseries\"><div class=\"illumination\">S</div>Séries</li></ul><div class=\"codesign\"><div class=\"howitworks\">Comment ça marche ?</div><div class=\"code\">" + (jade.escape(null == (jade_interp = appName) ? "" : jade_interp)) + "</div></div><button class=\"toggle\"></button>");}.call(this,"appName" in locals_for_with?locals_for_with.appName:typeof appName!=="undefined"?appName:undefined));;return buf.join("");
+buf.push("<div class=\"search\"><i class=\"fa fa-plus\"></i></div><div class=\"tools\">&nbsp;</div><ul class=\"selectlibrary\"><li type=\"radio\" name=\"optionslibrary\" data-value=\"videostreams\" class=\"selected\"><div class=\"illumination\">P</div>Programmes visionnés</li><li type=\"radio\" name=\"optionslibrary\" data-value=\"movies\"><div class=\"illumination\">F</div>Films</li><li type=\"radio\" name=\"optionslibrary\" data-value=\"tvseries\"><div class=\"illumination\">S</div>Séries</li></ul><div class=\"howitworks\"><div class=\"illumination\"><i class=\"fa fa-info-circle\"></i></div>Comment ça marche ?</div><div class=\"codesign\"><div class=\"code\">" + (jade.escape(null == (jade_interp = appName) ? "" : jade_interp)) + "</div></div><button class=\"toggle\"></button>");}.call(this,"appName" in locals_for_with?locals_for_with.appName:typeof appName!=="undefined"?appName:undefined));;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {
@@ -2944,3 +2944,5 @@ require.register("___globals___", function(exports, require, module) {
   
 });})();require('___globals___');
 
+
+//# sourceMappingURL=app.js.map

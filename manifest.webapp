@@ -42,7 +42,7 @@
       "type": "fr.orange.tvserie"
     },
     "apps": {
-      "description": "Required by the cozy-bar to display the icons of the apps",
+      "description": "Requis par la cozy-bar pour afficher les icônces des applications.",
       "type": "io.cozy.apps",
       "verbs": [
         "GET"

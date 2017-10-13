@@ -277,7 +277,7 @@ body {
   display: block;
 }
 
-.drawer .selectlibrary li .illumination {
+.drawer .illumination {
   font-size: 25px;
   line-height: 40px;
   position: absolute;
@@ -300,7 +300,22 @@ body {
   color: white;
 }
 
-.codesign {
+
+.drawer .howitworks {
+  position: relative;
+  padding-left: 34px;
+
+  color: #999999;
+  cursor: pointer;
+  line-height: 42px;
+  margin-top: 42px;
+}
+
+.drawer .howitworks.selected {
+  color: white;
+}
+
+.drawer .codesign {
   position: absolute;
   left: 10px;
   bottom: 50px;
@@ -315,7 +330,7 @@ body {
 }
 
 
-.codesign div {
+.drawer .codesign div {
   display: block;
   color: #666666;
   font-size: 15px;
@@ -323,27 +338,23 @@ body {
   line-height: 2.5;
 }
 
-.codesign a:hover,
-.codesign div:hover  {
+.drawer .codesign a:hover,
+.drawer .codesign div:hover  {
   color: #aaa;
   text-decoration: unset;
 }
 
 
-.codesign .selected {
+.drawer .codesign .selected {
   color: #fff;
 }
 
-.codesign .howitworks {
-  cursor: pointer;
-}
-
-.codesign .help i.fa,
-.codesign .feedback i.fa {
+.drawer .codesign .help i.fa,
+.drawer .codesign .feedback i.fa {
   font-size: 120%;
 }
 
-.codesign .code {
+.drawer .codesign .code {
   color: #666666;
   font-size: 80%;
 }
