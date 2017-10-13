@@ -36,9 +36,20 @@ module.exports = CozyModel.extend({
         ;
     }
 
+    // TODO : is it a good idea ! ?
+    // include commande of movies :
+    if (!content.subTitle) {
+      return content.title.replace(' - HD', '')
+        .replace(/^BA - /, '')
+        .replace(/ - extrait exclusif offert$/, '')
+        .replace(/ - extrait offert$/, '')
+        .replace(/ - édition spéciale$/, '')
+        ;
+    }
+    // if (!content.subTitle) { return ''; }
+
     // series
     // look in subtitle, remove %d - in front, and  - S%d%d at the end.
-    if (!content.subTitle) { return ''; }
 
     return content.subTitle.replace(/^\d+[ ]*-[ ]*/, '')
       .replace(/[ ]*-?[ ]+S\d+$/, '')

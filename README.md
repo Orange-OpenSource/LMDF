@@ -36,14 +36,17 @@ Le point d'entrée de l'application est `index.html` > `app/application.js`
 
 ## TODO
 
-* filtrer les - HD dans les séries aussi !
+
 * gestion état du connecteur --> vérif l'existence / l'état.
 
 
 ### Changelog
 
-#### 3.0.9
+#### 3.0.10
 * fix algorithme deezer
+* filtrer les - HD pour les commande aussi.
+
+#### 3.0.9
 * trace d'usage
 * logo en noir --> orange.
 * affichage vignettes film si erreur chargement image

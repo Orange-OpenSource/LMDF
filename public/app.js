@@ -393,7 +393,7 @@ require.register("lib/appname_version.js", function(exports, require, module) {
 
 const name = 'lamusiquedemesfilms';
 // use brunch-version plugin to populate these.
-const version = '3.0.9';
+const version = '3.0.10';
 
 module.exports = `${name}-${version}`;
 
@@ -1625,9 +1625,20 @@ module.exports = CozyModel.extend({
         ;
     }
 
+    // TODO : is it a good idea ! ?
+    // include commande of movies :
+    if (!content.subTitle) {
+      return content.title.replace(' - HD', '')
+        .replace(/^BA - /, '')
+        .replace(/ - extrait exclusif offert$/, '')
+        .replace(/ - extrait offert$/, '')
+        .replace(/ - édition spéciale$/, '')
+        ;
+    }
+    // if (!content.subTitle) { return ''; }
+
     // series
     // look in subtitle, remove %d - in front, and  - S%d%d at the end.
-    if (!content.subTitle) { return ''; }
 
     return content.subTitle.replace(/^\d+[ ]*-[ ]*/, '')
       .replace(/[ ]*-?[ ]+S\d+$/, '')
@@ -2933,5 +2944,3 @@ require.register("___globals___", function(exports, require, module) {
   
 });})();require('___globals___');
 
-
-//# sourceMappingURL=app.js.map
