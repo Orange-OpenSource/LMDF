@@ -580,12 +580,15 @@ M.musicbrainz2DeezerAlbum = function (soundtrack) {
 
 M.musicbrainz2DeezerTrack = function (track, album) {
   let params = {
-    album: album.title,
-    track: track.title,
-      // artist: track.artist,
-    //dur_min: Math.round(track.length / 1000 * 0.9),
-    //dur_max: Math.round(track.length / 1000 * 1.1),
+    track: track.title.replace(/(Theme.*)/, ''),
+    artist: track.artist,
   };
+
+  if (track.artist === '[no artist]' || track.artist === '[dialogue]') {
+    delete params.artist;
+    params.album = album.title;
+  }
+
   params = _.pairs(params).map(kv => `${kv[0]}:"${kv[1]}"`).join(' ');
   params = encodeURIComponent(params);
   return cozy.client.fetchJSON('GET', `/remote/com.deezer.api.track?q=${params}`)
@@ -798,11 +801,18 @@ M._findReleaseGroup = function (movie) {
         return false;
       });
     }, THROTTLING_PERIOD).then((found) => {
-      if (found === undefined) {
-        return Promise.reject("Can't find releaseGroup with corresponding imdbId");
+      if (found === undefined && releaseGroups[0] && movie.type === 'tvserie') {
+        return M._getReleaseGroupById(releaseGroups[0].id);
       }
+
       return found;
     });
+  })
+  .then((found) => {
+    if (found === undefined) {
+      return Promise.reject("Can't find releaseGroup with corresponding imdbId");
+    }
+    return found;
   });
 };
 
@@ -894,7 +904,122 @@ module.exports = M;
 
 });
 
-require.register("lib/walktree_utils.js", function(exports, require, module) {
+require.register("lib/test_lmdmf_algos.js", function(exports, require, module) {
+/* eslint-disable */
+const WikidataSuggestions = require('lib/wikidata_suggestions');
+const AudioVisualWork = require('models/audiovisualwork');
+
+module.exports = {
+  testAlgos: function () {
+    app.trigger('message:display', 'Chargement du test, cela prendra quelques minutes.', 'testloading');
+    const titles = [
+      'American Graffiti',
+      'Kill Bill 1',
+      'Kill Bill 2',
+      // NO musicbrainz
+      'Le dernier des mohicans',
+      'Alamo',
+      // NO musicbrainz
+      'The Mission',
+      "Il était une fois dans l'ouest",
+      'Le bon, la brute et le truand',
+      'True Romance',
+      'Orange mécanique',
+      "2001, L'Odyssée de l'espace",
+      "2010 : L'Année du premier contact",
+      'Amadeus',
+      'La panthère rose',
+
+      "Dr House",
+      "Mad Men",
+      "Sons of Anarchy",
+      "Soprano",
+      // NO musicbrainz
+      "Stranger things",
+      "Six feet under",
+      "Breaking bad",
+      // NO musicbrainz
+      "Peaky blinders",
+      "Narcos",
+      // NO musicbrainz
+      "True detective",
+      // NO musicbrainz
+      "Deadwood",
+      "Braquo",
+    ];
+
+    funpromise.series(titles, findAudioVisualWorks, 100)
+    .then((awvs) => {
+      let html = `<TABLE border=2 cellpadding=10>
+        <THEAD>
+          <TR>
+            <TH>Titre</TH>
+            <TH>Wikidata</TH>
+            <TH>Synopsys</TH>
+            <TH>Musicbrainz</TH>
+            <TH>Deezer nb pistes</TH>
+            <TH>Musicbrainz nb pistes</TH>
+          </TR>
+        </THEAD>
+        <TBODY>`;
+
+      html += awvs.map((awv, index) => {
+        let row = null;
+        try {
+          row = `<TR data-index='${index}'>
+            <TD>${awv.attributes.label}</TD>
+            <TD>${!!awv.attributes.wikidataId}</TD>
+            <TD>${!!awv.attributes.synopsis}</TD>
+            <TD>${awv.attributes.soundtrack && awv.attributes.soundtrack.musicbrainzReleaseGroupId}</TD>
+            <TD>${(awv.attributes.soundtrack && awv.attributes.soundtrack.tracks) ? awv.attributes.soundtrack.tracks.filter(track => track.deezerId).length : '-' }</TD>
+            <TD>${(awv.attributes.soundtrack && awv.attributes.soundtrack.tracks) ? awv.attributes.soundtrack.tracks.length : '-' }</TD>
+          </TR>`;
+        } catch (e) {
+          console.log(e);
+          console.log(awv);
+          console.log(index);
+          row = `<TR data-index='${index}'><TD>${titles[index]}</TD></TR>`;
+        }
+        return row;
+      }).join('');
+
+      html += '</TBODY></TABLE>';
+
+      app.layout.getRegion('main').$el.html(html);
+      $('TR').click(() => app.trigger('details:show', awvs[Number(ev.currentTarget.dataset.index)]));
+
+      app.trigger('message:hide', 'Chargement du test, cela prendra quelques minutes.', 'testloading');
+    });
+  },
+};
+
+findAudioVisualWorks = (name) => {
+  let avw = { attributes: { label: name } };
+  return new Promise(resolve => app.bloodhound.search(name, resolve))
+  .then((suggestions) => {
+    if (suggestions.length === 0) {
+      return WikidataSuggestions.fetchMoviesSuggestions(name);
+    }
+    return suggestions;
+  })
+  .then((suggestions) => {
+    if (suggestions.length === 0) {
+      return Promise.reject(`${name} not found on wikidata`);
+    }
+    return AudioVisualWork.fromWDSuggestion(suggestions[0]);
+  })
+  .then((res) => { avw = res; })
+  .then(() => avw.fetchSynopsis())
+  .then(() => avw.fetchSoundtrack())
+  .then(() => avw.fetchDeezerIds())
+  .catch(() => true)
+  .then(() => avw);
+};
+/* eslint-enable */
+
+});
+
+;require.register("lib/walktree_utils.js", function(exports, require, module) {
 'use_strict';
 
 module.exports.get = function (obj, ...prop) {
@@ -1575,6 +1700,9 @@ const AudioVisualWork = require('./audiovisualwork');
 
 module.exports = AudioVisualWork.extend({
   docType: 'fr.orange.tvserie',
+
+  defaults: _.extend({ type: 'tvserie' }, AudioVisualWork.defaults),
+
   save: function () {
     if (this.isNew()) {
       app.tvseries.add(this);
@@ -1799,6 +1927,7 @@ module.exports = Mn.View.extend({
     this.showChildView('main', view);
     this.currentMain = slug;
   },
+
 });
 
 });
@@ -1880,6 +2009,11 @@ const template = require('./templates/how_it_works');
 module.exports = Mn.View.extend({
   className: 'howitworks',
   template: template,
+
+  events: {
+    // eslint-disable-next-line
+    'click #testalgos': () => require("lib/test_lmdmf_algos").testAlgos(),
+  },
 
   serializeData: function () {
     // TODO
@@ -2529,7 +2663,8 @@ jade_mixins["featureInfos"](features['q:Q101']);
 jade_mixins["featureInfos"](features['q:Q102']);
 jade_mixins["featureInfos"](features['q:Q103']);
 jade_mixins["featureInfos"](features['q:Q104']);
-jade_mixins["featureInfos"](features['q:Q105']);}.call(this,"features" in locals_for_with?locals_for_with.features:typeof features!=="undefined"?features:undefined));;return buf.join("");
+jade_mixins["featureInfos"](features['q:Q105']);
+buf.push("<hr/><a id=\"testalgos\" href=\"#\">Page de test des algorithmes</a>");}.call(this,"features" in locals_for_with?locals_for_with.features:typeof features!=="undefined"?features:undefined));;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {
@@ -2944,5 +3079,3 @@ require.register("___globals___", function(exports, require, module) {
   
 });})();require('___globals___');
 
-
-//# sourceMappingURL=app.js.map

@@ -309,6 +309,7 @@ body {
   cursor: pointer;
   line-height: 42px;
   margin-top: 42px;
+  overflow:  hidden;
 }
 
 .drawer .howitworks.selected {
@@ -320,6 +321,7 @@ body {
   left: 10px;
   bottom: 50px;
 }
+
 
 .drawer[aria-expanded=false] .codesign {
   display: none;

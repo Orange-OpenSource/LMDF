@@ -78,4 +78,5 @@ module.exports = Mn.View.extend({
     this.showChildView('main', view);
     this.currentMain = slug;
   },
+
 });

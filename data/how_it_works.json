@@ -28,12 +28,12 @@
   "q:Q104": {
     "@id": "q:Q104",
     "label": "la musique associée",
-    "howItWorks": "La musique associée est recherché dans la base de donnée <a href='https://musicbrainz.org'>Musicbrainz</a>. À partir des données de Wikidata sur le programme, on recherche l'album de la bande originale dans musicbrainz, directement avec son id musicbrainz (s'il est présent), ou bien en recherchant avec le titre du film, et en sélectionnant l'album présentant l'identifiant IMDB du film."
+    "howItWorks": "La musique associée est recherché dans la base de donnée <a href='https://musicbrainz.org'>Musicbrainz</a>. À partir des données de Wikidata sur le programme, on recherche l'album de la bande originale dans musicbrainz, directement avec son id musicbrainz (s'il est présent), ou bien en recherchant avec le titre du film, et en sélectionnant l'album présentant l'identifiant IMDB du film, ou bien, dans le cas des séries, l'album avec le titre le plus proche du titre de la série."
   },
   "q:Q105": {
     "@id": "q:Q105",
     "label": "jouer la musique associée",
-    "howItWorks": "Chaque piste trouvée sur Musicbrainz est recherchée sur <a href='https://deezer.com'>Deezer</a>, via le titre de l'album, le titre de la piste, ainsi que la durée de la piste."
+    "howItWorks": "Chaque piste trouvée sur Musicbrainz est recherchée sur <a href='https://deezer.com'>Deezer</a>, via le titre de la piste et le nom de l'artiste. Dans quelques cas où l'artiste n'est pas pertinent ('no-artist', ...) le titre de l'album est utilisé."
   },
   "q:Q106": {
     "@id": "q:Q106",

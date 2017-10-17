@@ -72,11 +72,18 @@ M._findReleaseGroup = function (movie) {
         return false;
       });
     }, THROTTLING_PERIOD).then((found) => {
-      if (found === undefined) {
-        return Promise.reject("Can't find releaseGroup with corresponding imdbId");
+      if (found === undefined && releaseGroups[0] && movie.type === 'tvserie') {
+        return M._getReleaseGroupById(releaseGroups[0].id);
       }
+
       return found;
     });
+  })
+  .then((found) => {
+    if (found === undefined) {
+      return Promise.reject("Can't find releaseGroup with corresponding imdbId");
+    }
+    return found;
   });
 };
 

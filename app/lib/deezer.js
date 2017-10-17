@@ -73,12 +73,15 @@ M.musicbrainz2DeezerAlbum = function (soundtrack) {
 
 M.musicbrainz2DeezerTrack = function (track, album) {
   let params = {
-    album: album.title,
-    track: track.title,
-      // artist: track.artist,
-    //dur_min: Math.round(track.length / 1000 * 0.9),
-    //dur_max: Math.round(track.length / 1000 * 1.1),
+    track: track.title.replace(/(Theme.*)/, ''),
+    artist: track.artist,
   };
+
+  if (track.artist === '[no artist]' || track.artist === '[dialogue]') {
+    delete params.artist;
+    params.album = album.title;
+  }
+
   params = _.pairs(params).map(kv => `${kv[0]}:"${kv[1]}"`).join(' ');
   params = encodeURIComponent(params);
   return cozy.client.fetchJSON('GET', `/remote/com.deezer.api.track?q=${params}`)

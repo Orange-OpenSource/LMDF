@@ -35,10 +35,7 @@ Le point d'entrée de l'application est `index.html` > `app/application.js`
 ## Licence TODO.
 
 ## TODO
-* une mini page de comparatifs de différents algorithmes pour rechercher les infos sur deezer (une liste de titre de films --> qu'est-ce qui a été trouvé.)
-
-* commande / visualisation : comment ça fonctionne.
-
+* commande / visualisation : comment ça fonctionne ?
 * gestion état du connecteur --> vérif l'existence / l'état.
 
 
@@ -46,8 +43,10 @@ Le point d'entrée de l'application est `index.html` > `app/application.js`
 
 #### 3.0.10
 * mettre un (i) devant et remonter + mettre en valeur le "comment ça marche"
-* fix algorithme deezer
 * filtrer les - HD pour les commande aussi.
+* fix algorithme deezer
+* une mini page de comparatifs de différents algorithmes pour rechercher les infos sur deezer (une liste de titre de films --> qu'est-ce qui a été trouvé.)
+
 
 #### 3.0.9
 * trace d'usage
