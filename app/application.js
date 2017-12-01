@@ -5,6 +5,8 @@
 const Router = require('router');
 const AppLayout = require('views/app_layout');
 
+const AppNameVersion = require('lib/appname_version');
+const VersionsMigrations = require('versionsmigrations');
 const Properties = require('models/properties');
 const MoviesCollection = require('./collections/movies');
 const TVSeriesCollection = require('./collections/tvseries');
@@ -37,6 +39,25 @@ const Application = Mn.Application.extend({
       this.tvseries.fetch(),
       $.getJSON('data/how_it_works.json').then((data) => { PLD.allItems = data; }),
     ]));
+  },
+
+  upgrade: function () {
+    const lastRunVersion = this.properties.get('appVersion');
+    const curVersion = AppNameVersion.split('-', 2)[1];
+
+    if (lastRunVersion !== curVersion) {
+      // Is newer version !! Do something !!
+      this.trigger('message:display', "Mise à jour vers la nouvelle version de l'application", 'appversionmigration');
+
+      return VersionsMigrations.runMigration(lastRunVersion, curVersion)
+      .then(() => {
+        this.properties.set('appVersion', curVersion);
+        this.trigger('message:hide', 'appversionmigration');
+        return this.properties.save();
+      });
+    }
+
+    return Promise.resolve();
   },
 
   prepareInBackground: function () {
@@ -108,6 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
     console.error(err);
     application.trigger('message:error', msg);
   })
+  .then(() => application.upgrade())
   .then(() => application.start())
   .then(() => application.prepareInBackground())
   .catch((err) => {

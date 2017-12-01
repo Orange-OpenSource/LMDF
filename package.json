@@ -1,6 +1,6 @@
 {
   "name": "lamusiquedemesfilms",
-  "version": "3.0.10-dev",
+  "version": "3.0.11",
   "description": "Re-découvrez la musique des films que vous avez regardés sur votre LiveBox Orange.",
   "scripts": {
     "watch": "brunch watch",

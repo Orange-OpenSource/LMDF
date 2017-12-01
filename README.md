@@ -40,6 +40,8 @@ Le point d'entrée de l'application est `index.html` > `app/application.js`
 
 
 ### Changelog
+#### 3.0.11
+* Migrations de données au changement de version : ré-examiner l'historique Orange pour les version antérieures à 3.0.10 .
 
 #### 3.0.10
 * mettre un (i) devant et remonter + mettre en valeur le "comment ça marche"
