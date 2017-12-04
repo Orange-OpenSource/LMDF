@@ -37,11 +37,13 @@ Le point d'entrée de l'application est `index.html` > `app/application.js`
 ## TODO
 * commande / visualisation : comment ça fonctionne ?
 * gestion état du connecteur --> vérif l'existence / l'état.
+* mise à jour régulière des fiches de films, données musicbrainz (répercuter mises à jour de ces base communautaires).
+* utiliser d'autres métadonnées (en plus du titre) pour retrouver précisément le programme visionné via livebox sur wikidata.
 
 
 ### Changelog
 #### 3.0.11
-* Migrations de données au changement de version : ré-examiner l'historique Orange pour les version antérieures à 3.0.10 .
+* Migrations de données au changement de version : ré-examiner l'historique Orange pour les versions antérieures à 3.0.10 .
 
 #### 3.0.10
 * mettre un (i) devant et remonter + mettre en valeur le "comment ça marche"
