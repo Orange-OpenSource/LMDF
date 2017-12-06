@@ -19,7 +19,8 @@ module.exports = Mn.View.extend({
   },
 
   playTracks: function (tracksId) {
-    this.setDeezerPlay(tracksId.join(','), 'tracks');
+    const idList = tracksId.filter(id => Boolean(id)).join(',');
+    this.setDeezerPlay(idList, 'tracks');
   },
 
   setDeezerPlay: function (id, type) {

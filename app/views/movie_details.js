@@ -39,9 +39,7 @@ module.exports = Mn.View.extend({
   },
 
   initialize: function () {
-    this.model.fetchSynopsis();
-    this.model.fetchSoundtrack()
-    .then(() => this.model.fetchDeezerIds());
+    this.model.fetchUptodateDetails();
   },
 
   serializeData: function () {

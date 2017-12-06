@@ -1290,6 +1290,8 @@ M.getMovieOrTVSerieData = function (wikidataId) {
     delete avw.musicBrainzRGId;
 
     avw.wikidataId = wikidataId;
+
+    avw.lastUpdate = new Date().toISOString();
     return avw;
   });
 };
@@ -1663,6 +1665,24 @@ module.exports = AudioVisualWork = CozyModel.extend({
     })
     .then(data => `data:image;base64,${data}`);
   },
+
+  resetToWikidata: function () {
+    return Wikidata.getMovieOrTVSerieData(this.get('wikidataId'))
+    .then((attrs) => {
+      this.unset('synopsis');
+      this.unset('soundtrack');
+      this.set(attrs);
+      return this.save();
+    });
+  },
+
+  fetchUptodateDetails: function () {
+    const lastUpdate = this.get('lastUpdate');
+    (lastUpdate && moment().subtract(1, 'month').isBefore(lastUpdate) ? Promise.resolve() : this.resetToWikidata())
+    .then(() => this.fetchSynopsis())
+    .then(() => this.fetchSoundtrack())
+    .then(() => this.fetchDeezerIds());
+  },
 });
 
 
@@ -1675,7 +1695,7 @@ AudioVisualWork.fromWDSuggestion = function (wdSuggestion) {
   return Wikidata.getMovieOrTVSerieData(wdSuggestion.id)
   .then((attrs) => {
     if (attrs.isMovie) {
-      delete attrs.isMovie;
+      // delete attrs.isMovie;
       return new Movie(attrs);
     }
     return new TVSerie(attrs);
@@ -2232,9 +2252,7 @@ module.exports = Mn.View.extend({
   },
 
   initialize: function () {
-    this.model.fetchSynopsis();
-    this.model.fetchSoundtrack()
-    .then(() => this.model.fetchDeezerIds());
+    this.model.fetchUptodateDetails();
   },
 
   serializeData: function () {
@@ -2373,18 +2391,12 @@ require.register("views/movie_searchresults.js", function(exports, require, modu
 const MovieItemView = require('./movie_item');
 const SearchResultsCollection = require('../collections/search_results');
 const template = require('./templates/movie_searchresults');
-const emptyViewTemplate = require('./templates/movie_searchresults_empty');
 
 const SearchResultsView = Mn.CollectionView.extend({
   tagName: 'ul',
 
   className: 'movielibrary',
   childView: MovieItemView,
-
-  // emptyView: Mn.View.extend({
-  //   className: 'empty',
-  //   template: emptyViewTemplate,
-  // }),
 });
 
 
@@ -2520,7 +2532,8 @@ module.exports = Mn.View.extend({
   },
 
   playTracks: function (tracksId) {
-    this.setDeezerPlay(tracksId.join(','), 'tracks');
+    const idList = tracksId.filter(id => Boolean(id)).join(',');
+    this.setDeezerPlay(idList, 'tracks');
   },
 
   setDeezerPlay: function (id, type) {
@@ -2925,25 +2938,6 @@ if (typeof define === 'function' && define.amd) {
 }
 });
 
-;require.register("views/templates/movie_searchresults_empty.jade", function(exports, require, module) {
-var __templateData = function template(locals) {
-var buf = [];
-var jade_mixins = {};
-var jade_interp;
-
-buf.push("<p><b>Aucun film ou série trouvé.</b></p>");;return buf.join("");
-};
-if (typeof define === 'function' && define.amd) {
-  define([], function() {
-    return __templateData;
-  });
-} else if (typeof module === 'object' && module && module.exports) {
-  module.exports = __templateData;
-} else {
-  __templateData;
-}
-});
-
 ;require.register("views/templates/my_movies.jade", function(exports, require, module) {
 var __templateData = function template(locals) {
 var buf = [];
@@ -3122,5 +3116,3 @@ require.register("___globals___", function(exports, require, module) {
   
 });})();require('___globals___');
 
-
-//# sourceMappingURL=app.js.map

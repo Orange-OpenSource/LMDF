@@ -116,6 +116,24 @@ module.exports = AudioVisualWork = CozyModel.extend({
     })
     .then(data => `data:image;base64,${data}`);
   },
+
+  resetToWikidata: function () {
+    return Wikidata.getMovieOrTVSerieData(this.get('wikidataId'))
+    .then((attrs) => {
+      this.unset('synopsis');
+      this.unset('soundtrack');
+      this.set(attrs);
+      return this.save();
+    });
+  },
+
+  fetchUptodateDetails: function () {
+    const lastUpdate = this.get('lastUpdate');
+    (lastUpdate && moment().subtract(1, 'month').isBefore(lastUpdate) ? Promise.resolve() : this.resetToWikidata())
+    .then(() => this.fetchSynopsis())
+    .then(() => this.fetchSoundtrack())
+    .then(() => this.fetchDeezerIds());
+  },
 });
 
 
@@ -128,7 +146,7 @@ AudioVisualWork.fromWDSuggestion = function (wdSuggestion) {
   return Wikidata.getMovieOrTVSerieData(wdSuggestion.id)
   .then((attrs) => {
     if (attrs.isMovie) {
-      delete attrs.isMovie;
+      // delete attrs.isMovie;
       return new Movie(attrs);
     }
     return new TVSerie(attrs);

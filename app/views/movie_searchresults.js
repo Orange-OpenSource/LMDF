@@ -3,18 +3,12 @@
 const MovieItemView = require('./movie_item');
 const SearchResultsCollection = require('../collections/search_results');
 const template = require('./templates/movie_searchresults');
-const emptyViewTemplate = require('./templates/movie_searchresults_empty');
 
 const SearchResultsView = Mn.CollectionView.extend({
   tagName: 'ul',
 
   className: 'movielibrary',
   childView: MovieItemView,
-
-  // emptyView: Mn.View.extend({
-  //   className: 'empty',
-  //   template: emptyViewTemplate,
-  // }),
 });
 
 

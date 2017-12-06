@@ -233,6 +233,8 @@ M.getMovieOrTVSerieData = function (wikidataId) {
     delete avw.musicBrainzRGId;
 
     avw.wikidataId = wikidataId;
+
+    avw.lastUpdate = new Date().toISOString();
     return avw;
   });
 };

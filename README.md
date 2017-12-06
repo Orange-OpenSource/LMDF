@@ -39,7 +39,6 @@ Le point d'entrée de l'application est `index.html` > `app/application.js`
 * "Film SD / HD", est-ce que la mise à jour fonctionne bien ! ?
 * inversion titre saison titre épisode.
 
-* listes deezer incohérentes...
 
 * Homonymie : pousser à la recherche manuelle ; permettre de faire un lien manuel ? (fonctionnalité "C'était pas ça !")
 
@@ -57,6 +56,7 @@ Le point d'entrée de l'application est `index.html` > `app/application.js`
 #### 3.0.12
 * Cacher la page "test de l'algo"
 * Du ménage dans les messages, fix : message "film non trouvé apparaît subrepticement.
+* Mise à jour automatique des détails des films, tous les mois.
 
 #### 3.0.11
 * Migrations de données au changement de version : ré-examiner l'historique Orange pour les versions antérieures à 3.0.10 .
