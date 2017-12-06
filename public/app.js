@@ -415,7 +415,7 @@ require.register("lib/appname_version.js", function(exports, require, module) {
 
 const name = 'lamusiquedemesfilms';
 // use brunch-version plugin to populate these.
-const version = '3.0.11';
+const version = '3.0.12';
 
 module.exports = `${name}-${version}`;
 
@@ -1836,6 +1836,13 @@ require.register("router.js", function(exports, require, module) {
 module.exports = Backbone.Router.extend({
   routes: {
     '': 'index',
+    testalgos: 'testAlgos',
+  },
+
+  testAlgos: function () {
+    console.log('toto');
+    // eslint-disable-next-line
+    require("lib/test_lmdmf_algos").testAlgos();
   },
 });
 
@@ -2045,11 +2052,6 @@ const template = require('./templates/how_it_works');
 module.exports = Mn.View.extend({
   className: 'howitworks',
   template: template,
-
-  events: {
-    // eslint-disable-next-line
-    'click #testalgos': () => require("lib/test_lmdmf_algos").testAlgos(),
-  },
 
   serializeData: function () {
     // TODO
@@ -2699,8 +2701,7 @@ jade_mixins["featureInfos"](features['q:Q101']);
 jade_mixins["featureInfos"](features['q:Q102']);
 jade_mixins["featureInfos"](features['q:Q103']);
 jade_mixins["featureInfos"](features['q:Q104']);
-jade_mixins["featureInfos"](features['q:Q105']);
-buf.push("<hr/><a id=\"testalgos\" href=\"#\">Page de test des algorithmes</a>");}.call(this,"features" in locals_for_with?locals_for_with.features:typeof features!=="undefined"?features:undefined));;return buf.join("");
+jade_mixins["featureInfos"](features['q:Q105']);}.call(this,"features" in locals_for_with?locals_for_with.features:typeof features!=="undefined"?features:undefined));;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {
@@ -3115,3 +3116,5 @@ require.register("___globals___", function(exports, require, module) {
   
 });})();require('___globals___');
 
+
+//# sourceMappingURL=app.js.map
