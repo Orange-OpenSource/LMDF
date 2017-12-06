@@ -2381,10 +2381,10 @@ const SearchResultsView = Mn.CollectionView.extend({
   className: 'movielibrary',
   childView: MovieItemView,
 
-  emptyView: Mn.View.extend({
-    className: 'empty',
-    template: emptyViewTemplate,
-  }),
+  // emptyView: Mn.View.extend({
+  //   className: 'empty',
+  //   template: emptyViewTemplate,
+  // }),
 });
 
 
@@ -2426,8 +2426,14 @@ module.exports = Mn.View.extend({
 
   onLoaded: function () {
     this.$el.toggleClass('loading', false);
-    this.ui.title.text(`Films et séries dont le titre contient « ${this.model.get('q')} », trouvés sur Wikidata :`);
-    app.trigger('mainTitle:set', `Films et séries pour : « ${this.model.get('q')} »`);
+
+    if (this.collection.size() === 0) {
+      this.ui.title.text(`Aucun film ni série trouvé sur Wikidata pour « ${this.model.get('q')} ».`);
+      app.trigger('mainTitle:set', `Aucun film ni série pour : « ${this.model.get('q')} »`);
+    } else {
+      this.ui.title.text(`Films et séries dont le titre contient « ${this.model.get('q')} », trouvés sur Wikidata :`);
+      app.trigger('mainTitle:set', `Films et séries pour : « ${this.model.get('q')} »`);
+    }
   },
 
 
@@ -2887,7 +2893,7 @@ var buf = [];
 var jade_mixins = {};
 var jade_interp;
 
-buf.push("<p>Il n'y a aucun film dans votre vidéothèque Cozy !</p><p>Pour en ajouter, vous pouvez<ul><li>Si vous êtes client Livebox Orange, récupérer votre historique de VOD et Replay en activant le&nbsp;<button class=\"konnector\">connecteur Orange Livebox.</button></li><li>Tout simplement, rechercher et ajouter un film ou une série avec la barre de recherche à gauche.</li></ul></p>");;return buf.join("");
+buf.push("<p>Votre vidéothèque est vide !</p><p>Pour y ajouter des films ou des séries, vous pouvez<ul><li>Si vous êtes client Livebox Orange, récupérer votre historique de VOD et Replay en activant le&nbsp;<button class=\"konnector\">connecteur Orange Vidéos.</button></li><li>Et tout simplement, rechercher et ajouter un film ou une série avec la barre de recherche à gauche.</li></ul></p>");;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {
@@ -2906,7 +2912,7 @@ var buf = [];
 var jade_mixins = {};
 var jade_interp;
 ;var locals_for_with = (locals || {});(function (q) {
-buf.push("<h2>Résultats pour : «<span class=\"query\">" + (jade.escape(null == (jade_interp = q) ? "" : jade_interp)) + "</span>»</h2><ul></ul>");}.call(this,"q" in locals_for_with?locals_for_with.q:typeof q!=="undefined"?q:undefined));;return buf.join("");
+buf.push("<h2>Résultats pour : «<span class=\"query\">" + (jade.escape(null == (jade_interp = q) ? "" : jade_interp)) + "</span>»</h2><ul></ul><img src=\"/img/point_loader_1.gif\" class=\"loader\"/>");}.call(this,"q" in locals_for_with?locals_for_with.q:typeof q!=="undefined"?q:undefined));;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {
@@ -2925,7 +2931,7 @@ var buf = [];
 var jade_mixins = {};
 var jade_interp;
 
-buf.push("<p><b>Aucun film trouvé.</b></p><p>Attention, cette version n'est capable de rechercher que des films de cinéma, mais les séries devraient arriver dans une prochaine version !</p>");;return buf.join("");
+buf.push("<p><b>Aucun film ou série trouvé.</b></p>");;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {

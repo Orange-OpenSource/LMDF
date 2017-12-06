@@ -11,10 +11,10 @@ const SearchResultsView = Mn.CollectionView.extend({
   className: 'movielibrary',
   childView: MovieItemView,
 
-  emptyView: Mn.View.extend({
-    className: 'empty',
-    template: emptyViewTemplate,
-  }),
+  // emptyView: Mn.View.extend({
+  //   className: 'empty',
+  //   template: emptyViewTemplate,
+  // }),
 });
 
 
@@ -56,8 +56,14 @@ module.exports = Mn.View.extend({
 
   onLoaded: function () {
     this.$el.toggleClass('loading', false);
-    this.ui.title.text(`Films et séries dont le titre contient « ${this.model.get('q')} », trouvés sur Wikidata :`);
-    app.trigger('mainTitle:set', `Films et séries pour : « ${this.model.get('q')} »`);
+
+    if (this.collection.size() === 0) {
+      this.ui.title.text(`Aucun film ni série trouvé sur Wikidata pour « ${this.model.get('q')} ».`);
+      app.trigger('mainTitle:set', `Aucun film ni série pour : « ${this.model.get('q')} »`);
+    } else {
+      this.ui.title.text(`Films et séries dont le titre contient « ${this.model.get('q')} », trouvés sur Wikidata :`);
+      app.trigger('mainTitle:set', `Films et séries pour : « ${this.model.get('q')} »`);
+    }
   },
 
 

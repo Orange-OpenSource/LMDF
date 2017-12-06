@@ -35,12 +35,10 @@ Le point d'entrée de l'application est `index.html` > `app/application.js`
 ## Licence TODO.
 
 ## TODO
-* Cacher la page "test de l'algo"
-* Du ménage dans les messages
 * Bugs avec les vignettes ?
 * "Film SD / HD", est-ce que la mise à jour fonctionne bien ! ?
-* Message "film non trouvé apparait subreptissement !
-* inverstion titre saison titre épisode.
+* inversion titre saison titre épisode.
+
 * listes deezer incohérentes...
 
 * Homonymie : pousser à la recherche manuelle ; permettre de faire un lien manuel ? (fonctionnalité "C'était pas ça !")
@@ -55,6 +53,11 @@ Le point d'entrée de l'application est `index.html` > `app/application.js`
 
 
 ### Changelog
+
+#### 3.0.12
+* Cacher la page "test de l'algo"
+* Du ménage dans les messages, fix : message "film non trouvé apparaît subrepticement.
+
 #### 3.0.11
 * Migrations de données au changement de version : ré-examiner l'historique Orange pour les versions antérieures à 3.0.10 .
 

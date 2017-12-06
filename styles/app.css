@@ -538,8 +538,14 @@ ul.movielibrary .movieitem .placeholder h3 {
   padding: 10px 10px 0;
 }
 
-.searchresults.loading .empty {
+.searchresults .loader {
   display: none;
+}
+
+.searchresults.loading .loader {
+  width: 120px;
+  display: block;
+  margin: auto;
 }
 /* END main searchresults */
 
