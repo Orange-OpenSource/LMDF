@@ -465,8 +465,9 @@ main .videostreamitem .placeholder .subtitle {
 
 
 ul.movielibrary {
-  padding: 0px;
+  padding: 0;
   list-style: none;
+  margin: 0 -10px;
 }
 
 ul.movielibrary > li {
