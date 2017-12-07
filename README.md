@@ -36,9 +36,7 @@ Le point d'entrée de l'application est `index.html` > `app/application.js`
 
 ## TODO
 * Bugs avec les vignettes ?
-* "Film SD / HD", est-ce que la mise à jour fonctionne bien ! ?
 * inversion titre saison titre épisode.
-
 
 * Homonymie : pousser à la recherche manuelle ; permettre de faire un lien manuel ? (fonctionnalité "C'était pas ça !")
 
@@ -47,7 +45,6 @@ Le point d'entrée de l'application est `index.html` > `app/application.js`
 * commande / visualisation : comment ça fonctionne ? , qu'est-ce qu'on affiche, qu'est-ce qu'on explique ?
 
 * gestion état du connecteur --> vérif l'existence / l'état.
-* mise à jour régulière des fiches de films, données musicbrainz (répercuter mises à jour de ces base communautaires).
 * utiliser d'autres métadonnées (en plus du titre) pour retrouver précisément le programme visionné via livebox sur wikidata.
 
 
@@ -57,6 +54,7 @@ Le point d'entrée de l'application est `index.html` > `app/application.js`
 * Cacher la page "test de l'algo"
 * Du ménage dans les messages, fix : message "film non trouvé apparaît subrepticement.
 * Mise à jour automatique des détails des films, tous les mois.
+* Fix upgrade sur mise à jour.
 
 #### 3.0.11
 * Migrations de données au changement de version : ré-examiner l'historique Orange pour les versions antérieures à 3.0.10 .

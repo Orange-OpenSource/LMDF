@@ -42,13 +42,12 @@ const Application = Mn.Application.extend({
   },
 
   upgrade: function () {
-    const lastRunVersion = this.properties.get('appVersion');
+    const lastRunVersion = this.properties.get('appVersion') || '';
     const curVersion = AppNameVersion.split('-', 2)[1];
 
     if (lastRunVersion !== curVersion) {
       // Is newer version !! Do something !!
       this.trigger('message:display', "Mise à jour vers la nouvelle version de l'application", 'appversionmigration');
-
       return VersionsMigrations.runMigration(lastRunVersion, curVersion)
       .then(() => {
         this.properties.set('appVersion', curVersion);

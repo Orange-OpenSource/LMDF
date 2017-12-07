@@ -193,13 +193,12 @@ const Application = Mn.Application.extend({
   },
 
   upgrade: function () {
-    const lastRunVersion = this.properties.get('appVersion');
+    const lastRunVersion = this.properties.get('appVersion') || '';
     const curVersion = AppNameVersion.split('-', 2)[1];
 
     if (lastRunVersion !== curVersion) {
       // Is newer version !! Do something !!
       this.trigger('message:display', "Mise à jour vers la nouvelle version de l'application", 'appversionmigration');
-
       return VersionsMigrations.runMigration(lastRunVersion, curVersion)
       .then(() => {
         this.properties.set('appVersion', curVersion);
@@ -1871,7 +1870,7 @@ module.exports = Backbone.Router.extend({
 require.register("versionsmigrations.js", function(exports, require, module) {
 module.exports.runMigration = (previous) => { // previous, current
   // TODO : it's ugly, can we factoryse it ?
-  if (previous < '3.0.z' && Number(previous.slice(4)) < 10) {
+  if (previous < '3.0.z' && Number(previous.slice(4)) < 12) {
     // re-scan videostreams, by reseting "lastviewed" flag.
     app.properties.set('lastVideoStream', '');
     return app.properties.save();
