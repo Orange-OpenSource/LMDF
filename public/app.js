@@ -2372,10 +2372,10 @@ module.exports = Mn.View.extend({
   },
 
   fireIntent: function () {
-    cozy.client.intents.create('CREATE', 'io.cozy.accounts', { slug: 'orangelivebox' })
+    cozy.client.intents.create('CREATE', 'io.cozy.accounts', { slug: 'orangevideos' })
     .start(document.getElementById('popin'))
     .catch((err) => {
-      const msg = "Erreur lors de l'activation du connecteur Orange Livebox";
+      const msg = "Erreur lors de l'activation du connecteur Orange Videos";
       console.error(msg);
       console.error(err);
       app.trigger('message:error', msg);
