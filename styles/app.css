@@ -552,6 +552,10 @@ ul.movielibrary .movieitem .placeholder h3 {
 
 /* main how it works */
 
+.howitworks {
+  margin-bottom: 30px;
+}
+
 a {
   color: black;
 }

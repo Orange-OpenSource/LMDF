@@ -2720,7 +2720,9 @@ jade_mixins["featureInfos"](features['q:Q101']);
 jade_mixins["featureInfos"](features['q:Q102']);
 jade_mixins["featureInfos"](features['q:Q103']);
 jade_mixins["featureInfos"](features['q:Q104']);
-jade_mixins["featureInfos"](features['q:Q105']);}.call(this,"features" in locals_for_with?locals_for_with.features:typeof features!=="undefined"?features:undefined));;return buf.join("");
+jade_mixins["featureInfos"](features['q:Q105']);
+jade_mixins["featureInfos"](features['q:Q106']);
+jade_mixins["featureInfos"](features['q:Q107']);}.call(this,"features" in locals_for_with?locals_for_with.features:typeof features!=="undefined"?features:undefined));;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {
@@ -3020,7 +3022,7 @@ var buf = [];
 var jade_mixins = {};
 var jade_interp;
 ;var locals_for_with = (locals || {});(function (title) {
-buf.push("<h2>" + (jade.escape(null == (jade_interp = title) ? "" : jade_interp)) + "</h2><p> Voici les programmes que vous avez visionnés ou commandés via votre Livebox. Pour chacun, l'application&ensp;<i>La musique de mes films&ensp;</i>a essayé de retrouver la fiche et la musique, et les a ajoutés automatiquement à votre bibliothèque de films ou de séries. Si l'algorithme s'est trompé ou n'a pas abouti, vous pouvez rechercher le film ou la série manuellement (cliquez sur le \"+\" à gauche ).</p><ul></ul>");}.call(this,"title" in locals_for_with?locals_for_with.title:typeof title!=="undefined"?title:undefined));;return buf.join("");
+buf.push("<h2>" + (jade.escape(null == (jade_interp = title) ? "" : jade_interp)) + "</h2><p> Voici les programmes que vous avez visionnés ou commandés via votre Livebox. Chaque item détaille une action relative au visionnage (achat, lancement initial ou après reprise, etc.), ce qui peut faire apparaître des doublons. Pour chacun, l'application&ensp;<i>La musique de mes films&ensp;</i>a essayé de retrouver la fiche et la musique, et les a ajoutés automatiquement à votre bibliothèque de films ou de séries. Si l'algorithme s'est trompé ou n'a pas abouti, vous pouvez rechercher le film ou la série manuellement (cliquez sur le \"+\" à gauche ).</p><ul></ul>");}.call(this,"title" in locals_for_with?locals_for_with.title:typeof title!=="undefined"?title:undefined));;return buf.join("");
 };
 if (typeof define === 'function' && define.amd) {
   define([], function() {

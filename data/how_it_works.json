@@ -37,10 +37,12 @@
   },
   "q:Q106": {
     "@id": "q:Q106",
-    "label": "la bibliothèque de films, de séries"
+    "label": "la bibliothèque de films, de séries",
+    "howItWorks": "Il s'agit de la liste, respectivement des films et séries, qui ont été reconnu automatiquement de la liste des programmes visionnés ou qui ont été ajouté manuellement via le bouton 'ajouter à la bibliothèque'."
   },
   "q:Q107": {
     "@id": "q:Q107",
-    "label": "les programmes visionnés"
+    "label": "les programmes visionnés",
+    "howItWorks": "Il s'agit de la liste des programmes visionnés, commandés, etc. via votre Livebox. Ces données proviennent du conneteur Orange Vidéos. Chaque item détaille une action relative au visionnage (achat, lancement initial ou après reprise, etc.), ce qui peut faire apparaître des doublons. Pour chacun, l'application éssaie de retrouver la fiche et la musique, et les ajoute automatiquement à la bibliothèque de films ou de séries. Pour ce faire, l'application fait une recherche à partir du titre ou du sous-titre du programme, et choisi le premier résultat."
   }
 }
