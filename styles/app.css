@@ -470,6 +470,11 @@ ul.movielibrary {
   margin: 0 -10px;
 }
 
+/* emtpy item */
+ul.movielibrary > div {
+  margin: 10px;
+}
+
 ul.movielibrary > li {
   display: inline-block;
   padding: 10px;
