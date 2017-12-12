@@ -12,6 +12,7 @@ module.exports = (uri, doctype, options) => {
         const xhr = new XMLHttpRequest();
         xhr.open('GET', res[1]);
         xhr.setRequestHeader('Authorization', res[0].token.toAuthHeader());
+        xhr.withCredentials = true;
         xhr.responseType = 'arraybuffer';
         xhr.onload = (e) => {
           if (xhr.status === 200) {

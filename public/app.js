@@ -414,7 +414,7 @@ require.register("lib/appname_version.js", function(exports, require, module) {
 
 const name = 'lamusiquedemesfilms';
 // use brunch-version plugin to populate these.
-const version = '3.0.12';
+const version = '3.0.13';
 
 module.exports = `${name}-${version}`;
 
@@ -673,6 +673,7 @@ module.exports = (uri, doctype, options) => {
         const xhr = new XMLHttpRequest();
         xhr.open('GET', res[1]);
         xhr.setRequestHeader('Authorization', res[0].token.toAuthHeader());
+        xhr.withCredentials = true;
         xhr.responseType = 'arraybuffer';
         xhr.onload = (e) => {
           if (xhr.status === 200) {

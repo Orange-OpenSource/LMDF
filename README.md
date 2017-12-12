@@ -35,7 +35,7 @@ Le point d'entrée de l'application est `index.html` > `app/application.js`
 ## Licence TODO.
 
 ## TODO
-* Bugs avec les vignettes ?
+
 * inversion titre saison titre épisode.
 
 * Homonymie : pousser à la recherche manuelle ; permettre de faire un lien manuel ? (fonctionnalité "C'était pas ça !")
@@ -49,6 +49,9 @@ Le point d'entrée de l'application est `index.html` > `app/application.js`
 
 
 ### Changelog
+
+#### 3.0.13
+* Fix bugs avec les vignettes.
 
 #### 3.0.12
 * Cacher la page "test de l'algo"
