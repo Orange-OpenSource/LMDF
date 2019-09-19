@@ -32,7 +32,9 @@ L'application est écrite en es6, et s'appuie sur les bibliothèque suivante (cf
 
 Le point d'entrée de l'application est `index.html` > `app/application.js`
 
-## Licence TODO.
+## Licence 
+
+MIT License
 
 ## TODO
 
